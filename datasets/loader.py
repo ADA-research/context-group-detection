@@ -1,6 +1,3 @@
-import csv
-import os
-
 import numpy as np
 import pandas as pd
 
@@ -48,9 +45,19 @@ def read_obsmat(directory):
     :param directory: name of the directory
     :return: dataframe
     '''
-    columns = ['frame_number', 'pedestrian_ID', 'pos_x', 'pos_z', 'pos_y', 'v_x', 'v_z', 'v_y']
+    columns = ['frame_id', 'agent_id', 'pos_x', 'pos_z', 'pos_y', 'v_x', 'v_z', 'v_y']
     df = pd.read_csv(directory + '/obsmat.txt', sep='\s+', names=columns, header=None)
     df.drop(columns=['pos_z', 'v_z'], inplace=True)
+    # modify data types
+    df["frame_id"] = df["frame_id"].astype(int)
+    if str(df["agent_id"].iloc[0]).replace('.', '', 1).isdigit():
+        df["agent_id"] = df["agent_id"].astype(int)
+    df["pos_x"] = df["pos_x"].astype(float)
+    df["pos_y"] = df["pos_y"].astype(float)
+
+    d_frame = np.diff(pd.unique(df["frame_id"]))
+    fps = d_frame[0] * 2.5  # 2.5 is the common annotation fps for all (ETH+UCY) datasets
+    df["timestamp"] = df["frame_id"] / fps
 
     return df
 
@@ -64,59 +71,18 @@ def read_groups(directory):
     '''
 
     with open(directory + '/groups.txt') as f:
-        groups = [line.rstrip().lstrip().split(' ') for line in f if line.rstrip().lstrip() != '']
+        groups = [line.rstrip().lstrip().split() for line in f if line.rstrip().lstrip() != '']
 
     return groups
 
 
-def read_geometry(directory):
-    '''
-    Reads multiple csv files from the given directory and stores their data to a dataframe
-    :param directory: name of the directory
-    :return: dataframe
-    '''
-    columns = ['Timestamp', 'Ground_Position_X', 'Ground_Position_Y', 'Useless_Field', 'Body_Pose',
-               'Relative_Head2Body_Pose', 'Validity']
-    dfs = []
-    geometry = directory + '/geometryGT'
-    for filename in os.listdir(geometry):
-        df = pd.read_csv(geometry + '/' + filename, names=columns)
-        df.drop(columns=['Useless_Field'], inplace=True)
-        dfs.append(df)
-    df = pd.concat(dfs)
-    return df
-
-
-# TODO group pairs per frame
-#   check if it works
-def read_fformation(directory):
-    '''
-    Reads a fformationGT.csv file from the given directory and
-    converts it to pairs of pedestrians in the same group
-    :param directory: name of the directory
-    :return: pairs
-    '''
-
-    frame_groups = {}
-    with open(directory + '/fformationGT.csv') as csv_file:
-        csv_reader = csv.reader(csv_file, delimiter=',')
-        frames = [line for line in csv_reader]
-        for frame in frames:
-            frame_id = frame[0]
-            group = frame[1:]
-            if frame_id not in frame_groups.keys():
-                frame_groups[frame_id] = [group]
-            else:
-                frame_groups[frame_id].append(group)
-
-    return frame_groups
-
-
 if __name__ == '__main__':
-    eth_df = read_obsmat('./ETH/seq_eth')
-    eth_groups = read_groups('./ETH/seq_eth')
+    dataset_path = './UCY/students03'
+    eth_df = read_obsmat(dataset_path)
+    eth_groups = read_groups(dataset_path)
+
     eth_traj_dataset = load_eth('./ETH/seq_eth/obsmat.txt')
     eth_trajs = eth_traj_dataset.get_trajectories()
-
-    salsa_cp_df = read_geometry('./SALSA/CocktailParty')
-    salsa_cp_groups_df = read_fformation('./SALSA/CocktailParty')
+    traj_1 = eth_traj_dataset.data.iloc[eth_trajs.groups[0, 1]]  # get trajectory of scene_id 0 and pedestrian_id 1
+    traj_1_v2 = eth_traj_dataset.data[eth_traj_dataset.data['agent_id'] == 1]
+    pass
