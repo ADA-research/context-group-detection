@@ -71,7 +71,7 @@ def read_groups(directory):
     '''
 
     with open(directory + '/groups.txt') as f:
-        groups = [line.rstrip().lstrip().split() for line in f if line.rstrip().lstrip() != '']
+        groups = [line.split() for line in f if not line.isspace()]
 
     return groups
 
