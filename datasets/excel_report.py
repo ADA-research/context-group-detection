@@ -20,6 +20,7 @@ def report(name, stats):
     worksheet.write(header_row, header_column + 1, 'Agents #')
     worksheet.write(header_row, header_column + 2, 'Frames #')
     worksheet.write(header_row, header_column + 3, 'Groups #')
+    worksheet.write(header_row, header_column + 4, 'Duration')
     # worksheet.write(header_row, header_column + 4, 'Agents # in multiple groups')
     # worksheet.write(header_row, header_column + 5, 'Single agent groups #')
 
@@ -29,6 +30,7 @@ def report(name, stats):
         worksheet.write(row, 1, stats[key]['agents'])
         worksheet.write(row, 2, stats[key]['frames'])
         worksheet.write(row, 3, stats[key]['groups'])
+        worksheet.write(row, 4, stats[key]['duration'])
         # worksheet.write(row, 4, stats[key]['multigroup agents'])
         # worksheet.write(row, 5, stats[key]['single agent groups'])
         row += 1
@@ -56,7 +58,8 @@ def dataset_stats(dataset_path):
         'agents': agents_num,
         'frames': frames_num,
         'groups': len(groups),
-        'single agent groups': single_groups
+        'single agent groups': single_groups,
+        'duration': df.loc[df.frame_id.idxmax()]['timestamp'] - df.loc[df.frame_id.idxmin()]['timestamp']
     }
 
 
