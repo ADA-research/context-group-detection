@@ -1,3 +1,5 @@
+from collections import Counter
+
 import numpy as np
 import pandas as pd
 
@@ -62,6 +64,25 @@ def read_obsmat(directory):
     return df
 
 
+def merge_groups_with_common_agents(agents_in_multiple_groups, groups):
+    '''
+    Merge groups with common agents.
+    :param groups: list of lists representing the agent groups
+    :return: list of lists without agents being in multiple groups
+    '''
+    for agent in agents_in_multiple_groups:
+        group_indices = []
+        for i, group in enumerate(groups):
+            if agent in group:
+                group_indices.append(i)
+        groups_to_be_merged = [groups[i] for i in group_indices]
+        merged_group = list(set(agent for group in groups_to_be_merged for agent in group))
+        for c, i in enumerate(group_indices):
+            groups.pop(i - c)
+        groups.append(merged_group)
+    return groups
+
+
 def read_groups(directory):
     '''
     Reads a groups.txt file from the given directory and
@@ -72,6 +93,20 @@ def read_groups(directory):
 
     with open(directory + '/groups.txt') as f:
         groups = [line.split() for line in f if not line.isspace()]
+
+    # merge groups with common agents
+    count_dict = Counter([agent for group in groups for agent in group])
+    agents_in_multiple_groups = [key for key, value in count_dict.items() if value > 1]
+    if len(agents_in_multiple_groups) > 0:
+        groups_with_duplicate_agents_indices = \
+            set(i for i, group in enumerate(groups) for agent in agents_in_multiple_groups if agent in group)
+        groups_without_duplicate_agents = \
+            [group for i, group in enumerate(groups) if i not in groups_with_duplicate_agents_indices]
+        groups_with_duplicate_agents = \
+            [group for i, group in enumerate(groups) if i in groups_with_duplicate_agents_indices]
+        groups = \
+            groups_without_duplicate_agents + merge_groups_with_common_agents(agents_in_multiple_groups,
+                                                                              groups_with_duplicate_agents)
 
     return groups
 
