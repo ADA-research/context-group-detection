@@ -1,6 +1,9 @@
 from collections import Counter
 
+import pandas as pd
+import seaborn as sns
 import xlsxwriter
+from matplotlib import pyplot as plt
 
 from loader import read_obsmat, read_groups
 
@@ -63,13 +66,49 @@ def dataset_stats(dataset_path):
     }
 
 
+def groups_size_hist(groups_dict, save_loc):
+    '''
+    Produces a plot of counts of group lengths per dataset
+    :param groups_dict:
+    :return:
+    '''
+    # create dataframe with group sizes from all datasets
+    groups_df_list = []
+    for key, group in groups_dict.items():
+        groups_len = [len(group) for group in groups_dict[key]]
+        temp_df = pd.DataFrame(groups_len, columns=['size'])
+        temp_df['dataset'] = key
+        groups_df_list.append(temp_df)
+    groups_df = pd.concat(groups_df_list)
+
+    # bar plot using seaborn
+    sns.set_theme(style="whitegrid")
+    sns.catplot(data=groups_df, kind='count', x='size', hue='dataset')
+    plt.suptitle('Group sizes per dataset')
+    plt.ylabel('Count')
+    plt.xlabel('Group size')
+    plt.savefig(save_loc)
+    plt.show()
+
+
+
 if __name__ == '__main__':
-    stats = {
-        'eth': dataset_stats('./ETH/seq_eth'),
-        'hotel': dataset_stats('./ETH/seq_hotel'),
-        'zara01': dataset_stats('./UCY/zara01'),
-        'zara02': dataset_stats('./UCY/zara02'),
-        'students03': dataset_stats('./UCY/students03')
+    # stats_dict = {
+    #     'eth': dataset_stats('./ETH/seq_eth'),
+    #     'hotel': dataset_stats('./ETH/seq_hotel'),
+    #     'zara01': dataset_stats('./UCY/zara01'),
+    #     'zara02': dataset_stats('./UCY/zara02'),
+    #     'students03': dataset_stats('./UCY/students03')
+    # }
+    #
+    # report('datasets.xlsx', stats_dict)
+
+    groups_dict = {
+        'eth': read_groups('./ETH/seq_eth'),
+        'hotel': read_groups('./ETH/seq_hotel'),
+        'zara01': read_groups('./UCY/zara01'),
+        'zara02': read_groups('./UCY/zara02'),
+        'students03': read_groups('./UCY/students03')
     }
 
-    report('datasets.xlsx', stats)
+    groups_size_hist(groups_dict, './group_size_plot.png')
