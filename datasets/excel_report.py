@@ -91,18 +91,18 @@ def groups_size_hist(groups_dict, save_loc):
     plt.show()
 
 
-
 if __name__ == '__main__':
-    # stats_dict = {
-    #     'eth': dataset_stats('./ETH/seq_eth'),
-    #     'hotel': dataset_stats('./ETH/seq_hotel'),
-    #     'zara01': dataset_stats('./UCY/zara01'),
-    #     'zara02': dataset_stats('./UCY/zara02'),
-    #     'students03': dataset_stats('./UCY/students03')
-    # }
-    #
-    # report('datasets.xlsx', stats_dict)
+    # create datasets report
+    stats_dict = {
+        'eth': dataset_stats('./ETH/seq_eth'),
+        'hotel': dataset_stats('./ETH/seq_hotel'),
+        'zara01': dataset_stats('./UCY/zara01'),
+        'zara02': dataset_stats('./UCY/zara02'),
+        'students03': dataset_stats('./UCY/students03')
+    }
+    report('datasets.xlsx', stats_dict)
 
+    # create datasets group size histogram
     groups_dict = {
         'eth': read_groups('./ETH/seq_eth'),
         'hotel': read_groups('./ETH/seq_hotel'),
@@ -110,5 +110,4 @@ if __name__ == '__main__':
         'zara02': read_groups('./UCY/zara02'),
         'students03': read_groups('./UCY/students03')
     }
-
     groups_size_hist(groups_dict, './group_size_plot.png')
