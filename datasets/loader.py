@@ -120,4 +120,3 @@ if __name__ == '__main__':
     eth_trajs = eth_traj_dataset.get_trajectories()
     traj_1 = eth_traj_dataset.data.iloc[eth_trajs.groups[0, 1]]  # get trajectory of scene_id 0 and pedestrian_id 1
     traj_1_v2 = eth_traj_dataset.data[eth_traj_dataset.data['agent_id'] == 1]
-    pass
