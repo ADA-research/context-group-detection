@@ -177,6 +177,7 @@ if __name__ == '__main__':
     # get_frame_combs_stats(dataframe=df, consecutive_frames=3)
 
     # remove agents with low number of frames
+    # TODO figure out how to filter until both dont have anything else to remove
     df = remove_agents_in_low_number_of_frames(dataframe=df, frame_threshold=5)
     df = remove_frames_with_low_number_of_agents(dataframe=df, agents_threshold=5)
     pass
