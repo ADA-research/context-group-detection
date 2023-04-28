@@ -151,7 +151,7 @@ def remove_agents_and_frames_with_insufficient_data(dataframe, agents_threshold,
         dataframe = dataframe[dataframe.agent_id.isin(unwanted_agent_ids) == False]
         dataframe = dataframe[dataframe.frame_id.isin(unwanted_frame_ids) == False]
         unwanted_frame_ids = check_for_frames_with_low_number_of_agents(dataframe, agents_threshold)
-        unwanted_agent_ids = check_for_frames_with_low_number_of_agents(dataframe, frames_threshold)
+        unwanted_agent_ids = check_for_agents_in_low_number_of_frames(dataframe, frames_threshold)
 
     return dataframe
 
