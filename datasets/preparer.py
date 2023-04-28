@@ -92,32 +92,68 @@ def dataset_stats(dataset_path):
     }
 
 
-def remove_agents_in_low_number_of_frames(dataframe, frames_threshold):
+def remove_agents_in_low_number_of_frames(dataframe, agent_ids_to_be_removed):
     '''
     Filters dataframe to find agents with frames less than the given threshold.
     :param dataframe: dataframe to be filtered
-    :param frames_threshold: minimum number of frames for agent not to be removed
+    :param agent_ids_to_be_removed: agent ids to be removed
     :return: filtered dataframe
     '''
-    agents_df = dataframe.groupby('agent_id')['frame_id'].apply(list).reset_index(name='frames')
-    agents_df['frames_num'] = agents_df['frames'].apply(len)
-    agent_ids_to_be_removed = list(agents_df[agents_df['frames_num'] < frames_threshold]['agent_id'].values)
-
     return dataframe[not dataframe.agent_id.isin(agent_ids_to_be_removed)]
 
 
-def remove_frames_with_low_number_of_agents(dataframe, agents_threshold):
+def check_for_agents_in_low_number_of_frames(dataframe, frames_threshold):
+    '''
+    Check if there are agents that need to be removed from the dataframe, given a frame threshold.
+    :param dataframe: dataframe to be filtered
+    :param frames_threshold: minimum number of frames for agent not to be removed
+    :return: list of agent ids to be removed
+    '''
+    agents_df = dataframe.groupby('agent_id')['frame_id'].apply(list).reset_index(name='frames')
+    agents_df['frames_num'] = agents_df['frames'].apply(len)
+    return list(agents_df[agents_df['frames_num'] < frames_threshold]['agent_id'].values)
+
+
+def remove_frames_with_low_number_of_agents(dataframe, frame_ids_to_be_removed):
     '''
     Filters dataframe to find frames with agents less than the given threshold.
     :param dataframe: dataframe to be filtered
-    :param agents_threshold: minimum number of agents for frame not to be removed
+    :param frame_ids_to_be_removed: frames to be removed
     :return: filtered dataframe
+    '''
+    return dataframe[not dataframe.frame_id.isin(frame_ids_to_be_removed)]
+
+
+def check_for_frames_with_low_number_of_agents(dataframe, agents_threshold):
+    '''
+    Check if there are frames that need to be removed from the dataframe, given an agent threshold.
+    :param dataframe: dataframe to be filtered
+    :param agents_threshold: minimum number of agents for frame not to be removed
+    :return: list of frame ids to be removed
     '''
     frames_df = dataframe.groupby('frame_id')['agent_id'].apply(list).reset_index(name='agents')
     frames_df['agents_num'] = frames_df['agents'].apply(len)
-    frame_ids_to_be_removed = list(frames_df[frames_df['agents_num'] < agents_threshold]['frame_id'].values)
+    return list(frames_df[frames_df['agents_num'] < agents_threshold]['frame_id'].values)
 
-    return dataframe[not dataframe.frame_id.isin(frame_ids_to_be_removed)]
+
+def remove_agents_and_frames_with_insufficient_data(dataframe, agents_threshold, frames_threshold):
+    '''
+    Remove agents and frames with insufficient data, based on given thresholds.
+    :param dataframe: dataframe to be filtered
+    :param agents_threshold: minimum number of agents for frame not to be removed
+    :param frames_threshold: minimum number of frames for agent not to be removed
+    :return: filtered dataframe
+    '''
+    unwanted_frame_ids = check_for_frames_with_low_number_of_agents(dataframe, agents_threshold)
+    unwanted_agent_ids = check_for_agents_in_low_number_of_frames(dataframe, frames_threshold)
+
+    while len(unwanted_frame_ids) > 0 or len(unwanted_agent_ids) > 0:
+        dataframe = dataframe[dataframe.agent_id.isin(unwanted_agent_ids) == False]
+        dataframe = dataframe[dataframe.frame_id.isin(unwanted_frame_ids) == False]
+        unwanted_frame_ids = check_for_frames_with_low_number_of_agents(dataframe, agents_threshold)
+        unwanted_agent_ids = check_for_frames_with_low_number_of_agents(dataframe, frames_threshold)
+
+    return dataframe
 
 
 # TODO calculate number of same agents in X consecutive frames,
@@ -173,11 +209,8 @@ if __name__ == '__main__':
     df = datasets_dict[dataset]['df']
     groups = datasets_dict[dataset]['groups']
 
+    # remove agents with low number of frames
+    df = remove_agents_and_frames_with_insufficient_data(dataframe=df, frames_threshold=5, agents_threshold=7)
+
     # get frame stats
     # get_frame_combs_stats(dataframe=df, consecutive_frames=3)
-
-    # remove agents with low number of frames
-    # TODO figure out how to filter until both dont have anything else to remove
-    df = remove_agents_in_low_number_of_frames(dataframe=df, frames_threshold=5)
-    df = remove_frames_with_low_number_of_agents(dataframe=df, agents_threshold=5)
-    pass
