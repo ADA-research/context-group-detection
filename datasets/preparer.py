@@ -8,11 +8,11 @@ from matplotlib import pyplot as plt
 from loader import read_obsmat, read_groups
 
 
-def report(name, stats):
+def report(name, data):
     '''
-    Generate excel report file with dataset stats.
+    Generate excel report file with dataset data.
     :param name: string for Excel file name
-    :param stats: dictionary of stats for every dataset
+    :param data: dictionary of data for every dataset
     :return: nothing
     '''
     workbook = xlsxwriter.Workbook(name)
@@ -28,14 +28,14 @@ def report(name, stats):
     # worksheet.write(header_row, header_column + 5, 'Single agent groups #')
 
     row = header_row + 1
-    for key in stats.keys():
+    for key in data.keys():
         worksheet.write(row, 0, key)
-        worksheet.write(row, 1, stats[key]['agents'])
-        worksheet.write(row, 2, stats[key]['frames'])
-        worksheet.write(row, 3, len(stats[key]['groups']))
-        worksheet.write(row, 4, stats[key]['duration'])
-        # worksheet.write(row, 4, stats[key]['multigroup agents'])
-        # worksheet.write(row, 5, stats[key]['single agent groups'])
+        worksheet.write(row, 1, data[key]['agents'])
+        worksheet.write(row, 2, data[key]['frames'])
+        worksheet.write(row, 3, len(data[key]['groups']))
+        worksheet.write(row, 4, data[key]['duration'])
+        # worksheet.write(row, 4, data[key]['multigroup agents'])
+        # worksheet.write(row, 5, data[key]['single agent groups'])
         row += 1
 
     workbook.close()
@@ -66,11 +66,11 @@ def groups_size_hist(groups_dict, save_loc):
     plt.show()
 
 
-def dataset_stats(dataset_path):
+def dataset_data(dataset_path):
     '''
-    Get stats for specified dataset.
+    Get data for specified dataset.
     :param dataset_path: string of where to find dataset
-    :return: dictionary with stats
+    :return: dictionary with data
     '''
     df = read_obsmat(dataset_path)
     groups = read_groups(dataset_path)
@@ -156,39 +156,72 @@ def remove_agents_and_frames_with_insufficient_data(dataframe, agents_threshold,
     return dataframe
 
 
-# TODO calculate number of same agents in X consecutive frames,
-#  find set of agents in each frame, check intersection between the sets
-def get_frame_combs_stats(dataframe, consecutive_frames):
-    agent_sets = dataframe.groupby('frame_id')['agent_id'].apply(list).reset_index(name='agents')
+def filter_difference_between_frame_combinations(combinations, diff_between_frames):
+    '''
+    Filter frame combinations based on given difference between frames to be considered continuous.
+    :param combinations: list of frame combinations to be filtered
+    :param diff_between_frames: difference between frames to be continuous
+    :return: list of filtered frame combinations
+    '''
+    filtered_combinations = []
+    for frames in combinations:
+        differences = [True for i, frame in enumerate(frames[:-1]) if frames[i + 1] - frame != diff_between_frames]
+        if len(differences) == 0:
+            filtered_combinations.append(frames)
+    return filtered_combinations
 
-    frame_ids = agent_sets.frame_id.values
-    frame_id_combs = [list(frame_ids[i:i + consecutive_frames]) for i, frame_id in
-                      enumerate(frame_ids[:-consecutive_frames])]
 
+def get_frame_combs_data(dataframe, agents_minimum, consecutive_frames, difference_between_frames):
+    # get agents by frame
+    agents_by_frame = dataframe.groupby('frame_id')['agent_id'].apply(list).reset_index(name='agents')
+
+    # get frame combinations
+    frame_ids = agents_by_frame.frame_id.values
+    frame_id_combinations = [list(frame_ids[i:i + consecutive_frames]) for i, frame_id in
+                             enumerate(frame_ids[:-consecutive_frames])]
+    frame_id_combinations = filter_difference_between_frame_combinations(frame_id_combinations,
+                                                                         difference_between_frames)
+
+    # check agents intersection in frame combinations
     combs = []
-    for frames in frame_id_combs:
+    for frames in frame_id_combinations:
         comb_dict = {}
-        agent_list = [set(agent_sets[agent_sets['frame_id'] == frame]['agents'].iloc[0]) for frame in frames]
+        agent_list = [set(agents_by_frame[agents_by_frame['frame_id'] == frame]['agents'].iloc[0]) for frame in frames]
         comb_dict['frames'] = frames
         comb_dict['common_agents'] = set.intersection(*agent_list)
         comb_dict['total_agents'] = set.union(*agent_list)
-        combs.append(comb_dict)
+        # ignore frame combinations with not enough common agents
+        if len(comb_dict['common_agents']) >= agents_minimum:
+            combs.append(comb_dict)
 
     return combs
 
 
-# TODO for agents with lower than X frames, generate data to reach X frames
-# TODO check number of data when time window is 1 frame
-# TODO check number of data when time window is X frame
+# TODO handle frames with more than agents_minimum
+#  get all combinations of agents_minimum length for the common agents
+#  create data with frames - agents in frame comb - data of each agent (location, velocity, frame)
+def dataset_creator(dataframe, frame_comb_data, agents_minimum):
+    dataset = []
+    for frame_comb in frame_comb_data:
+        # for frames with minimum agents data
+        # get trajectories of each agent in an array
+        if len(frame_comb['common_agents']) >= agents_minimum:
+            pass
+        # for frames with more agents
+        # get all possible combinations of common agents and handle them as different samples
+        else:
+            pass
+    return dataset
+
 
 if __name__ == '__main__':
     # create datasets report
     datasets_dict = {
-        'eth': dataset_stats('./ETH/seq_eth'),
-        'hotel': dataset_stats('./ETH/seq_hotel'),
-        'zara01': dataset_stats('./UCY/zara01'),
-        'zara02': dataset_stats('./UCY/zara02'),
-        'students03': dataset_stats('./UCY/students03')
+        'eth': dataset_data('./ETH/seq_eth'),
+        'hotel': dataset_data('./ETH/seq_hotel'),
+        'zara01': dataset_data('./UCY/zara01'),
+        'zara02': dataset_data('./UCY/zara02'),
+        'students03': dataset_data('./UCY/students03')
     }
     # uncomment to produce report
     # report('datasets.xlsx', datasets_dict)
@@ -212,5 +245,7 @@ if __name__ == '__main__':
     # remove agents with low number of frames
     df = remove_agents_and_frames_with_insufficient_data(dataframe=df, frames_threshold=5, agents_threshold=7)
 
-    # get frame stats
-    # get_frame_combs_stats(dataframe=df, consecutive_frames=3)
+    # get frame combinations data
+    combinations = get_frame_combs_data(dataframe=df, agents_minimum=7, consecutive_frames=3,
+                                        difference_between_frames=6)
+    pass
