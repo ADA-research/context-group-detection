@@ -92,7 +92,7 @@ def read_groups(directory):
     '''
 
     with open(directory + '/groups.txt') as f:
-        groups = [line.split() for line in f if not line.isspace()]
+        groups = [[int(x) for x in line.split()] for line in f if not line.isspace()]
 
     # merge groups with common agents
     count_dict = Counter([agent for group in groups for agent in group])
