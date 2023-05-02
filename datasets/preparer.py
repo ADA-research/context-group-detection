@@ -1,4 +1,5 @@
 from collections import Counter
+from itertools import combinations
 
 import pandas as pd
 import seaborn as sns
@@ -197,21 +198,54 @@ def get_frame_combs_data(dataframe, agents_minimum, consecutive_frames, differen
     return combs
 
 
+def get_agent_data_for_frames(dataframe, agents, frames):
+    '''
+    Returns a list of tuples with location and velocity data for each frame and agent
+    :param dataframe: dataframe to retrieve data
+    :param agents: list of agents for who to retrieve data
+    :param frames: list of frames for which to retrieve data
+    :return: list
+    '''
+    data = dataframe[dataframe['frame_id'].isin(frames) & dataframe['agent_id'].isin(agents)].sort_values(
+        by=['agent_id', 'frame_id'])
+    data['measurement'] = data[['pos_x', 'pos_y', 'v_x', 'v_y']].apply(tuple, axis=1)
+    return list(data.groupby('agent_id')['measurement'].apply(list).values)
+
+
+def get_pair_label(groups, agents):
+    '''
+    Checks if agents are in the same group.
+    :param groups: list of groups to search
+    :param agents: tuple of agents to check
+    :return: True if agents are in the same, otherwise False
+    '''
+    return any(all(agent in group for agent in agents) for group in groups)
+
+
 # TODO handle frames with more than agents_minimum
 #  get all combinations of agents_minimum length for the common agents
 #  create data with frames - agents in frame comb - data of each agent (location, velocity, frame)
-def dataset_creator(dataframe, frame_comb_data, agents_minimum):
-    dataset = []
+def dataset_creator(dataframe, groups, frame_comb_data, agents_minimum):
+    data = []
     for frame_comb in frame_comb_data:
         # for frames with minimum agents data
         # get trajectories of each agent in an array
-        if len(frame_comb['common_agents']) >= agents_minimum:
-            pass
+        frames = frame_comb['frames']
+        agents = frame_comb['common_agents']
+        if len(agents) >= agents_minimum:
+            pairs = list(combinations(agents, 2))
+            for pair_agents in pairs:
+                context_agents = agents - set(pair_agents)
+                pair_data = get_agent_data_for_frames(dataframe, pair_agents, frames)
+                context_data = get_agent_data_for_frames(dataframe, context_agents, frames)
+                pair_data.extend(context_data)
+                data.append(pair_data)
+                label = get_pair_label(groups, pair_agents)
         # for frames with more agents
         # get all possible combinations of common agents and handle them as different samples
         else:
             pass
-    return dataset
+    return data
 
 
 if __name__ == '__main__':
@@ -246,6 +280,6 @@ if __name__ == '__main__':
     df = remove_agents_and_frames_with_insufficient_data(dataframe=df, frames_threshold=5, agents_threshold=7)
 
     # get frame combinations data
-    combinations = get_frame_combs_data(dataframe=df, agents_minimum=7, consecutive_frames=3,
-                                        difference_between_frames=6)
-    pass
+    combs = get_frame_combs_data(dataframe=df, agents_minimum=7, consecutive_frames=3,
+                                 difference_between_frames=6)
+    dataset_df = dataset_creator(dataframe=df, groups=groups, frame_comb_data=combs, agents_minimum=7)
