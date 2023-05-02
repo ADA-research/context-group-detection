@@ -173,6 +173,14 @@ def filter_difference_between_frame_combinations(combinations, diff_between_fram
 
 
 def get_frame_combs_data(dataframe, agents_minimum, consecutive_frames, difference_between_frames):
+    '''
+    Get frame combinations based on given parameters.
+    :param dataframe: dataframe to be filtered
+    :param agents_minimum: minimum number of agents for frame not to be removed
+    :param consecutive_frames: minimum number of frames for agent not to be removed
+    :param difference_between_frames: difference between frames to be continuous
+    :return: frame combinations after filtering
+    '''
     # get agents by frame
     agents_by_frame = dataframe.groupby('frame_id')['agent_id'].apply(list).reset_index(name='agents')
 
@@ -204,7 +212,7 @@ def get_agent_data_for_frames(dataframe, agents, frames):
     :param dataframe: dataframe to retrieve data
     :param agents: list of agents for who to retrieve data
     :param frames: list of frames for which to retrieve data
-    :return: list
+    :return: list of lists of data of each agent
     '''
     data = dataframe[dataframe['frame_id'].isin(frames) & dataframe['agent_id'].isin(agents)].sort_values(
         by=['agent_id', 'frame_id'])
@@ -222,29 +230,47 @@ def get_pair_label(groups, agents):
     return any(all(agent in group for agent in agents) for group in groups)
 
 
+def scene_sample(dataframe, groups, agents, frames, data, labels):
+    '''
+
+    :param dataframe: dataframe to retrieve data
+    :param groups: list of groups to search
+    :param agents: list of agents in the scene
+    :param frames: list of frames for which to get data
+    :param data: list to store agent data
+    :param labels: list to store group relationship
+    :return: nothing
+    '''
+    pairs = list(combinations(agents, 2))
+    for pair_agents in pairs:
+        context_agents = agents - set(pair_agents)
+        pair_data = get_agent_data_for_frames(dataframe, pair_agents, frames)
+        context_data = get_agent_data_for_frames(dataframe, context_agents, frames)
+        pair_data.extend(context_data)
+        data.append(pair_data)
+        label = get_pair_label(groups, pair_agents)
+        labels.append(label)
+
+
 # TODO handle frames with more than agents_minimum
 #  get all combinations of agents_minimum length for the common agents
 #  create data with frames - agents in frame comb - data of each agent (location, velocity, frame)
 def dataset_creator(dataframe, groups, frame_comb_data, agents_minimum):
     data = []
+    labels = []
     for frame_comb in frame_comb_data:
         # for frames with minimum agents data
         # get trajectories of each agent in an array
         frames = frame_comb['frames']
         agents = frame_comb['common_agents']
         if len(agents) >= agents_minimum:
-            pairs = list(combinations(agents, 2))
-            for pair_agents in pairs:
-                context_agents = agents - set(pair_agents)
-                pair_data = get_agent_data_for_frames(dataframe, pair_agents, frames)
-                context_data = get_agent_data_for_frames(dataframe, context_agents, frames)
-                pair_data.extend(context_data)
-                data.append(pair_data)
-                label = get_pair_label(groups, pair_agents)
+            scene_sample(dataframe, groups, agents, frames, data, labels)
         # for frames with more agents
         # get all possible combinations of common agents and handle them as different samples
         else:
-            pass
+            agent_combs = list(combinations(agents, agents_minimum))
+            for comb in agent_combs:
+                scene_sample(dataframe, groups, comb, frames, data, labels)
     return data
 
 
