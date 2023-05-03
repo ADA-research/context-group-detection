@@ -1,4 +1,5 @@
 from collections import Counter
+from datetime import datetime
 from itertools import combinations
 
 import pandas as pd
@@ -255,7 +256,7 @@ def scene_sample(dataframe, groups, agents, frames, data, labels):
 # TODO handle frames with more than agents_minimum
 #  get all combinations of agents_minimum length for the common agents
 #  create data with frames - agents in frame comb - data of each agent (location, velocity, frame)
-def dataset_creator(dataframe, groups, frame_comb_data, agents_minimum):
+def dataset_reformat(dataframe, groups, frame_comb_data, agents_minimum):
     data = []
     labels = []
     for frame_comb in frame_comb_data:
@@ -275,6 +276,8 @@ def dataset_creator(dataframe, groups, frame_comb_data, agents_minimum):
 
 
 if __name__ == '__main__':
+    start = datetime.now()
+
     # create datasets report
     datasets_dict = {
         'eth': dataset_data('./ETH/seq_eth'),
@@ -302,10 +305,17 @@ if __name__ == '__main__':
     df = datasets_dict[dataset]['df']
     groups = datasets_dict[dataset]['groups']
 
+    consecutive_frames = 3
+    agents_minimum = 7
+
     # remove agents with low number of frames
-    df = remove_agents_and_frames_with_insufficient_data(dataframe=df, frames_threshold=5, agents_threshold=7)
+    df = remove_agents_and_frames_with_insufficient_data(dataframe=df, frames_threshold=consecutive_frames,
+                                                         agents_threshold=agents_minimum)
 
     # get frame combinations data
-    combs = get_frame_combs_data(dataframe=df, agents_minimum=7, consecutive_frames=3,
+    combs = get_frame_combs_data(dataframe=df, agents_minimum=agents_minimum, consecutive_frames=consecutive_frames,
                                  difference_between_frames=6)
-    dataset_df = dataset_creator(dataframe=df, groups=groups, frame_comb_data=combs, agents_minimum=7)
+    dataset_df = dataset_reformat(dataframe=df, groups=groups, frame_comb_data=combs, agents_minimum=agents_minimum)
+
+    end = datetime.now()
+    print('Duration: {}'.format(end - start))
