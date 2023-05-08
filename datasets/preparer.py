@@ -253,10 +253,16 @@ def scene_sample(dataframe, groups, agents, frames, data, labels):
         labels.append(label)
 
 
-# TODO handle frames with more than agents_minimum
-#  get all combinations of agents_minimum length for the common agents
-#  create data with frames - agents in frame comb - data of each agent (location, velocity, frame)
+# TODO finalise format of dataset
 def dataset_reformat(dataframe, groups, frame_comb_data, agents_minimum):
+    '''
+    Gather data from all possible scenes based on given parameters.
+    :param dataframe: dataframe to retrieve data
+    :param groups: list of groups
+    :param frame_comb_data: valid continuous frame combinations
+    :param agents_minimum: number of agents (pair + context)
+    :return: dataset
+    '''
     data = []
     labels = []
     for frame_comb in frame_comb_data:
