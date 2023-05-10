@@ -1,7 +1,9 @@
+import argparse
 from collections import Counter
 from datetime import datetime
 from itertools import combinations
 
+import numpy as np
 import pandas as pd
 import seaborn as sns
 import xlsxwriter
@@ -253,7 +255,7 @@ def scene_sample(dataframe, groups, agents, frames, data, labels):
         labels.append(label)
 
 
-# TODO finalise format of dataset
+# TODO check runtime
 def dataset_reformat(dataframe, groups, frame_comb_data, agents_minimum):
     '''
     Gather data from all possible scenes based on given parameters.
@@ -265,24 +267,42 @@ def dataset_reformat(dataframe, groups, frame_comb_data, agents_minimum):
     '''
     data = []
     labels = []
+    counter = 0
+    print(len(frame_comb_data))
     for frame_comb in frame_comb_data:
+        print(counter)
+        counter += 1
         # for frames with minimum agents data
         # get trajectories of each agent in an array
         frames = frame_comb['frames']
         agents = frame_comb['common_agents']
-        if len(agents) >= agents_minimum:
+        if len(agents) == agents_minimum:
             scene_sample(dataframe, groups, agents, frames, data, labels)
         # for frames with more agents
         # get all possible combinations of common agents and handle them as different samples
         else:
             agent_combs = list(combinations(agents, agents_minimum))
             for comb in agent_combs:
-                scene_sample(dataframe, groups, comb, frames, data, labels)
-    return data
+                scene_sample(dataframe, groups, set(comb), frames, data, labels)
+    return np.asarray(data), np.asarray(labels)
+
+
+def get_args():
+    parser = argparse.ArgumentParser()
+
+    # parser.add_argument('-r', '--report', type=bool, default=True)
+    parser.add_argument('-r', '--report', action="store_true", default=False)
+    parser.add_argument('-f', '--frames', type=int, default=10)
+    parser.add_argument('-a', '--agents', type=int, default=10)
+    parser.add_argument('-d', '--dataset', type=str, default='eth')
+
+    return parser.parse_args()
 
 
 if __name__ == '__main__':
     start = datetime.now()
+
+    args = get_args()
 
     # create datasets report
     datasets_dict = {
@@ -292,8 +312,8 @@ if __name__ == '__main__':
         'zara02': dataset_data('./UCY/zara02'),
         'students03': dataset_data('./UCY/students03')
     }
-    # uncomment to produce report
-    # report('datasets.xlsx', datasets_dict)
+    if args.report:
+        report('datasets.xlsx', datasets_dict)
 
     # create datasets group size histogram
     groups_dict = {
@@ -303,25 +323,31 @@ if __name__ == '__main__':
         'zara02': read_groups('./UCY/zara02'),
         'students03': read_groups('./UCY/students03')
     }
-    # uncomment to produce plot
-    # groups_size_hist(groups_dict, './group_size_plot.png')
+    if args.plot:
+        groups_size_hist(groups_dict, './group_size_plot.png')
 
-    # select one dataframe
-    dataset = 'eth'
-    df = datasets_dict[dataset]['df']
-    groups = datasets_dict[dataset]['groups']
+    consecutive_frames = args.frames
+    agents_minimum = args.agents
+    consecutive_frames = 10
+    agents_minimum = 10
 
-    consecutive_frames = 3
-    agents_minimum = 7
+    for dataset in datasets_dict.keys():
+        df = datasets_dict[dataset]['df']
+        groups = datasets_dict[dataset]['groups']
 
-    # remove agents with low number of frames
-    df = remove_agents_and_frames_with_insufficient_data(dataframe=df, frames_threshold=consecutive_frames,
-                                                         agents_threshold=agents_minimum)
+        # remove agents with low number of frames
+        df = remove_agents_and_frames_with_insufficient_data(dataframe=df, frames_threshold=consecutive_frames,
+                                                             agents_threshold=agents_minimum)
 
-    # get frame combinations data
-    combs = get_frame_combs_data(dataframe=df, agents_minimum=agents_minimum, consecutive_frames=consecutive_frames,
-                                 difference_between_frames=6)
-    dataset_df = dataset_reformat(dataframe=df, groups=groups, frame_comb_data=combs, agents_minimum=agents_minimum)
+        # get frame combinations data
+        combs = get_frame_combs_data(dataframe=df, agents_minimum=agents_minimum, consecutive_frames=consecutive_frames,
+                                     difference_between_frames=6)
+        data, labels = dataset_reformat(dataframe=df, groups=groups, frame_comb_data=combs,
+                                        agents_minimum=agents_minimum)
+        filename = '{}_{}_{}'.format(dataset, consecutive_frames, agents_minimum)
+        with open(filename, 'wb') as f:
+            np.save(f, data)
+            np.save(f, labels)
 
     end = datetime.now()
     print('Duration: {}'.format(end - start))
