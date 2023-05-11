@@ -247,9 +247,7 @@ def scene_sample(dataframe, groups, agents, frames, data, labels):
         context_agents = agents - set(pair_agents)
         pair_data = get_agent_data_for_frames(dataframe, pair_agents, frames)
         context_data = get_agent_data_for_frames(dataframe, context_agents, frames)
-        # pair_data.extend(context_data)
-        data.append(pair_data)
-        data.append(context_data)
+        data.append(np.concatenate((pair_data, context_data), axis=0))
         label = get_pair_label(groups, pair_agents)
         labels.append(label)
 
