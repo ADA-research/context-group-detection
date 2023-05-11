@@ -218,7 +218,7 @@ def get_agent_data_for_frames(dataframe, agents, frames):
     :return: list of lists of data of each agent
     '''
     data = dataframe[dataframe['frame_id'].isin(frames) & dataframe['agent_id'].isin(agents)]
-    return data.groupby('agent_id')['measurement'].apply(list).values
+    return list(data.groupby('agent_id')['measurement'].apply(list).values)
 
 
 def get_pair_label(groups, agents):
@@ -247,7 +247,8 @@ def scene_sample(dataframe, groups, agents, frames, data, labels):
         context_agents = agents - set(pair_agents)
         pair_data = get_agent_data_for_frames(dataframe, pair_agents, frames)
         context_data = get_agent_data_for_frames(dataframe, context_agents, frames)
-        data.append(np.concatenate((pair_data, context_data), axis=0))
+        pair_data.extend(context_data)
+        data.append(pair_data)
         label = get_pair_label(groups, pair_agents)
         labels.append(label)
 
@@ -265,7 +266,6 @@ def dataset_reformat(dataframe, groups, frame_comb_data, agents_minimum):
     data = []
     labels = []
     counter = 0
-    print(len(frame_comb_data))
     for frame_comb in frame_comb_data:
         print(counter)
         counter += 1
@@ -287,12 +287,12 @@ def dataset_reformat(dataframe, groups, frame_comb_data, agents_minimum):
 def get_args():
     parser = argparse.ArgumentParser()
 
-    # parser.add_argument('-r', '--report', type=bool, default=True)
     parser.add_argument('-r', '--report', action="store_true", default=False)
     parser.add_argument('-p', '--plot', action="store_true", default=False)
     parser.add_argument('-f', '--frames', type=int, default=10)
     parser.add_argument('-a', '--agents', type=int, default=10)
     parser.add_argument('-d', '--dataset', type=str, default='eth')
+    parser.add_argument('-s', '--save_folder', type=str, default='./reformatted')
 
     return parser.parse_args()
 
@@ -324,25 +324,20 @@ if __name__ == '__main__':
     if args.plot:
         groups_size_hist(groups_dict, './group_size_plot.png')
 
-    consecutive_frames = args.frames
-    agents_minimum = args.agents
-    consecutive_frames = 10
-    agents_minimum = 10
-
     for dataset in datasets_dict.keys():
         df = datasets_dict[dataset]['df']
         groups = datasets_dict[dataset]['groups']
 
         # remove agents with low number of frames
-        df = remove_agents_and_frames_with_insufficient_data(dataframe=df, frames_threshold=consecutive_frames,
-                                                             agents_threshold=agents_minimum)
+        df = remove_agents_and_frames_with_insufficient_data(dataframe=df, frames_threshold=args.frames,
+                                                             agents_threshold=args.agents)
 
         # get frame combinations data
-        combs = get_frame_combs_data(dataframe=df, agents_minimum=agents_minimum, consecutive_frames=consecutive_frames,
+        combs = get_frame_combs_data(dataframe=df, agents_minimum=args.agents, consecutive_frames=args.frames,
                                      difference_between_frames=6)
         data, labels = dataset_reformat(dataframe=df, groups=groups, frame_comb_data=combs,
-                                        agents_minimum=agents_minimum)
-        filename = '{}_{}_{}'.format(dataset, consecutive_frames, agents_minimum)
+                                        agents_minimum=args.agents)
+        filename = '{}/{}_{}_{}.npy'.format(args.save_folder, dataset, args.frames, args.agents)
         with open(filename, 'wb') as f:
             np.save(f, data)
             np.save(f, labels)
