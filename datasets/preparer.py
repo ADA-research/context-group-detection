@@ -217,8 +217,9 @@ def get_agent_data_for_frames(dataframe, agents, frames):
     :param frames: list of frames for which to retrieve data
     :return: list of lists of data of each agent
     '''
-    data = dataframe[dataframe['frame_id'].isin(frames) & dataframe['agent_id'].isin(agents)].sort_values(
-        by=['agent_id', 'frame_id'])
+    data = dataframe[dataframe['frame_id'].isin(frames) & dataframe['agent_id'].isin(agents)]
+    # data = dataframe[dataframe['frame_id'].isin(frames) & dataframe['agent_id'].isin(agents)].sort_values(
+    #     by=['agent_id', 'frame_id'])
     data['measurement'] = data[['pos_x', 'pos_y', 'v_x', 'v_y']].apply(tuple, axis=1)
     return list(data.groupby('agent_id')['measurement'].apply(list).values)
 
@@ -292,6 +293,7 @@ def get_args():
 
     # parser.add_argument('-r', '--report', type=bool, default=True)
     parser.add_argument('-r', '--report', action="store_true", default=False)
+    parser.add_argument('-p', '--plot', action="store_true", default=False)
     parser.add_argument('-f', '--frames', type=int, default=10)
     parser.add_argument('-a', '--agents', type=int, default=10)
     parser.add_argument('-d', '--dataset', type=str, default='eth')
