@@ -1,4 +1,5 @@
 import argparse
+import random
 from collections import Counter
 from datetime import datetime
 from itertools import combinations
@@ -11,6 +12,7 @@ from matplotlib import pyplot as plt
 
 from loader import read_obsmat, read_groups
 
+random.seed(14)
 
 def report(name, data):
     '''
@@ -80,11 +82,14 @@ def dataset_data(dataset_path):
     groups = read_groups(dataset_path)
 
     agents_num = df.agent_id.unique().size
-    frames_num = df.frame_id.unique().size
+    frames = df.frame_id.unique()
+    frames_num = frames.size
+    frames_difference = frames[1] - frames[0]
 
     count_dict = Counter([agent for group in groups for agent in group])
     agents_in_groups = [agent for agent in count_dict.elements()]
     single_groups = agents_num - len(agents_in_groups)
+
 
     return {
         'df': df,
@@ -92,6 +97,7 @@ def dataset_data(dataset_path):
         'agents': agents_num,
         'frames': frames_num,
         'single agent groups': single_groups,
+        'difference': frames_difference,
         'duration': df.loc[df.frame_id.idxmax()]['timestamp'] - df.loc[df.frame_id.idxmin()]['timestamp']
     }
 
@@ -253,13 +259,14 @@ def scene_sample(dataframe, groups, agents, frames, data, labels):
         labels.append(label)
 
 
-def dataset_reformat(dataframe, groups, frame_comb_data, agents_minimum, agents_maximum):
+def dataset_reformat(dataframe, groups, frame_comb_data, agents_minimum, samples_maximum):
     '''
     Gather data from all possible scenes based on given parameters.
     :param dataframe: dataframe to retrieve data
     :param groups: list of groups
     :param frame_comb_data: valid continuous frame combinations
     :param agents_minimum: number of agents (pair + context)
+    :param samples_maximum:
     :return: dataset
     '''
     data = []
@@ -277,15 +284,10 @@ def dataset_reformat(dataframe, groups, frame_comb_data, agents_minimum, agents_
             scene_sample(dataframe, groups, agents, frames, data, labels)
         # for scenes with agents more than minimum and less than maximum
         # get all possible combinations of common agents and handle them as different samples
-        elif agents_minimum < agents_num < agents_maximum:
-            agent_combs = list(combinations(agents, agents_minimum))
-            for comb in agent_combs:
-                scene_sample(dataframe, groups, set(comb), frames, data, labels)
-        # for scenes with agents more than maximum
-        # get all possible combinations of common agents and handle them as different samples
         else:
-            # TODO remove agents randomly from scenes with too many agents
             agent_combs = list(combinations(agents, agents_minimum))
+            if len(agent_combs) > samples_maximum:
+                agent_combs = random.sample(agent_combs, samples_maximum)
             for comb in agent_combs:
                 scene_sample(dataframe, groups, set(comb), frames, data, labels)
     return np.asarray(data), np.asarray(labels)
@@ -297,8 +299,8 @@ def get_args():
     parser.add_argument('-r', '--report', action="store_true", default=False)
     parser.add_argument('-p', '--plot', action="store_true", default=False)
     parser.add_argument('-f', '--frames', type=int, default=10)
-    parser.add_argument('-amin', '--agents_min', type=int, default=10)
-    parser.add_argument('-amax', '--agents_max', type=int, default=12)
+    parser.add_argument('-a', '--agents', type=int, default=10)
+    parser.add_argument('-smax', '--samples_max', type=int, default=20)
     parser.add_argument('-d', '--dataset', type=str, default='eth')
     parser.add_argument('-s', '--save_folder', type=str, default='./reformatted')
 
@@ -335,23 +337,24 @@ if __name__ == '__main__':
     for dataset in datasets_dict.keys():
         df = datasets_dict[dataset]['df']
         groups = datasets_dict[dataset]['groups']
+        difference = datasets_dict[dataset]['difference']
 
         # remove agents with low number of frames
         df = remove_agents_and_frames_with_insufficient_data(dataframe=df,
                                                              frames_threshold=args.frames,
-                                                             agents_threshold=args.agents_min)
+                                                             agents_threshold=args.agents)
 
         # get frame combinations data
         combs = get_frame_combs_data(dataframe=df,
-                                     agents_minimum=args.agents_min,
+                                     agents_minimum=args.agents,
                                      consecutive_frames=args.frames,
-                                     difference_between_frames=6)
+                                     difference_between_frames=difference)
         data, labels = dataset_reformat(dataframe=df,
                                         groups=groups,
                                         frame_comb_data=combs,
-                                        agents_minimum=args.agents_min,
-                                        agents_maximum=args.agents_max)
-        filename = '{}/{}_{}_{}.npy'.format(args.save_folder, dataset, args.frames, args.agents_min)
+                                        agents_minimum=args.agents,
+                                        samples_maximum=args.samples_max)
+        filename = '{}/{}_{}_{}.npy'.format(args.save_folder, dataset, args.frames, args.agents)
         with open(filename, 'wb') as f:
             np.save(f, data)
             np.save(f, labels)
