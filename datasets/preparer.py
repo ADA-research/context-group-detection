@@ -253,8 +253,7 @@ def scene_sample(dataframe, groups, agents, frames, data, labels):
         labels.append(label)
 
 
-# TODO remove agents randomly from scenes with too many agents
-def dataset_reformat(dataframe, groups, frame_comb_data, agents_minimum):
+def dataset_reformat(dataframe, groups, frame_comb_data, agents_minimum, agents_maximum):
     '''
     Gather data from all possible scenes based on given parameters.
     :param dataframe: dataframe to retrieve data
@@ -269,15 +268,23 @@ def dataset_reformat(dataframe, groups, frame_comb_data, agents_minimum):
     for frame_comb in frame_comb_data:
         print(counter)
         counter += 1
-        # for frames with minimum agents data
+        # for scenes with minimum agents data
         # get trajectories of each agent in an array
         frames = frame_comb['frames']
         agents = frame_comb['common_agents']
-        if len(agents) == agents_minimum:
+        agents_num = len(agents)
+        if agents_num == agents_minimum:
             scene_sample(dataframe, groups, agents, frames, data, labels)
-        # for frames with more agents
+        # for scenes with agents more than minimum and less than maximum
+        # get all possible combinations of common agents and handle them as different samples
+        elif agents_minimum < agents_num < agents_maximum:
+            agent_combs = list(combinations(agents, agents_minimum))
+            for comb in agent_combs:
+                scene_sample(dataframe, groups, set(comb), frames, data, labels)
+        # for scenes with agents more than maximum
         # get all possible combinations of common agents and handle them as different samples
         else:
+            # TODO remove agents randomly from scenes with too many agents
             agent_combs = list(combinations(agents, agents_minimum))
             for comb in agent_combs:
                 scene_sample(dataframe, groups, set(comb), frames, data, labels)
@@ -290,7 +297,8 @@ def get_args():
     parser.add_argument('-r', '--report', action="store_true", default=False)
     parser.add_argument('-p', '--plot', action="store_true", default=False)
     parser.add_argument('-f', '--frames', type=int, default=10)
-    parser.add_argument('-a', '--agents', type=int, default=10)
+    parser.add_argument('-amin', '--agents_min', type=int, default=10)
+    parser.add_argument('-amax', '--agents_max', type=int, default=12)
     parser.add_argument('-d', '--dataset', type=str, default='eth')
     parser.add_argument('-s', '--save_folder', type=str, default='./reformatted')
 
@@ -329,15 +337,21 @@ if __name__ == '__main__':
         groups = datasets_dict[dataset]['groups']
 
         # remove agents with low number of frames
-        df = remove_agents_and_frames_with_insufficient_data(dataframe=df, frames_threshold=args.frames,
-                                                             agents_threshold=args.agents)
+        df = remove_agents_and_frames_with_insufficient_data(dataframe=df,
+                                                             frames_threshold=args.frames,
+                                                             agents_threshold=args.agents_min)
 
         # get frame combinations data
-        combs = get_frame_combs_data(dataframe=df, agents_minimum=args.agents, consecutive_frames=args.frames,
+        combs = get_frame_combs_data(dataframe=df,
+                                     agents_minimum=args.agents_min,
+                                     consecutive_frames=args.frames,
                                      difference_between_frames=6)
-        data, labels = dataset_reformat(dataframe=df, groups=groups, frame_comb_data=combs,
-                                        agents_minimum=args.agents)
-        filename = '{}/{}_{}_{}.npy'.format(args.save_folder, dataset, args.frames, args.agents)
+        data, labels = dataset_reformat(dataframe=df,
+                                        groups=groups,
+                                        frame_comb_data=combs,
+                                        agents_minimum=args.agents_min,
+                                        agents_maximum=args.agents_max)
+        filename = '{}/{}_{}_{}.npy'.format(args.save_folder, dataset, args.frames, args.agents_min)
         with open(filename, 'wb') as f:
             np.save(f, data)
             np.save(f, labels)
