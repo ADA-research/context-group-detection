@@ -218,10 +218,6 @@ def get_agent_data_for_frames(dataframe, agents, frames):
     :return: list of lists of data of each agent
     '''
     data = dataframe[dataframe['frame_id'].isin(frames) & dataframe['agent_id'].isin(agents)]
-    # data = dataframe[dataframe['frame_id'].isin(frames) & dataframe['agent_id'].isin(agents)].sort_values(
-    #     by=['agent_id', 'frame_id'])
-    data['measurement'] = data[['pos_x', 'pos_y', 'v_x', 'v_y']].apply(tuple, axis=1)
-    # return list(data.groupby('agent_id')['measurement'].apply(list).values)
     return data.groupby('agent_id')['measurement'].apply(list).values
 
 

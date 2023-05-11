@@ -62,6 +62,7 @@ def read_obsmat(directory):
     df["timestamp"] = df["frame_id"] / fps
 
     df.sort_values(by=['agent_id', 'frame_id'], inplace=True)
+    df['measurement'] = df[['pos_x', 'pos_y', 'v_x', 'v_y']].apply(tuple, axis=1)
 
     return df
 
