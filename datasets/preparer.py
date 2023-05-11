@@ -253,7 +253,7 @@ def scene_sample(dataframe, groups, agents, frames, data, labels):
         labels.append(label)
 
 
-# TODO check runtime
+# TODO remove agents randomly from scenes with too many agents
 def dataset_reformat(dataframe, groups, frame_comb_data, agents_minimum):
     '''
     Gather data from all possible scenes based on given parameters.
