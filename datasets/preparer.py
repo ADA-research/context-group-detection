@@ -318,6 +318,7 @@ if __name__ == '__main__':
         'hotel': dataset_data('./ETH/seq_hotel'),
         'zara01': dataset_data('./UCY/zara01'),
         'zara02': dataset_data('./UCY/zara02'),
+        # TODO handle big scenes (42 people) in students03 dataset
         'students03': dataset_data('./UCY/students03')
     }
     if args.report:
