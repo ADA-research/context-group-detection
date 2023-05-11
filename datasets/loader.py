@@ -61,6 +61,8 @@ def read_obsmat(directory):
     fps = d_frame[0] * 2.5  # 2.5 is the common annotation fps for all (ETH+UCY) datasets
     df["timestamp"] = df["frame_id"] / fps
 
+    df.sort_values(by=['agent_id', 'frame_id'], inplace=True)
+
     return df
 
 
