@@ -221,7 +221,8 @@ def get_agent_data_for_frames(dataframe, agents, frames):
     # data = dataframe[dataframe['frame_id'].isin(frames) & dataframe['agent_id'].isin(agents)].sort_values(
     #     by=['agent_id', 'frame_id'])
     data['measurement'] = data[['pos_x', 'pos_y', 'v_x', 'v_y']].apply(tuple, axis=1)
-    return list(data.groupby('agent_id')['measurement'].apply(list).values)
+    # return list(data.groupby('agent_id')['measurement'].apply(list).values)
+    return data.groupby('agent_id')['measurement'].apply(list).values
 
 
 def get_pair_label(groups, agents):
@@ -236,7 +237,7 @@ def get_pair_label(groups, agents):
 
 def scene_sample(dataframe, groups, agents, frames, data, labels):
     '''
-
+    Sampling scene by getting agents and label data.
     :param dataframe: dataframe to retrieve data
     :param groups: list of groups to search
     :param agents: list of agents in the scene
@@ -250,8 +251,9 @@ def scene_sample(dataframe, groups, agents, frames, data, labels):
         context_agents = agents - set(pair_agents)
         pair_data = get_agent_data_for_frames(dataframe, pair_agents, frames)
         context_data = get_agent_data_for_frames(dataframe, context_agents, frames)
-        pair_data.extend(context_data)
+        # pair_data.extend(context_data)
         data.append(pair_data)
+        data.append(context_data)
         label = get_pair_label(groups, pair_agents)
         labels.append(label)
 
