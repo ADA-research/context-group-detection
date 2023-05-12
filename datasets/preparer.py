@@ -295,16 +295,12 @@ def dataset_reformat(dataframe, groups, group_pairs, frame_comb_data, agents_min
     :param groups: list of groups
     :param frame_comb_data: valid continuous frame combinations
     :param agents_minimum: minimum agents (pair + context) in a scene
-    :param scene_samples: maximum samples to get from a scene
+    :param scene_samples: maximum samples to get from a scene for each pair
     :return: dataset
     '''
     data = []
     labels = []
-    counter = 0
     for frame_comb in frame_comb_data:
-        print(counter)
-        counter += 1
-
         frames = frame_comb['frames']
         agents = frame_comb['common_agents']
 
