@@ -359,13 +359,15 @@ if __name__ == '__main__':
         group_pairs = get_group_pairs(groups)
         difference = datasets_dict[dataset]['difference']
 
-        # remove agents with low number of frames
+        # remove agents with low number of frames or agents
         df = remove_agents_and_frames_with_insufficient_data(dataframe=df, frames_threshold=args.frames,
                                                              agents_threshold=args.agents)
 
         # get frame combinations data
         combs = get_frame_combs_data(dataframe=df, agents_minimum=args.agents,
                                      consecutive_frames=args.frames, difference_between_frames=difference)
+
+        # format dataset to be used by proposed approach
         data, labels = dataset_reformat(dataframe=df, groups=groups, group_pairs=group_pairs, frame_comb_data=combs,
                                         agents_minimum=args.agents, scene_samples=args.scene_samples)
 
@@ -376,3 +378,6 @@ if __name__ == '__main__':
 
         end = datetime.now()
         print('Duration: {}'.format(end - start))
+
+    end = datetime.now()
+    print('Duration: {}'.format(end - start))
