@@ -15,6 +15,20 @@ from loader import read_obsmat, read_groups
 random.seed(14)
 
 
+def get_args():
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument('-r', '--report', action="store_true", default=False)
+    parser.add_argument('-p', '--plot', action="store_true", default=False)
+    parser.add_argument('-f', '--frames', type=int, default=10)
+    parser.add_argument('-a', '--agents', type=int, default=10)
+    parser.add_argument('-samples', '--scene_samples', type=int, default=5)
+    parser.add_argument('-d', '--dataset', type=str, default='eth')
+    parser.add_argument('-folder', '--save_folder', type=str, default='./reformatted')
+
+    return parser.parse_args()
+
+
 def report(name, data):
     '''
     Generate excel report file with dataset data.
@@ -256,7 +270,18 @@ def scene_sample(dataframe, groups, pair_agents, context_agents, frames, data, l
     labels.append(label)
 
 
-def dataset_reformat(dataframe, groups, frame_comb_data, agents_minimum, scene_samples):
+# TODO balance pairs in same/different groups
+def filter_pairs(pairs, group_pairs):
+    '''
+    Filter pairs in order to have balanced samples.
+    :param pairs: list of pairs in scene
+    :param group_pairs: list of pairs in same group
+    :return: filtered list of pairs
+    '''
+    return pairs
+
+
+def dataset_reformat(dataframe, groups, group_pairs, frame_comb_data, agents_minimum, scene_samples):
     '''
     Gather data from all possible scenes based on given parameters.
     :param dataframe: dataframe to retrieve data
@@ -277,7 +302,7 @@ def dataset_reformat(dataframe, groups, frame_comb_data, agents_minimum, scene_s
         agents = frame_comb['common_agents']
 
         pairs = list(combinations(agents, 2))
-        # TODO balance pairs in same/different groups
+        pairs = filter_pairs(pairs, group_pairs)
         for pair_agents in pairs:
             scene_agents = agents - set(pair_agents)
             for i in range(scene_samples):
@@ -286,18 +311,16 @@ def dataset_reformat(dataframe, groups, frame_comb_data, agents_minimum, scene_s
     return np.asarray(data), np.asarray(labels)
 
 
-def get_args():
-    parser = argparse.ArgumentParser()
-
-    parser.add_argument('-r', '--report', action="store_true", default=False)
-    parser.add_argument('-p', '--plot', action="store_true", default=False)
-    parser.add_argument('-f', '--frames', type=int, default=10)
-    parser.add_argument('-a', '--agents', type=int, default=10)
-    parser.add_argument('-samples', '--scene_samples', type=int, default=5)
-    parser.add_argument('-d', '--dataset', type=str, default='eth')
-    parser.add_argument('-folder', '--save_folder', type=str, default='./reformatted')
-
-    return parser.parse_args()
+def get_group_pairs(groups):
+    '''
+    Get pairs of agents that are in same group.
+    :param groups: list of groups
+    :return: list of pairs of agents
+    '''
+    pairs = []
+    for group in groups:
+        pairs.extend(list(combinations(group, 2)))
+    return pairs
 
 
 if __name__ == '__main__':
@@ -330,6 +353,7 @@ if __name__ == '__main__':
     for dataset in datasets_dict.keys():
         df = datasets_dict[dataset]['df']
         groups = datasets_dict[dataset]['groups']
+        group_pairs = get_group_pairs(groups)
         difference = datasets_dict[dataset]['difference']
 
         # remove agents with low number of frames
@@ -339,12 +363,13 @@ if __name__ == '__main__':
         # get frame combinations data
         combs = get_frame_combs_data(dataframe=df, agents_minimum=args.agents,
                                      consecutive_frames=args.frames, difference_between_frames=difference)
-        data, labels = dataset_reformat(dataframe=df, groups=groups, frame_comb_data=combs,
+        data, labels = dataset_reformat(dataframe=df, groups=groups, group_pairs=group_pairs, frame_comb_data=combs,
                                         agents_minimum=args.agents, scene_samples=args.scene_samples)
+
         filename = '{}/{}_{}_{}.npy'.format(args.save_folder, dataset, args.frames, args.agents)
         with open(filename, 'wb') as f:
             np.save(f, data)
             np.save(f, labels)
 
-    end = datetime.now()
-    print('Duration: {}'.format(end - start))
+        end = datetime.now()
+        print('Duration: {}'.format(end - start))
