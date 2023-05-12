@@ -271,7 +271,7 @@ def scene_sample(dataframe, groups, pair_agents, context_agents, frames, data, l
 
 
 # TODO balance pairs in same/different groups
-def filter_pairs(pairs, group_pairs):
+def filter_scene_pairs(pairs, group_pairs):
     '''
     Filter pairs in order to have balanced samples.
     :param pairs: list of pairs in scene
