@@ -270,7 +270,6 @@ def scene_sample(dataframe, groups, pair_agents, context_agents, frames, data, l
     labels.append(label)
 
 
-# TODO balance pairs in same/different groups
 def filter_scene_pairs(pairs, group_pairs):
     '''
     Filter pairs in order to have balanced samples.
@@ -310,7 +309,7 @@ def dataset_reformat(dataframe, groups, group_pairs, frame_comb_data, agents_min
         agents = frame_comb['common_agents']
 
         pairs = list(combinations(agents, 2))
-        pairs = filter_pairs(pairs, group_pairs)
+        pairs = filter_scene_pairs(pairs, group_pairs)
         for pair_agents in pairs:
             scene_agents = agents - set(pair_agents)
             for i in range(scene_samples):
