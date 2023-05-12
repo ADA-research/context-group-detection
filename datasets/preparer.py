@@ -278,7 +278,15 @@ def filter_pairs(pairs, group_pairs):
     :param group_pairs: list of pairs in same group
     :return: filtered list of pairs
     '''
-    return pairs
+    same = []
+    different = []
+    for pair in pairs:
+        if pair in group_pairs:
+            same.append(pair)
+        else:
+            different.append(pair)
+
+    return same + random.sample(different, len(same))
 
 
 def dataset_reformat(dataframe, groups, group_pairs, frame_comb_data, agents_minimum, scene_samples):
