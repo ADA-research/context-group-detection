@@ -99,8 +99,8 @@ def shift_all_data_standard(Positions, Groups_at_time, n_people, dataset):
     print('standard shifting')
     Shifted_Coordinates = []
 
-    np.savetxt('../datasets/' + dataset + '/coordinates.txt', Shifted_Coordinates, fmt='%s')
-    f = open('../datasets/' + dataset + '/coordinates.txt', 'ab')
+    np.savetxt('../../datasets/' + dataset + '/coordinates.txt', Shifted_Coordinates, fmt='%s')
+    f = open('../../datasets/' + dataset + '/coordinates.txt', 'ab')
     for time in Groups_at_time:
         frame_shifted_coordinates = compute_data_shift(Positions, time, n_people, augment_flipped_data=True)
         # Shifted_Coordinates = np.concatenate(Shifted_Coordinates = frame_shifted_coordinates)
@@ -128,8 +128,8 @@ def shift_all_data_nonstandard(Positions, Groups_at_time, n_people, n_features, 
     prev_people = []
     counter = 0
 
-    np.savetxt('../datasets/' + dataset + '/coordinates.txt', Shifted_Coordinates, fmt='%s')
-    f = open('../datasets/' + dataset + '/coordinates.txt', 'ab')
+    np.savetxt('../../datasets/' + dataset + '/coordinates.txt', Shifted_Coordinates, fmt='%s')
+    f = open('../../datasets/' + dataset + '/coordinates.txt', 'ab')
     for time in Groups_at_time:
         frame_idx = list(Positions[:, 0]).index(time)
         frame = Positions[frame_idx]
@@ -183,8 +183,8 @@ def shift_all_data_nonstandard(Positions, Groups_at_time, n_people, n_features, 
 # Shifted_Coordinates = output of shift_all_data
 # Groups_at_time dictionary from time to groups
 
-## returns affinities = matrix of affinities at time:i:j:orientation
-## returns timechanges = array of all the indicies of affinities matrix at which the actual time changes
+# returns affinities = matrix of affinities at time:i:j:orientation
+# returns timechanges = array of all the indicies of affinities matrix at which the actual time changes
 def affinities_and_timechanges(Shifted_Coordinates, Groups_at_time):
     affinities = []
     i = 0
@@ -222,8 +222,8 @@ def indiv_affinities_at_time(time, Groups_at_time):
 def get_args():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('-d', '--dataset', help="which dataset to use", required=True)
-    parser.add_argument('-p', '--n_people', help="number of people in network", type=int, default=15)
+    parser.add_argument('-d', '--dataset', help="which dataset to use", default="cocktail_party")
+    parser.add_argument('-p', '--n_people', help="number of people in network", type=int, default=6)
     parser.add_argument('-f', '--n_features', help="number of features being used, including name", type=int, default=4)
     parser.add_argument('-a', '--n_aug_features', help="number of augmented features being used, not including name",
                         type=int, default=4)
@@ -260,12 +260,12 @@ if __name__ == "__main__":
                                    n_augmented_features=n_augmented_features, velocities=use_velocities,
                                    dataset=dataset)
 
-    Shifted_Coordinates = np.genfromtxt('../datasets/' + dataset + '/coordinates.txt', dtype='str', delimiter=' ')
+    Shifted_Coordinates = np.genfromtxt('../../datasets/' + dataset + '/coordinates.txt', dtype='str', delimiter=' ')
     print("data shifted")
     affinites, timechanges = affinities_and_timechanges(Shifted_Coordinates, Groups_at_time)
     print("shifted affinity file generated")
 
-    np.savetxt('../datasets/' + dataset + '/timechanges.txt', timechanges, fmt='%s')
-    np.savetxt('../datasets/' + dataset + '/affinities.txt', affinites, fmt='%s')
+    np.savetxt('../../datasets/' + dataset + '/timechanges.txt', timechanges, fmt='%s')
+    np.savetxt('../../datasets/' + dataset + '/affinities.txt', affinites, fmt='%s')
     print("Coordinates (features) file saved")
     print("file generation of reformatted data done. ready for build_dataset.py")

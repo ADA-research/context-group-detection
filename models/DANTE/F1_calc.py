@@ -76,8 +76,8 @@ def F1_calc(group_thres, affinities, times, Groups_at_time, Positions, n_people,
     return f1_avg, avg_results[0], avg_results[1]
 
 
-## calculates true positives, false negatives, and false positives
-## given the guesses, the true groups, and the threshold T
+# calculates true positives, false negatives, and false positives
+# given the guesses, the true groups, and the threshold T
 def group_correctness(guesses, truth, T, non_reusable=False):
     TP = 0
     FN = 0
