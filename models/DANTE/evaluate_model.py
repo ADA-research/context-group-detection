@@ -27,7 +27,7 @@ def get_args():
     parser.add_argument('-m', '--model_path', type=str,
                         help="path to the desired model directory (e.g. models/cocktail_party/pair_predictions_1/)",
                         required=True)
-    parser.add_argument('-d', '--dataset', type=str, required=True,
+    parser.add_argument('-d', '--dataset', type=str, default="cocktail_party",
                         help="which dataset to use (e.g. cocktail_party)")
     parser.add_argument('-f', '--F1', action='store_true', default=False,
                         help="calculates the F1 score on the test set, otherwise saves predictions to an output file")
