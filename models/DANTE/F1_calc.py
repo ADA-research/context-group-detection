@@ -109,7 +109,7 @@ def group_correctness(guesses, truth, T, non_reusable=False):
                     n_found += 1
 
             if float(n_found) / max(len(true_group), len(guess)) >= T:
-                if non_reusable == True:
+                if non_reusable:
                     guesses.remove(guess)
                 TP += 1
 
@@ -137,7 +137,7 @@ def group_names(bool_groups, n_people):
     for bool_group in bool_groups:
         group = []
         for i in range(n_people):
-            if (bool_group[i]):
+            if bool_group[i]:
                 group.append("ID_00" + str(i + 1))
         groups.append(group)
     return groups

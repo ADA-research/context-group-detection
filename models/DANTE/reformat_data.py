@@ -9,7 +9,7 @@ from shift_data import *
 
 # primary set of functions for reformatting the data for use in the Tensorflow
 # need to have created features and groups datasets
-# main function gives coordiantes, affinities, and timechanges
+# main function gives coordinates, affinities, and timechanges
 
 
 # generates feature and ground-truth group matrices from data files
@@ -117,7 +117,7 @@ def shift_all_data_standard(Positions, Groups_at_time, n_people, dataset):
 # n_people = max number of people at a time. could be "fake"
 # n_features = number of features before augmentation including name. eg (ID001, x, y, theta) = 4
 # n_augmented_features = number of features after augmentation including name. eg (ID001, x, y, cos(theta), sin(theta)) = 5
-# velocities = boolen if we use velocities as features
+# velocities = boolean if we use velocities as features
 # dataset = name of dataset. eg coffeebreak
 
 ## returns a matrix where each row for a person i,j is: time:i:j:orientation, ID001, feature1, feature2, ... ID00i, feature1, .., ID00j, ..., feature1, ...

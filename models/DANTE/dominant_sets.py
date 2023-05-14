@@ -63,8 +63,7 @@ def vector_climb(A, allowed, n_people, original_A, thres=1e-5):
     x = np.random.uniform(0, 1, n_people)
     x = np.multiply(x, allowed)
     eps = 10
-    n = 10
-    while (eps > 1e-15):
+    while eps > 1e-15:
         p = f(x, A)
         x = np.multiply(x, np.dot(A, x)) / np.dot(x, np.dot(A, x))
         n = f(x, A)
@@ -86,10 +85,10 @@ def iterate_climb_learned(predictions, frame, n_people, thres, n_features):
 
     A = learned_affinity(n_people, predictions, frame, n_features)
     original_A = A.copy()
-    while (np.sum(allowed) > 1):
+    while np.sum(allowed) > 1:
         A[allowed == False] = 0
         A[:, allowed == False] = 0
-        if (np.sum(np.dot(allowed, A)) == 0):
+        if np.sum(np.dot(allowed, A)) == 0:
             break
         x = vector_climb(A, allowed, n_people, original_A, thres=1e-5)
         if len(x) == 0:

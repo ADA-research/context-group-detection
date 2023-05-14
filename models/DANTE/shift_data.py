@@ -18,8 +18,7 @@ def shift_indiv_data_standard(people, i, j, time, n_people):
     b0 = dx / np.sqrt(dx ** 2 + dy ** 2)
     b1 = dy / np.sqrt(dx ** 2 + dy ** 2)
 
-    new_frame = []
-    new_frame.append(time + "000")
+    new_frame = [time + "000"]
 
     feasible_surroundings = []
     for person in range(n_people):
@@ -98,7 +97,7 @@ def shift_indiv_data_standard(people, i, j, time, n_people):
     return new_frame
 
 
-# "standard" form is originall (x, y, theta) for each person
+# "standard" form is original (x, y, theta) for each person
 # and then the input to this function is the shifted_coordinates centered between i and j (x, y, cos(theta), sin(theta))
 # returns frame flipped over the horizontal axis (flipped vertically)
 def augment_frame_standard(frame):
@@ -146,8 +145,7 @@ def shift_indiv_data_nonstandard(people, i, j, time, n_people, n_features, veloc
     b0 = dx / np.sqrt(dx ** 2 + dy ** 2)
     b1 = dy / np.sqrt(dx ** 2 + dy ** 2)
 
-    new_frame = []
-    new_frame.append(time + "000")
+    new_frame = [time + "000"]
 
     feasible_surroundings = []
     for person in range(n_people):
