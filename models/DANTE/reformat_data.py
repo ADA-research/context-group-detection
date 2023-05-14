@@ -1,7 +1,11 @@
-import numpy as np
 import re
 import argparse
 from shift_data import *
+import argparse
+import re
+
+from shift_data import *
+
 
 # primary set of functions for reformatting the data for use in the Tensorflow
 # need to have created features and groups datasets

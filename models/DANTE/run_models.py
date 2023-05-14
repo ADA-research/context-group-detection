@@ -1,8 +1,8 @@
+import argparse
+
 import numpy as np
 
 from utils import load_data, train_and_save_model
-
-import argparse
 
 """
 Trains models with random architectures on each fold for a particular dataset.
@@ -14,6 +14,7 @@ Example usage:
 python run_models.py -d cocktail_party
 """
 
+
 def get_args():
     parser = argparse.ArgumentParser()
 
@@ -23,9 +24,10 @@ def get_args():
     parser.add_argument('-e', '--epochs', type=int, default=600, help="max number of epochs to run for")
     return parser.parse_args()
 
+
 if __name__ == "__main__":
     args = get_args()
-    folds = [0, 1, 2, 3, 4] # which folds to train on
+    folds = [0, 1, 2, 3, 4]  # which folds to train on
     while True:
         for i in range(len(folds)):
             fold = folds[i]
@@ -63,12 +65,12 @@ if __name__ == "__main__":
                     combined_filters += [np.random.choice([64, 128, 256])]
                 combined_filters.sort(reverse=True)
 
-                reg = 10 ** (float(np.random.randint(-90, -40))/10)
-                dropout = float(np.random.randint(0, 30))/100
+                reg = 10 ** (float(np.random.randint(-90, -40)) / 10)
+                dropout = float(np.random.randint(0, 30)) / 100
 
                 print("global filters:", global_filters)
                 print("combined filters:", combined_filters)
                 train_and_save_model(global_filters, individual_filters, combined_filters,
-                train, val, test, args.epochs, args.dataset,
-                reg=reg, dropout=dropout, fold_num=fold, no_pointnet=args.no_pointnet,
-                symmetric=args.symmetric)
+                                     train, val, test, args.epochs, args.dataset,
+                                     reg=reg, dropout=dropout, fold_num=fold, no_pointnet=args.no_pointnet,
+                                     symmetric=args.symmetric)

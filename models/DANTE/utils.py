@@ -10,9 +10,9 @@ from keras.layers import Dense, Dropout, Conv2D, MaxPooling2D, Concatenate, Lamb
 from keras.models import Model
 
 from F1_calc import F1_calc
+from reformat_data import add_time, import_data
 
 sys.path.append("../../datasets")
-from reformat_data import add_time, import_data
 
 
 def get_args():
