@@ -136,9 +136,9 @@ class ValLoss(keras.callbacks.Callback):
         self.train_mses = []
 
     def on_epoch_end(self, epoch, logs={}):
-        if logs['val_mean_squared_error'] < self.best_val_mse:
+        if logs['val_mse'] < self.best_val_mse:
             self.best_model = self.model
-            self.best_val_mse = logs['val_mean_squared_error']
+            self.best_val_mse = logs['val_mse']
             self.best_epoch = epoch
 
         (f1_two_thirds, _, _,), (f1_one, _, _) = predict(self.val_data, self.model, self.groups_at_time,
@@ -152,8 +152,8 @@ class ValLoss(keras.callbacks.Callback):
             obj['f1s'].append(f1)
         self.val_losses.append(logs['val_loss'])
         self.train_losses.append(logs['loss'])
-        self.val_mses.append(logs['val_mean_squared_error'])
-        self.train_mses.append(logs['mean_squared_error'])
+        self.val_mses.append(logs['val_mse'])
+        self.train_mses.append(logs['mse'])
 
 
 # saves the information in the model.history object to a .txt file
@@ -334,7 +334,7 @@ if __name__ == "__main__":
     args = get_args()
 
     # get data
-    test, train, val = load_data("../datasets/" + args.dataset + "/fold_" + args.fold)
+    test, train, val = load_data("../../datasets/" + args.dataset + "/fold_" + args.fold)
 
     # set model architecture
     global_filters = [64, 128, 512]
