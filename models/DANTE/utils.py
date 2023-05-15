@@ -250,8 +250,8 @@ def build_model(reg_amt, drop_amt, max_people, d, global_filters,
 
     # Final MLP from paper
     for filters in combined_filters:
-        # concat = Dense(units=filters, use_bias='True', kernel_regularizer=reg, activation=tf.nn.relu,
-        #     kernel_initializer="he_normal")(concat)
+        concat = Dense(units=filters, use_bias='True', kernel_regularizer=reg, activation=tf.nn.relu,
+            kernel_initializer="he_normal")(concat)
         concat = Dropout(drop_amt)(concat)
         concat = BatchNormalization()(concat)
 
