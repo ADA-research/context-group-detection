@@ -12,26 +12,27 @@ def conv(filters, reg, name=None):
 
 def build_model(context_size, features, consecutive_frames):
     inputs = []
-    pair_first_input = keras.layers.Input(shape=(consecutive_frames, features), name='pair_first')
-    inputs.append(pair_first_input)
-    pair_second_input = keras.layers.Input(shape=(consecutive_frames, features), name='pair_second')
-    inputs.append(pair_second_input)
+    pair_inputs = []
     context_inputs = []
+
+    pair_first_input = keras.layers.Input(shape=(consecutive_frames, features), name='pair_1')
+    pair_inputs.append(pair_first_input)
+    inputs.append(pair_first_input)
+
+    pair_second_input = keras.layers.Input(shape=(consecutive_frames, features), name='pair_2')
+    pair_inputs.append(pair_second_input)
+    inputs.append(pair_second_input)
+
     for i in range(context_size):
         context_input = keras.layers.Input(shape=(consecutive_frames, features), name='context_{}'.format(i))
         context_inputs.append(context_input)
         inputs.append(context_input)
 
     denses = []
-    # LSTM branch 1
-    pair_first_lstm = LSTM(64, batch_input_shape=(10, 4))(pair_first_input)
-    dense1 = Dense(32)(pair_first_lstm)
-    denses.append(dense1)
-
-    # LSTM branch 2
-    pair_second_lstm = LSTM(64, batch_input_shape=(10, 4))(pair_second_input)
-    dense2 = Dense(32)(pair_second_lstm)
-    denses.append(dense2)
+    for pair_input in pair_inputs:
+        lstm = LSTM(64, batch_input_shape=(10, 4))(pair_input)
+        dense = Dense(32)(lstm)
+        denses.append(dense)
 
     for context_input in context_inputs:
         lstm = LSTM(64, batch_input_shape=(10, 4))(context_input)
