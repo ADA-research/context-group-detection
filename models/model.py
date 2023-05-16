@@ -1,6 +1,7 @@
 import keras as keras
+import numpy as np
 import tensorflow as tf
-from keras.layers import Dense, Dropout, Conv2D, MaxPooling2D, Concatenate, Lambda, BatchNormalization, Flatten
+from keras.layers import Dense, Conv2D, LSTM, concatenate
 from keras.models import Model
 
 
@@ -9,67 +10,47 @@ def conv(filters, reg, name=None):
                   use_bias='True', kernel_regularizer=reg, activation=tf.nn.relu, name=name)
 
 
-def build_model(reg_amt, drop_amt, context_size, features, global_filters,
-                individual_filters, combined_filters, consecutive_frames, no_pointnet=False, symmetric=False):
+def build_model(context_size, features, consecutive_frames):
     context_inputs = keras.layers.Input(shape=(context_size, consecutive_frames, features), name='context')
     pair_inputs = keras.layers.Input(shape=(2, consecutive_frames, features), name='pair')
 
-    reg = keras.regularizers.l2(reg_amt)
+    # LSTM branch 1
+    lstm1 = LSTM(64)(pair_inputs)
+    dense1 = Dense(32)(lstm1)
 
-    # TODO check how to use LSTM
-    #  one for each agent
-    #  one for pair and one for context
-    pair_lstm = keras.layers.LSTM()
-    context_lstm = keras.layers.LSTM()
+    # LSTM branch 2
+    lstm2 = LSTM(64)(context_inputs)
+    dense2 = Dense(32)(lstm2)
 
-    # Dyad Transform
-    for filters in individual_filters:
-        pair_conv_out = conv(filters, reg)(pair_inputs)
-        pair_drop_out = Dropout(drop_amt)(pair_conv_out)
-        pair_batch_norm_out = BatchNormalization()(pair_drop_out)
+    # Concatenate the outputs of the two branches
+    concatenated = concatenate([dense1, dense2])
 
-    y_0 = Lambda(lambda input: tf.slice(input, [0, 0, 0, 0], [-1, -1, 1, -1]))(pair_batch_norm_out)
-    y_1 = Lambda(lambda input: tf.slice(input, [0, 0, 1, 0], [-1, -1, 1, -1]))(pair_batch_norm_out)
+    # Output layer
+    output = Dense(1)(concatenated)
 
-    if no_pointnet:
-        combined = Concatenate(name='concat')([Flatten()(y_0), Flatten()(y_1)])
-    else:
+    # Create the model with two inputs and one output
+    model = Model(inputs=[pair_inputs, context_inputs], outputs=output)
 
-        # Context Transform
-        for filters in global_filters:
-            context_conv_out = conv(filters, reg)(context_inputs)
-            context_drop_out = Dropout(drop_amt)(context_conv_out)
-            context_batch_norm_out = BatchNormalization()(context_drop_out)
-
-        context_max_pool_out = MaxPooling2D(name="global_pool", pool_size=[1, context_size], strides=1,
-                                            padding='valid')(context_batch_norm_out)
-        context_drop_out = Dropout(drop_amt)(context_max_pool_out)
-        context_batch_norm_out = BatchNormalization()(context_drop_out)
-        context_flat = Flatten()(context_batch_norm_out)
-
-        # enforce symmetric affinity predictions by doing pointnet on 2 people
-        if symmetric:
-            pair_max_pool_out = MaxPooling2D(name="symmetric_pool", pool_size=[1, 2], strides=1, padding='valid')(
-                pair_batch_norm_out)
-            pair_flat = Flatten()(pair_max_pool_out)
-            combined = Concatenate(name='concat')([context_flat, pair_flat])
-        else:
-            combined = Concatenate(name='concat')([context_flat, Flatten()(y_0), Flatten()(y_1)])
-
-    # Final MLP from paper
-    for filters in combined_filters:
-        combined_dense_out = Dense(units=filters, use_bias='True', kernel_regularizer=reg, activation=tf.nn.relu,
-                                   kernel_initializer="he_normal")(combined)
-        combined_drop_out = Dropout(drop_amt)(combined_dense_out)
-        combined_batch_norm = BatchNormalization()(combined_drop_out)
-
-    # final pred
-    affinity = Dense(units=1, use_bias="True", kernel_regularizer=reg, activation=tf.nn.sigmoid,
-                     name='affinity', kernel_initializer="glorot_normal")(combined_batch_norm)
-
-    model = Model(inputs=[context_inputs, pair_inputs], outputs=affinity)
-
+    # Compile the model
     opt = keras.optimizers.Adam(lr=0.0001, beta_1=0.9, beta_2=0.999, decay=1e-5, amsgrad=False, clipvalue=0.5)
     model.compile(optimizer=opt, loss="binary_crossentropy", metrics=['mse'])
 
     return model
+
+
+if __name__ == '__main__':
+    context_size, consecutive_frames, features = 8, 10, 4
+
+    data_filename = '../datasets/reformatted/eth_10_10_data.npy'
+    data = np.load(data_filename)
+    X_train_pair = data[:, :2]
+    X_train_context = data[:, 2:]
+    labels_filename = '../datasets/reformatted/eth_10_10_labels.npy'
+    Y_train = np.load(labels_filename)
+
+    model = build_model(context_size, features, consecutive_frames)
+
+    model.fit([X_train_pair, X_train_context], Y_train,
+              epochs=10, batch_size=1024,
+              # validation_data=(X_val, Y_val)
+              )
