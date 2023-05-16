@@ -21,8 +21,6 @@ def build_model(context_size, features, consecutive_frames):
         context_input = keras.layers.Input(shape=(consecutive_frames, features), name='context_{}'.format(i))
         context_inputs.append(context_input)
         inputs.append(context_input)
-    # context_inputs = keras.layers.Input(shape=(context_size, consecutive_frames, features), name='context')
-    # pair_inputs = keras.layers.Input(shape=(2, consecutive_frames, features), name='pair')
 
     denses = []
     # LSTM branch 1
@@ -64,9 +62,6 @@ if __name__ == '__main__':
     X_train = []
     for i in range(context_size + 2):
         X_train.append(data[:, i])
-    # X_train_pair_first = data[:, 0]
-    # X_train_pair_second = data[:, 1]
-    # X_train_context = data[:, 2:]
 
     labels_filename = '../datasets/reformatted/eth_10_10_labels.npy'
     Y_train = np.load(labels_filename)
