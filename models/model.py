@@ -11,25 +11,43 @@ def conv(filters, reg, name=None):
 
 
 def build_model(context_size, features, consecutive_frames):
-    context_inputs = keras.layers.Input(shape=(context_size, consecutive_frames, features), name='context')
-    pair_inputs = keras.layers.Input(shape=(2, consecutive_frames, features), name='pair')
+    inputs = []
+    pair_first_input = keras.layers.Input(shape=(consecutive_frames, features), name='pair_first')
+    inputs.append(pair_first_input)
+    pair_second_input = keras.layers.Input(shape=(consecutive_frames, features), name='pair_second')
+    inputs.append(pair_second_input)
+    context_inputs = []
+    for i in range(context_size):
+        context_input = keras.layers.Input(shape=(consecutive_frames, features), name='context_{}'.format(i))
+        context_inputs.append(context_input)
+        inputs.append(context_input)
+    # context_inputs = keras.layers.Input(shape=(context_size, consecutive_frames, features), name='context')
+    # pair_inputs = keras.layers.Input(shape=(2, consecutive_frames, features), name='pair')
 
+    denses = []
     # LSTM branch 1
-    lstm1 = LSTM(64)(pair_inputs)
-    dense1 = Dense(32)(lstm1)
+    pair_first_lstm = LSTM(64, batch_input_shape=(10, 4))(pair_first_input)
+    dense1 = Dense(32)(pair_first_lstm)
+    denses.append(dense1)
 
     # LSTM branch 2
-    lstm2 = LSTM(64)(context_inputs)
-    dense2 = Dense(32)(lstm2)
+    pair_second_lstm = LSTM(64, batch_input_shape=(10, 4))(pair_second_input)
+    dense2 = Dense(32)(pair_second_lstm)
+    denses.append(dense2)
+
+    for context_input in context_inputs:
+        lstm = LSTM(64, batch_input_shape=(10, 4))(context_input)
+        dense = Dense(32)(lstm)
+        denses.append(dense)
 
     # Concatenate the outputs of the two branches
-    concatenated = concatenate([dense1, dense2])
+    concatenated = concatenate(denses)
 
     # Output layer
     output = Dense(1)(concatenated)
 
     # Create the model with two inputs and one output
-    model = Model(inputs=[pair_inputs, context_inputs], outputs=output)
+    model = Model(inputs=[inputs], outputs=output)
 
     # Compile the model
     opt = keras.optimizers.Adam(lr=0.0001, beta_1=0.9, beta_2=0.999, decay=1e-5, amsgrad=False, clipvalue=0.5)
@@ -43,14 +61,19 @@ if __name__ == '__main__':
 
     data_filename = '../datasets/reformatted/eth_10_10_data.npy'
     data = np.load(data_filename)
-    X_train_pair = data[:, :2]
-    X_train_context = data[:, 2:]
+    X_train = []
+    for i in range(context_size + 2):
+        X_train.append(data[:, i])
+    # X_train_pair_first = data[:, 0]
+    # X_train_pair_second = data[:, 1]
+    # X_train_context = data[:, 2:]
+
     labels_filename = '../datasets/reformatted/eth_10_10_labels.npy'
     Y_train = np.load(labels_filename)
 
     model = build_model(context_size, features, consecutive_frames)
 
-    model.fit([X_train_pair, X_train_context], Y_train,
+    model.fit(X_train, Y_train,
               epochs=10, batch_size=1024,
               # validation_data=(X_val, Y_val)
               )
