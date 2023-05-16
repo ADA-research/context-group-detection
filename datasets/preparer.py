@@ -371,13 +371,14 @@ if __name__ == '__main__':
         data, labels = dataset_reformat(dataframe=df, groups=groups, group_pairs=group_pairs, frame_comb_data=combs,
                                         agents_minimum=args.agents, scene_samples=args.scene_samples)
 
-        filename = '{}/{}_{}_{}.npy'.format(args.save_folder, dataset, args.frames, args.agents)
-        with open(filename, 'wb') as f:
-            np.save(f, data)
-            np.save(f, labels)
+        filename = '{}/{}_{}_{}_data.npy'.format(args.save_folder, dataset, args.frames, args.agents)
+        np.save(filename, data)
+        filename = '{}/{}_{}_{}_labels.npy'.format(args.save_folder, dataset, args.frames, args.agents)
+        np.save(filename, labels)
 
         end = datetime.now()
         print('Duration: {}'.format(end - start))
+        start = end
 
     end = datetime.now()
     print('Duration: {}'.format(end - start))
