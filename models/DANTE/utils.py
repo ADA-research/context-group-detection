@@ -273,7 +273,7 @@ def train_and_save_model(global_filters, individual_filters, combined_filters,
                          train, val, test, epochs, dataset, reg=0.0000001, dropout=.35, fold_num=0,
                          no_pointnet=False, symmetric=False):
     # ensures repeatability
-    # tf.set_random_seed(0)
+    tf.random.set_seed(0)
     np.random.seed(0)
 
     num_train, _, max_people, d = train[0][0].shape
