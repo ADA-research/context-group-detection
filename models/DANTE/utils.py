@@ -8,6 +8,7 @@ import numpy as np
 import tensorflow as tf
 from keras.layers import Dense, Dropout, Conv2D, MaxPooling2D, Concatenate, Lambda, BatchNormalization, Flatten
 from keras.models import Model
+from sklearn.model_selection import train_test_split
 
 from F1_calc import F1_calc
 from reformat_data import add_time, import_data
@@ -332,21 +333,30 @@ def train_and_save_model(global_filters, individual_filters, combined_filters,
     file.close()
 
 
-# TODO fix dante loader
-def dante_load(filename, context_size, features):
-    data = np.load(filename)
-    data = data.reshape(len(data), 1, context_size + 2, features)
-    # return test, train, val
-    return data, None, None
+def dante_load(path, context_size, features):
+    '''
+    Load dataset and reformat it to match model input.
+    :param path: string of path to data
+    :param context_size: number of context size
+    :param features: number of features
+    :return: train and test data
+    '''
+    X = np.load(path + '_data.npy')
+    X = X.reshape(len(X), 1, context_size + 2, features)
+    y = np.load(path + '_labels.npy')
+    X_train, X_test, y_train, y_test = train_test_split(X, y)
+    train = ([X_train[:, :, :2], X_train[:, :, 2:]], y_train)
+    test = ([X_test[:, :, :2], X_test[:, :, 2:]], y_test)
+    return train, test
 
 
 if __name__ == "__main__":
     args = get_args()
 
     # get data
-    # test, train, val = load_data("../../datasets/" + args.dataset + "/fold_" + args.fold)
-    train, test, val = dante_load(
-        '../../datasets/reformatted/{}_1_{}_data.npy'.format(args.dataset, args.context_size + 2),
+    # test, train, val = load_data("../../datasets/cocktail_party/fold_" + args.fold)
+    train, test = dante_load(
+        '../../datasets/reformatted/{}_1_{}'.format(args.dataset, args.context_size + 2),
         args.context_size, args.features)
 
     # set model architecture
@@ -355,6 +365,6 @@ if __name__ == "__main__":
     combined_filters = [256, 64]
 
     train_and_save_model(global_filters, individual_filters, combined_filters,
-                         train, val, test, args.epochs, args.dataset,
+                         train, test, test, args.epochs, args.dataset,
                          reg=args.reg, dropout=args.dropout, fold_num=args.fold, no_pointnet=args.no_pointnet,
                          symmetric=args.symmetric)
