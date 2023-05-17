@@ -251,7 +251,7 @@ def build_model(reg_amt, drop_amt, max_people, d, global_filters,
     # Final MLP from paper
     for filters in combined_filters:
         concat = Dense(units=filters, use_bias='True', kernel_regularizer=reg, activation=tf.nn.relu,
-            kernel_initializer="he_normal")(concat)
+                       kernel_initializer="he_normal")(concat)
         concat = Dropout(drop_amt)(concat)
         concat = BatchNormalization()(concat)
 
@@ -330,11 +330,22 @@ def train_and_save_model(global_filters, individual_filters, combined_filters,
     file.close()
 
 
+# TODO fix dante loader
+def dante_load(filename, context_size, features):
+    data = np.load(filename)
+    data = data.reshape(len(data), 1, context_size + 2, features)
+    # return test, train, val
+    return data, None, None
+
+
 if __name__ == "__main__":
     args = get_args()
 
     # get data
-    test, train, val = load_data("../../datasets/" + args.dataset + "/fold_" + args.fold)
+    # test, train, val = load_data("../../datasets/" + args.dataset + "/fold_" + args.fold)
+    train, test, val = dante_load(
+        '../../datasets/reformatted/{}_1_{}_data.npy'.format(args.dataset, args.context_size + 2),
+        args.context_size, args.features)
 
     # set model architecture
     global_filters = [64, 128, 512]
