@@ -22,7 +22,9 @@ def get_args():
     parser.add_argument('-r', '--reg', type=float, default=0.0000001)
     parser.add_argument('-d', '--dropout', type=float, default=0.35)
     parser.add_argument('-e', '--epochs', type=int, default=1000)
-    parser.add_argument('--dataset', type=str, default="cocktail_party")
+    parser.add_argument('-f', '--features', type=int, default=4)
+    parser.add_argument('-c', '--context_size', type=int, default=8)
+    parser.add_argument('--dataset', type=str, default="eth")
     parser.add_argument('-p', '--no_pointnet', action="store_true", default=False)
     parser.add_argument('-s', '--symmetric', action="store_true", default=False)
 
