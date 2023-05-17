@@ -1,13 +1,13 @@
 import keras as keras
 import numpy as np
 import tensorflow as tf
-from keras.layers import Dense, Conv2D, LSTM, concatenate
+from keras.layers import Dense, Conv1D, LSTM, concatenate, Reshape, Dense, Dropout, BatchNormalization, MaxPooling1D
 from keras.models import Model
 from sklearn.model_selection import KFold
 
 
 def conv(filters, reg, name=None):
-    return Conv2D(filters=filters, kernel_size=1, padding='valid', kernel_initializer="he_normal",
+    return Conv1D(filters=filters, kernel_size=1, padding='valid', kernel_initializer="he_normal",
                   use_bias='True', kernel_regularizer=reg, activation=tf.nn.relu, name=name)
 
 
@@ -29,22 +29,43 @@ def build_model(context_size, consecutive_frames, features, units):
         context_inputs.append(context_input)
         inputs.append(context_input)
 
-    denses = []
+    # pair branch
+    pair_layers = []
     for pair_input in pair_inputs:
         lstm = LSTM(units, batch_input_shape=(consecutive_frames, features))(pair_input)
-        dense = Dense(32)(lstm)
-        denses.append(dense)
+        pair_layers.append(lstm)
 
+    pair_concatenated = concatenate(pair_layers)
+    pair_reshaped = Reshape((pair_concatenated.shape[1], 1))(pair_concatenated)
+    pair_conv = Conv1D(filters=64, kernel_size=3, activation=tf.nn.relu)(pair_reshaped)
+    drop = Dropout(.35)(pair_conv)
+    batch_norm = BatchNormalization()(drop)
+    max_pool = MaxPooling1D()(batch_norm)
+    drop = Dropout(.35)(max_pool)
+    batch_norm = BatchNormalization()(drop)
+    pair_layer = batch_norm
+
+    # context branch
+    context_layers = []
     for context_input in context_inputs:
         lstm = LSTM(64, batch_input_shape=(consecutive_frames, features))(context_input)
-        dense = Dense(32)(lstm)
-        denses.append(dense)
+        context_layers.append(lstm)
+
+    context_concatenated = concatenate(context_layers)
+    context_reshaped = Reshape((context_concatenated.shape[1], 1))(context_concatenated)
+    context_conv = Conv1D(filters=64, kernel_size=3, activation=tf.nn.relu)(context_reshaped)
+    drop = Dropout(.35)(context_conv)
+    batch_norm = BatchNormalization()(drop)
+    max_pool = MaxPooling1D()(batch_norm)
+    drop = Dropout(.35)(max_pool)
+    batch_norm = BatchNormalization()(drop)
+    context_layer = batch_norm
 
     # Concatenate the outputs of the two branches
-    concatenated = concatenate(denses)
-
+    combined = concatenate([pair_layer, context_layer], axis=1)
+    combined_dense = Dense(32)(combined)
     # Output layer
-    output = Dense(1)(concatenated)
+    output = Dense(1)(combined_dense)
 
     # Create the model with two inputs and one output
     model = Model(inputs=[inputs], outputs=output)
