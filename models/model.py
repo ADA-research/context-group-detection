@@ -3,6 +3,7 @@ import numpy as np
 import tensorflow as tf
 from keras.layers import Dense, Conv2D, LSTM, concatenate
 from keras.models import Model
+from sklearn.model_selection import KFold
 
 
 def conv(filters, reg, name=None):
@@ -10,7 +11,7 @@ def conv(filters, reg, name=None):
                   use_bias='True', kernel_regularizer=reg, activation=tf.nn.relu, name=name)
 
 
-def build_model(context_size, features, consecutive_frames):
+def build_model(context_size, consecutive_frames, features, units):
     inputs = []
     pair_inputs = []
     context_inputs = []
@@ -30,12 +31,12 @@ def build_model(context_size, features, consecutive_frames):
 
     denses = []
     for pair_input in pair_inputs:
-        lstm = LSTM(64, batch_input_shape=(10, 4))(pair_input)
+        lstm = LSTM(units, batch_input_shape=(consecutive_frames, features))(pair_input)
         dense = Dense(32)(lstm)
         denses.append(dense)
 
     for context_input in context_inputs:
-        lstm = LSTM(64, batch_input_shape=(10, 4))(context_input)
+        lstm = LSTM(64, batch_input_shape=(consecutive_frames, features))(context_input)
         dense = Dense(32)(lstm)
         denses.append(dense)
 
@@ -60,16 +61,24 @@ if __name__ == '__main__':
 
     data_filename = '../datasets/reformatted/eth_10_10_data.npy'
     data = np.load(data_filename)
-    X_train = []
+    X = []
     for i in range(context_size + 2):
-        X_train.append(data[:, i])
+        X.append(data[:, i])
 
     labels_filename = '../datasets/reformatted/eth_10_10_labels.npy'
     Y_train = np.load(labels_filename)
 
-    model = build_model(context_size, features, consecutive_frames)
+    kf = KFold(n_splits=5, shuffle=True, random_state=0)
+    for i, (train_index, test_index) in enumerate(kf.split(X[0])):
+        print("Fold {}:".format(i))
+        print("\tTrain: index={}".format(train_index))
+        print("\tTest:  index={}".format(test_index))
 
-    model.fit(X_train, Y_train,
-              epochs=10, batch_size=1024,
-              # validation_data=(X_val, Y_val)
-              )
+        model = build_model(context_size, consecutive_frames, features, units=64)
+
+        early_stop = keras.callbacks.EarlyStopping(monitor='val_loss', patience=5)
+
+        model.fit([x[train_index] for x in X], Y_train[train_index], epochs=20, batch_size=1024,
+                  validation_data=([x[test_index] for x in X], Y_train[test_index]),
+                  callbacks=[early_stop]
+                  )
