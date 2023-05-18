@@ -3,12 +3,13 @@ import os
 import pickle
 import sys
 
-import keras as keras
 import numpy as np
 import tensorflow as tf
 from keras.callbacks import EarlyStopping, TensorBoard, Callback
-from keras.layers import Dense, Dropout, Conv2D, MaxPooling2D, Concatenate, Lambda, BatchNormalization, Flatten
+from keras.layers import Dense, Dropout, Conv2D, MaxPooling2D, Concatenate, Lambda, BatchNormalization, Flatten, Input
 from keras.models import Model
+from keras.optimizers import Adam
+from keras.regularizers import l2
 from sklearn.model_selection import train_test_split
 
 from F1_calc import F1_calc
@@ -205,10 +206,10 @@ def conv(filters, reg, name=None):
 
 def build_model(reg_amt, drop_amt, max_people, d, global_filters,
                 individual_filters, combined_filters, no_pointnet=False, symmetric=False):
-    group_inputs = keras.layers.Input(shape=(1, max_people, d))
-    pair_inputs = keras.layers.Input(shape=(1, 2, d))
+    group_inputs = Input(shape=(1, max_people, d))
+    pair_inputs = Input(shape=(1, 2, d))
 
-    reg = keras.regularizers.l2(reg_amt)
+    reg = l2(reg_amt)
 
     y = pair_inputs
 
@@ -257,7 +258,7 @@ def build_model(reg_amt, drop_amt, max_people, d, global_filters,
 
     model = Model(inputs=[group_inputs, pair_inputs], outputs=affinity)
 
-    opt = keras.optimizers.Adam(lr=0.0001, beta_1=0.9, beta_2=0.999, decay=1e-5, amsgrad=False, clipvalue=0.5)
+    opt = Adam(lr=0.0001, beta_1=0.9, beta_2=0.999, decay=1e-5, amsgrad=False, clipvalue=0.5)
     model.compile(optimizer=opt, loss="binary_crossentropy", metrics=['mse'])
 
     return model
@@ -292,10 +293,10 @@ def train_and_save_model(global_filters, individual_filters, combined_filters,
                         no_pointnet=no_pointnet, symmetric=symmetric)
 
     # train model
-    early_stop = keras.callbacks.EarlyStopping(monitor='val_loss', patience=50)
+    early_stop = EarlyStopping(monitor='val_loss', patience=50)
     history = ValLoss(val, dataset)
     print("MODEL IS IN {}".format(path))
-    tensorboard = keras.callbacks.TensorBoard(log_dir='./logs')
+    tensorboard = TensorBoard(log_dir='./logs')
 
     model.fit(X_train, Y_train, epochs=epochs, batch_size=1024,
               validation_data=(X_val, Y_val), callbacks=[tensorboard, history, early_stop])
