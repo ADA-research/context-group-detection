@@ -6,7 +6,7 @@ import sys
 import keras as keras
 import numpy as np
 import tensorflow as tf
-from keras.callbacks import EarlyStopping, TensorBoard
+from keras.callbacks import EarlyStopping, TensorBoard, Callback
 from keras.layers import Dense, Dropout, Conv2D, MaxPooling2D, Concatenate, Lambda, BatchNormalization, Flatten
 from keras.models import Model
 from sklearn.model_selection import train_test_split
@@ -22,6 +22,7 @@ def load_matrix(file):
         return pickle.load(f)
 
 
+# must have run build_dataset.py first
 def load_data(path):
     train = load_matrix(path + '/train.p')
     test = load_matrix(path + '/test.p')
@@ -29,7 +30,7 @@ def load_data(path):
     return test, train, val
 
 
-# must have run build_dataset.py first
+# creates a new directory to save the model to
 def get_path(dataset, no_pointnet=False):
     path = 'models/' + dataset
     if not os.path.isdir(path):
@@ -56,7 +57,7 @@ def get_path(dataset, no_pointnet=False):
     return path
 
 
-# creates a new directory to save the model to
+# gives T=1 and T=2/3 F1 scores
 def predict(data, model, groups_at_time, dataset="SALSA_all", positions=None):
     X, y, timestamps = data
     preds = model.predict(X)
@@ -78,6 +79,9 @@ def predict(data, model, groups_at_time, dataset="SALSA_all", positions=None):
     elif "CocktailParty14" in dataset:
         n_people = 14
         n_features = 4
+    elif "eth" in dataset:
+        n_people = 10
+        n_features = 4
     else:
         raise Exception("unkown dataset")
 
@@ -86,10 +90,7 @@ def predict(data, model, groups_at_time, dataset="SALSA_all", positions=None):
                                                         n_people, 1e-5, n_features)
 
 
-# gives T=1 and T=2/3 F1 scores
-
-
-class ValLoss(keras.callbacks.Callback):
+class ValLoss(Callback):
     # record train and val losses and mse
     def __init__(self, val_data, dataset):
         super(ValLoss, self).__init__()
@@ -110,7 +111,10 @@ class ValLoss(keras.callbacks.Callback):
             self.positions, groups = import_data("cocktail_party")
             self.groups_at_time = add_time(groups)
         elif "eth" in dataset:
-            raise Exception("unrecognized dataset")
+            # TODO make it work
+            pass
+            # self.positions, groups = import_data("eth")
+            # self.groups_at_time = add_time(groups)
         else:
             raise Exception("unrecognized dataset")
 
@@ -148,6 +152,7 @@ class ValLoss(keras.callbacks.Callback):
         self.train_mses.append(logs['mse'])
 
 
+# saves the information in the model.history object to a .txt file
 def write_history(file_name, history, test):
     file = open(file_name, 'w+')
 
@@ -193,7 +198,6 @@ def write_history(file_name, history, test):
     file.close()
 
 
-# saves the information in the model.history object to a .txt file
 def conv(filters, reg, name=None):
     return Conv2D(filters=filters, kernel_size=1, padding='valid', kernel_initializer="he_normal",
                   use_bias='True', kernel_regularizer=reg, activation=tf.nn.relu, name=name)
@@ -259,6 +263,8 @@ def build_model(reg_amt, drop_amt, max_people, d, global_filters,
     return model
 
 
+# constructs a model, trains it with early stopping based on validation loss, and then
+# saves the output to a .txt file.
 def train_and_save_model(global_filters, individual_filters, combined_filters,
                          train, val, test, epochs, dataset, reg=0.0000001, dropout=.35, fold_num=0,
                          no_pointnet=False, symmetric=False):
