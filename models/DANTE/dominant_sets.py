@@ -53,12 +53,12 @@ def weight(S, i, A):
         return sum_weights
 
 
-## optimization function
+# optimization function
 def f(x, A):
     return np.dot(x.T, np.dot(A, x))
 
 
-## iteratively finds vector x which maximizes f
+# iteratively finds vector x which maximizes f
 def vector_climb(A, allowed, n_people, original_A, thres=1e-5):
     x = np.random.uniform(0, 1, n_people)
     x = np.multiply(x, allowed)
