@@ -11,7 +11,7 @@ datasets/*
 __pycache__
 
 # ignored folders
-models/DANTE/logs
+logs
 models/DANTE/models
 
 # ignored files
