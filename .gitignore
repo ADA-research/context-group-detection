@@ -1,4 +1,19 @@
+# PyCharm project folder
 .idea
+
+# local python environment
 venv
+
+# unused dataset files
 datasets/*
+
+# pycache folders
+__pycache__
+
+# ignored folders
+models/DANTE/logs
+models/DANTE/models
+
+# ignored files
 notes.txt
+M95-1005.pdf
