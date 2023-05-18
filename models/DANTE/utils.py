@@ -6,9 +6,9 @@ import sys
 import keras as keras
 import numpy as np
 import tensorflow as tf
+from keras.callbacks import EarlyStopping, TensorBoard
 from keras.layers import Dense, Dropout, Conv2D, MaxPooling2D, Concatenate, Lambda, BatchNormalization, Flatten
 from keras.models import Model
-from keras.callbacks import EarlyStopping, TensorBoard
 from sklearn.model_selection import train_test_split
 
 from F1_calc import F1_calc
@@ -17,28 +17,11 @@ from reformat_data import add_time, import_data
 sys.path.append("../../datasets")
 
 
-def get_args():
-    parser = argparse.ArgumentParser()
-
-    parser.add_argument('-k', '--fold', type=str, default='0')
-    parser.add_argument('-r', '--reg', type=float, default=0.0000001)
-    parser.add_argument('-d', '--dropout', type=float, default=0.35)
-    parser.add_argument('-e', '--epochs', type=int, default=100)
-    parser.add_argument('-f', '--features', type=int, default=4)
-    parser.add_argument('-c', '--context_size', type=int, default=8)
-    parser.add_argument('--dataset', type=str, default="eth")
-    parser.add_argument('-p', '--no_pointnet', action="store_true", default=False)
-    parser.add_argument('-s', '--symmetric', action="store_true", default=False)
-
-    return parser.parse_args()
-
-
 def load_matrix(file):
     with open(file, 'rb') as f:
         return pickle.load(f)
 
 
-# must have run build_dataset.py first
 def load_data(path):
     train = load_matrix(path + '/train.p')
     test = load_matrix(path + '/test.p')
@@ -46,7 +29,7 @@ def load_data(path):
     return test, train, val
 
 
-# creates a new directory to save the model to
+# must have run build_dataset.py first
 def get_path(dataset, no_pointnet=False):
     path = 'models/' + dataset
     if not os.path.isdir(path):
@@ -73,7 +56,7 @@ def get_path(dataset, no_pointnet=False):
     return path
 
 
-# gives T=1 and T=2/3 F1 scores
+# creates a new directory to save the model to
 def predict(data, model, groups_at_time, dataset="SALSA_all", positions=None):
     X, y, timestamps = data
     preds = model.predict(X)
@@ -101,6 +84,9 @@ def predict(data, model, groups_at_time, dataset="SALSA_all", positions=None):
     return F1_calc(2 / 3, preds, timestamps, groups_at_time, positions,
                    n_people, 1e-5, n_features), F1_calc(1, preds, timestamps, groups_at_time, positions,
                                                         n_people, 1e-5, n_features)
+
+
+# gives T=1 and T=2/3 F1 scores
 
 
 class ValLoss(keras.callbacks.Callback):
@@ -162,7 +148,6 @@ class ValLoss(keras.callbacks.Callback):
         self.train_mses.append(logs['mse'])
 
 
-# saves the information in the model.history object to a .txt file
 def write_history(file_name, history, test):
     file = open(file_name, 'w+')
 
@@ -208,6 +193,7 @@ def write_history(file_name, history, test):
     file.close()
 
 
+# saves the information in the model.history object to a .txt file
 def conv(filters, reg, name=None):
     return Conv2D(filters=filters, kernel_size=1, padding='valid', kernel_initializer="he_normal",
                   use_bias='True', kernel_regularizer=reg, activation=tf.nn.relu, name=name)
@@ -273,8 +259,6 @@ def build_model(reg_amt, drop_amt, max_people, d, global_filters,
     return model
 
 
-# constructs a model, trains it with early stopping based on validation loss, and then
-# saves the output to a .txt file.
 def train_and_save_model(global_filters, individual_filters, combined_filters,
                          train, val, test, epochs, dataset, reg=0.0000001, dropout=.35, fold_num=0,
                          no_pointnet=False, symmetric=False):
@@ -336,6 +320,8 @@ def train_and_save_model(global_filters, individual_filters, combined_filters,
     file.close()
 
 
+# constructs a model, trains it with early stopping based on validation loss, and then
+# saves the output to a .txt file.
 def train_and_save_model_updated(global_filters, individual_filters, combined_filters,
                                  train, test, epochs, dataset, reg=0.0000001, dropout=.35, fold_num=0,
                                  no_pointnet=False, symmetric=False):
@@ -415,6 +401,22 @@ def dante_load(path, context_size, features):
     train = ([X_train[:, :, 2:], X_train[:, :, :2]], y_train)
     test = ([X_test[:, :, 2:], X_test[:, :, :2]], y_test)
     return train, test
+
+
+def get_args():
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument('-k', '--fold', type=str, default='0')
+    parser.add_argument('-r', '--reg', type=float, default=0.0000001)
+    parser.add_argument('-d', '--dropout', type=float, default=0.35)
+    parser.add_argument('-e', '--epochs', type=int, default=100)
+    parser.add_argument('-f', '--features', type=int, default=4)
+    parser.add_argument('-c', '--context_size', type=int, default=8)
+    parser.add_argument('--dataset', type=str, default="eth")
+    parser.add_argument('-p', '--no_pointnet', action="store_true", default=False)
+    parser.add_argument('-s', '--symmetric', action="store_true", default=False)
+
+    return parser.parse_args()
 
 
 if __name__ == "__main__":
