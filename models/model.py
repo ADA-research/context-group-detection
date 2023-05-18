@@ -1,8 +1,9 @@
-import keras as keras
 import numpy as np
 import tensorflow as tf
-from keras.layers import Dense, Conv1D, LSTM, concatenate, Reshape, Dense, Dropout, BatchNormalization, MaxPooling1D
+from keras.callbacks import EarlyStopping
+from keras.layers import Dense, Conv1D, LSTM, concatenate, Reshape, Dropout, BatchNormalization, MaxPooling1D, Input
 from keras.models import Model
+from keras.optimizers import Adam
 from sklearn.model_selection import KFold
 
 
@@ -13,23 +14,15 @@ def conv(filters, reg, name=None):
 
 def build_model(context_size, consecutive_frames, features, units):
     inputs = []
-    pair_inputs = []
-    context_inputs = []
-
-    pair_first_input = keras.layers.Input(shape=(consecutive_frames, features), name='pair_1')
-    pair_inputs.append(pair_first_input)
-    inputs.append(pair_first_input)
-
-    pair_second_input = keras.layers.Input(shape=(consecutive_frames, features), name='pair_2')
-    pair_inputs.append(pair_second_input)
-    inputs.append(pair_second_input)
-
-    for i in range(context_size):
-        context_input = keras.layers.Input(shape=(consecutive_frames, features), name='context_{}'.format(i))
-        context_inputs.append(context_input)
-        inputs.append(context_input)
 
     # pair branch
+    # create input layers
+    pair_inputs = []
+    for i in range(2):
+        pair_input = Input(shape=(consecutive_frames, features), name='pair_{}'.format(i))
+        pair_inputs.append(pair_input)
+        inputs.append(pair_input)
+
     pair_layers = []
     for pair_input in pair_inputs:
         lstm = LSTM(units, batch_input_shape=(consecutive_frames, features))(pair_input)
@@ -46,6 +39,12 @@ def build_model(context_size, consecutive_frames, features, units):
     pair_layer = batch_norm
 
     # context branch
+    context_inputs = []
+    for i in range(context_size):
+        context_input = Input(shape=(consecutive_frames, features), name='context_{}'.format(i))
+        context_inputs.append(context_input)
+        inputs.append(context_input)
+
     context_layers = []
     for context_input in context_inputs:
         lstm = LSTM(64, batch_input_shape=(consecutive_frames, features))(context_input)
@@ -71,7 +70,7 @@ def build_model(context_size, consecutive_frames, features, units):
     model = Model(inputs=[inputs], outputs=output)
 
     # Compile the model
-    opt = keras.optimizers.Adam(lr=0.0001, beta_1=0.9, beta_2=0.999, decay=1e-5, amsgrad=False, clipvalue=0.5)
+    opt = Adam(lr=0.0001, beta_1=0.9, beta_2=0.999, decay=1e-5, amsgrad=False, clipvalue=0.5)
     model.compile(optimizer=opt, loss="binary_crossentropy", metrics=['mse'])
 
     return model
@@ -97,7 +96,7 @@ if __name__ == '__main__':
 
         model = build_model(context_size, consecutive_frames, features, units=64)
 
-        early_stop = keras.callbacks.EarlyStopping(monitor='val_loss', patience=5)
+        early_stop = EarlyStopping(monitor='val_loss', patience=5)
 
         model.fit([x[train_index] for x in X], Y_train[train_index], epochs=20, batch_size=1024,
                   validation_data=([x[test_index] for x in X], Y_train[test_index]),
