@@ -8,6 +8,7 @@ import numpy as np
 import tensorflow as tf
 from keras.layers import Dense, Dropout, Conv2D, MaxPooling2D, Concatenate, Lambda, BatchNormalization, Flatten
 from keras.models import Model
+from keras.callbacks import EarlyStopping, TensorBoard
 from sklearn.model_selection import train_test_split
 
 from F1_calc import F1_calc
@@ -22,7 +23,7 @@ def get_args():
     parser.add_argument('-k', '--fold', type=str, default='0')
     parser.add_argument('-r', '--reg', type=float, default=0.0000001)
     parser.add_argument('-d', '--dropout', type=float, default=0.35)
-    parser.add_argument('-e', '--epochs', type=int, default=1000)
+    parser.add_argument('-e', '--epochs', type=int, default=100)
     parser.add_argument('-f', '--features', type=int, default=4)
     parser.add_argument('-c', '--context_size', type=int, default=8)
     parser.add_argument('--dataset', type=str, default="eth")
@@ -122,6 +123,8 @@ class ValLoss(keras.callbacks.Callback):
         elif "cocktail_party" in dataset:
             self.positions, groups = import_data("cocktail_party")
             self.groups_at_time = add_time(groups)
+        elif "eth" in dataset:
+            raise Exception("unrecognized dataset")
         else:
             raise Exception("unrecognized dataset")
 
@@ -333,6 +336,70 @@ def train_and_save_model(global_filters, individual_filters, combined_filters,
     file.close()
 
 
+def train_and_save_model_updated(global_filters, individual_filters, combined_filters,
+                                 train, test, epochs, dataset, reg=0.0000001, dropout=.35, fold_num=0,
+                                 no_pointnet=False, symmetric=False):
+    # ensures repeatability
+    tf.random.set_seed(0)
+    np.random.seed(0)
+
+    num_train, _, max_people, d = train[0][0].shape
+    # save achitecture
+    path = get_path(dataset, no_pointnet)
+    file = open(path + '/architecture.txt', 'w+')
+    file.write("global: " + str(global_filters) + "\nindividual: " +
+               str(individual_filters) + "\ncombined: " + str(combined_filters) +
+               "\nreg= " + str(reg) + "\ndropout= " + str(dropout))
+
+    best_val_mses = []
+    best_val_f1s_one = []
+    best_val_f1s_two_thirds = []
+    X_train, Y_train = train
+    X_val, Y_val = test
+
+    # build model
+    model = build_model(reg, dropout, max_people, d,
+                        global_filters, individual_filters, combined_filters,
+                        no_pointnet=no_pointnet, symmetric=symmetric)
+
+    # train model
+    early_stop = EarlyStopping(monitor='val_loss', patience=50)
+    # history = ValLoss(test, dataset)
+    print("MODEL IS IN {}".format(path))
+    tensorboard = TensorBoard(log_dir='./logs')
+
+    model.fit(X_train, Y_train, epochs=epochs, batch_size=1024,
+              validation_data=(X_val, Y_val),
+              callbacks=[tensorboard, early_stop]
+              # callbacks=[tensorboard, history, early_stop]
+              )
+
+    # best_val_mses.append(history.best_val_mse)
+    # best_val_f1s_one.append(history.val_f1_one_obj['best_f1'])
+    # best_val_f1s_two_thirds.append(history.val_f1_two_thirds_obj['best_f1'])
+    #
+    # # save model
+    # name = path + '/val_fold_' + str(fold_num)
+    # if not os.path.isdir(name):
+    #     os.makedirs(name)
+    #
+    # write_history(name + '/results.txt', history, test)
+    #
+    # history.val_f1_one_obj['model'].save(name + '/best_val_model.h5')
+    # print("saved best val model as " + '/best_val_model.h5')
+    #
+    # file.write("\n\nbest overall val loss: " + str(min(best_val_mses)))
+    # file.write("\nbest val losses per fold: " + str(best_val_mses))
+    #
+    # file.write("\n\nbest overall f1 1: " + str(max(best_val_f1s_one)))
+    # file.write("\nbest f1 1s per fold: " + str(best_val_f1s_one))
+    #
+    # file.write("\n\nbest overall f1 2/3: " + str(max(best_val_f1s_two_thirds)))
+    # file.write("\nbest f1 2/3s per fold: " + str(best_val_f1s_two_thirds))
+    #
+    # file.close()
+
+
 def dante_load(path, context_size, features):
     '''
     Load dataset and reformat it to match model input.
@@ -342,11 +409,11 @@ def dante_load(path, context_size, features):
     :return: train and test data
     '''
     X = np.load(path + '_data.npy')
-    X = X.reshape(len(X), 1, context_size + 2, features)
+    X = X.reshape((len(X), 1, context_size + 2, features))
     y = np.load(path + '_labels.npy')
     X_train, X_test, y_train, y_test = train_test_split(X, y)
-    train = ([X_train[:, :, :2], X_train[:, :, 2:]], y_train)
-    test = ([X_test[:, :, :2], X_test[:, :, 2:]], y_test)
+    train = ([X_train[:, :, 2:], X_train[:, :, :2]], y_train)
+    test = ([X_test[:, :, 2:], X_test[:, :, :2]], y_test)
     return train, test
 
 
@@ -364,7 +431,7 @@ if __name__ == "__main__":
     individual_filters = [16, 64, 128]
     combined_filters = [256, 64]
 
-    train_and_save_model(global_filters, individual_filters, combined_filters,
-                         train, test, test, args.epochs, args.dataset,
-                         reg=args.reg, dropout=args.dropout, fold_num=args.fold, no_pointnet=args.no_pointnet,
-                         symmetric=args.symmetric)
+    train_and_save_model_updated(global_filters, individual_filters, combined_filters,
+                                 train, test, args.epochs, args.dataset,
+                                 reg=args.reg, dropout=args.dropout, fold_num=args.fold, no_pointnet=args.no_pointnet,
+                                 symmetric=args.symmetric)
