@@ -1,3 +1,5 @@
+import argparse
+
 import numpy as np
 import tensorflow as tf
 from keras.callbacks import EarlyStopping
@@ -12,7 +14,7 @@ def conv(filters, reg, name=None):
                   use_bias='True', kernel_regularizer=reg, activation=tf.nn.relu, name=name)
 
 
-def build_model(context_size, consecutive_frames, features, units):
+def build_model(context_size, consecutive_frames, features, units, reg, drop):
     inputs = []
 
     # pair branch
@@ -76,13 +78,28 @@ def build_model(context_size, consecutive_frames, features, units):
     return model
 
 
+def get_args():
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument('-d', '--dataset', type=str, default="eth")
+    parser.add_argument('-e', '--epochs', type=int, default=100)
+    parser.add_argument('-f', '--features', type=int, default=4)
+    parser.add_argument('-c', '--context_size', type=int, default=8)
+    parser.add_argument('-cf', '--consecutive_frames', type=int, default=10)
+    parser.add_argument('-b', '--batch_size', type=int, default=1024)
+    parser.add_argument('-r', '--reg', type=float, default=0.0000001)
+    parser.add_argument('-drop', '--dropout', type=float, default=0.35)
+
+    return parser.parse_args()
+
+
 if __name__ == '__main__':
-    context_size, consecutive_frames, features = 8, 10, 4
+    args = get_args()
 
     data_filename = '../datasets/reformatted/eth_10_10_data.npy'
     data = np.load(data_filename)
     X = []
-    for i in range(context_size + 2):
+    for i in range(args.context_size + 2):
         X.append(data[:, i])
 
     labels_filename = '../datasets/reformatted/eth_10_10_labels.npy'
@@ -94,11 +111,12 @@ if __name__ == '__main__':
         print("\tTrain: index={}".format(train_index))
         print("\tTest:  index={}".format(test_index))
 
-        model = build_model(context_size, consecutive_frames, features, units=64)
+        model = build_model(args.context_size, args.consecutive_frames, args.features, 64, args.reg, args.dropout)
 
         early_stop = EarlyStopping(monitor='val_loss', patience=5)
 
-        model.fit([x[train_index] for x in X], Y_train[train_index], epochs=20, batch_size=1024,
+        model.fit([x[train_index] for x in X], Y_train[train_index],
+                  epochs=args.epochs, batch_size=args.batch_size,
                   validation_data=([x[test_index] for x in X], Y_train[test_index]),
                   callbacks=[early_stop]
                   )
