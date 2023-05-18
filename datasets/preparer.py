@@ -15,20 +15,6 @@ from loader import read_obsmat, read_groups
 random.seed(14)
 
 
-def get_args():
-    parser = argparse.ArgumentParser()
-
-    parser.add_argument('-r', '--report', action="store_true", default=False)
-    parser.add_argument('-p', '--plot', action="store_true", default=False)
-    parser.add_argument('-f', '--frames', type=int, default=10)
-    parser.add_argument('-a', '--agents', type=int, default=10)
-    parser.add_argument('-samples', '--scene_samples', type=int, default=5)
-    parser.add_argument('-d', '--dataset', type=str, default='eth')
-    parser.add_argument('-folder', '--save_folder', type=str, default='./reformatted')
-
-    return parser.parse_args()
-
-
 def report(name, data):
     '''
     Generate excel report file with dataset data.
@@ -324,6 +310,20 @@ def get_group_pairs(groups):
     for group in groups:
         pairs.extend(list(combinations(group, 2)))
     return pairs
+
+
+def get_args():
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument('-r', '--report', action="store_true", default=False)
+    parser.add_argument('-p', '--plot', action="store_true", default=False)
+    parser.add_argument('-f', '--frames', type=int, default=10)
+    parser.add_argument('-a', '--agents', type=int, default=10)
+    parser.add_argument('-ss', '--scene_samples', type=int, default=5)
+    parser.add_argument('-d', '--dataset', type=str, default='eth')
+    parser.add_argument('-sf', '--save_folder', type=str, default='./reformatted')
+
+    return parser.parse_args()
 
 
 if __name__ == '__main__':
