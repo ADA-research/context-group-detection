@@ -88,7 +88,7 @@ def get_args():
     parser.add_argument('-e', '--epochs', type=int, default=100)
     parser.add_argument('-f', '--features', type=int, default=4)
     parser.add_argument('-cs', '--context_size', type=int, default=8)
-    parser.add_argument('-cf', '--consecutive_frames', type=int, default=10)
+    parser.add_argument('-cf', '--consecutive_frames', type=int, default=1)
     parser.add_argument('-bs', '--batch_size', type=int, default=1024)
     parser.add_argument('-r', '--reg', type=float, default=0.0000001)
     parser.add_argument('-drop', '--dropout', type=float, default=0.35)
@@ -114,6 +114,10 @@ if __name__ == '__main__':
     frames_filename = '../datasets/reformatted/{}_{}_{}_frames.npy'.format(args.dataset, args.consecutive_frames,
                                                                            args.context_size + 2)
     frames = np.load(frames_filename)
+
+    groups_filename = '../datasets/reformatted/{}_{}_{}_groups.npy'.format(args.dataset, args.consecutive_frames,
+                                                                           args.context_size + 2)
+    groups = np.load(groups_filename, allow_pickle=True)
 
     kf = KFold(n_splits=5, shuffle=True, random_state=0)
     for i, (train_index, test_index) in enumerate(kf.split(X[0])):

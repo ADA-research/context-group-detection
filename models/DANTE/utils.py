@@ -407,7 +407,9 @@ def dante_load(path, context_size, features):
     X_train, X_test, y_train, y_test = train_test_split(X, y)
     train = ([X_train[:, :, 2:], X_train[:, :, :2]], y_train)
     test = ([X_test[:, :, 2:], X_test[:, :, :2]], y_test)
-    return train, test
+    frames = np.load(path + '_frames.npy')
+    groups = np.load(path + '_groups.npy', allow_pickle=True)
+    return train, test, frames, groups
 
 
 def get_args():
@@ -431,7 +433,7 @@ if __name__ == "__main__":
 
     # get data
     # test, train, val = load_data("../../datasets/cocktail_party/fold_" + args.fold)
-    train, test = dante_load(
+    train, test, frames, groups = dante_load(
         '../../datasets/reformatted/{}_1_{}'.format(args.dataset, args.context_size + 2),
         args.context_size, args.features)
 
