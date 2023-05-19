@@ -111,6 +111,10 @@ if __name__ == '__main__':
                                                                            args.context_size + 2)
     Y_train = np.load(labels_filename)
 
+    frames_filename = '../datasets/reformatted/{}_{}_{}_frames.npy'.format(args.dataset, args.consecutive_frames,
+                                                                           args.context_size + 2)
+    frames = np.load(frames_filename)
+
     kf = KFold(n_splits=5, shuffle=True, random_state=0)
     for i, (train_index, test_index) in enumerate(kf.split(X[0])):
         print("Fold {}:".format(i))
