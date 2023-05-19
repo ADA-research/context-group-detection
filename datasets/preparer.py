@@ -16,12 +16,12 @@ random.seed(14)
 
 
 def report(name, data):
-    '''
+    """
     Generate excel report file with dataset data.
     :param name: string for Excel file name
     :param data: dictionary of data for every dataset
     :return: nothing
-    '''
+    """
     workbook = xlsxwriter.Workbook(name)
     worksheet = workbook.add_worksheet('Datasets')
     header_row = 0
@@ -49,11 +49,12 @@ def report(name, data):
 
 
 def groups_size_hist(groups_dict, save_loc):
-    '''
+    """
     Produces a plot of counts of group lengths per dataset
-    :param groups_dict:
+    :param groups_dict: dictionary of group data for each dataset
+    :param save_loc: path to location to save the histogram
     :return: nothing
-    '''
+    """
     # create dataframe with group sizes from all datasets
     groups_df_list = []
     for key, group in groups_dict.items():
@@ -74,11 +75,11 @@ def groups_size_hist(groups_dict, save_loc):
 
 
 def dataset_data(dataset_path):
-    '''
+    """
     Get data for specified dataset.
     :param dataset_path: string of where to find dataset
     :return: dictionary with data
-    '''
+    """
     df = read_obsmat(dataset_path)
     groups = read_groups(dataset_path)
 
@@ -103,57 +104,57 @@ def dataset_data(dataset_path):
 
 
 def remove_agents_in_low_number_of_frames(dataframe, agent_ids_to_be_removed):
-    '''
+    """
     Filters dataframe to find agents with frames less than the given threshold.
     :param dataframe: dataframe to be filtered
     :param agent_ids_to_be_removed: agent ids to be removed
     :return: filtered dataframe
-    '''
+    """
     return dataframe[not dataframe.agent_id.isin(agent_ids_to_be_removed)]
 
 
 def check_for_agents_in_low_number_of_frames(dataframe, frames_threshold):
-    '''
+    """
     Check if there are agents that need to be removed from the dataframe, given a frame threshold.
     :param dataframe: dataframe to be filtered
     :param frames_threshold: minimum number of frames for agent not to be removed
     :return: list of agent ids to be removed
-    '''
+    """
     agents_df = dataframe.groupby('agent_id')['frame_id'].apply(list).reset_index(name='frames')
     agents_df['frames_num'] = agents_df['frames'].apply(len)
     return list(agents_df[agents_df['frames_num'] < frames_threshold]['agent_id'].values)
 
 
 def remove_frames_with_low_number_of_agents(dataframe, frame_ids_to_be_removed):
-    '''
+    """
     Filters dataframe to find frames with agents less than the given threshold.
     :param dataframe: dataframe to be filtered
     :param frame_ids_to_be_removed: frames to be removed
     :return: filtered dataframe
-    '''
+    """
     return dataframe[not dataframe.frame_id.isin(frame_ids_to_be_removed)]
 
 
 def check_for_frames_with_low_number_of_agents(dataframe, agents_threshold):
-    '''
+    """
     Check if there are frames that need to be removed from the dataframe, given an agent threshold.
     :param dataframe: dataframe to be filtered
     :param agents_threshold: minimum number of agents for frame not to be removed
     :return: list of frame ids to be removed
-    '''
+    """
     frames_df = dataframe.groupby('frame_id')['agent_id'].apply(list).reset_index(name='agents')
     frames_df['agents_num'] = frames_df['agents'].apply(len)
     return list(frames_df[frames_df['agents_num'] < agents_threshold]['frame_id'].values)
 
 
 def remove_agents_and_frames_with_insufficient_data(dataframe, agents_threshold, frames_threshold):
-    '''
+    """
     Remove agents and frames with insufficient data, based on given thresholds.
     :param dataframe: dataframe to be filtered
     :param agents_threshold: minimum number of agents for frame not to be removed
     :param frames_threshold: minimum number of frames for agent not to be removed
     :return: filtered dataframe
-    '''
+    """
     unwanted_frame_ids = check_for_frames_with_low_number_of_agents(dataframe, agents_threshold)
     unwanted_agent_ids = check_for_agents_in_low_number_of_frames(dataframe, frames_threshold)
 
@@ -167,12 +168,12 @@ def remove_agents_and_frames_with_insufficient_data(dataframe, agents_threshold,
 
 
 def filter_difference_between_frame_combinations(combinations, diff_between_frames):
-    '''
+    """
     Filter frame combinations based on given difference between frames to be considered continuous.
     :param combinations: list of frame combinations to be filtered
     :param diff_between_frames: difference between frames to be continuous
     :return: list of filtered frame combinations
-    '''
+    """
     filtered_combinations = []
     for frames in combinations:
         differences = [True for i, frame in enumerate(frames[:-1]) if frames[i + 1] - frame != diff_between_frames]
@@ -181,15 +182,16 @@ def filter_difference_between_frame_combinations(combinations, diff_between_fram
     return filtered_combinations
 
 
-def get_frame_combs_data(dataframe, agents_minimum, consecutive_frames, difference_between_frames):
-    '''
+def get_frame_combs_data(dataframe, agents_minimum, consecutive_frames, difference_between_frames, groups):
+    """
     Get frame combinations based on given parameters.
     :param dataframe: dataframe to be filtered
     :param agents_minimum: minimum number of agents for frame not to be removed
     :param consecutive_frames: minimum number of frames for agent not to be removed
     :param difference_between_frames: difference between frames to be continuous
+    :param groups: groups to check which groups exist in every combination
     :return: frame combinations after filtering
-    '''
+    """
     # get agents by frame
     agents_by_frame = dataframe.groupby('frame_id')['agent_id'].apply(list).reset_index(name='agents')
 
@@ -203,51 +205,71 @@ def get_frame_combs_data(dataframe, agents_minimum, consecutive_frames, differen
     # check agents intersection in frame combinations
     combs = []
     for frames in frame_id_combinations:
-        comb_dict = {}
         agent_list = [set(agents_by_frame[agents_by_frame['frame_id'] == frame]['agents'].iloc[0]) for frame in frames]
-        comb_dict['frames'] = frames
-        comb_dict['common_agents'] = set.intersection(*agent_list)
-        comb_dict['total_agents'] = set.union(*agent_list)
+        common_agents = set.intersection(*agent_list)
         # ignore frame combinations with not enough common agents
-        if len(comb_dict['common_agents']) >= agents_minimum:
+        if len(common_agents) >= agents_minimum:
+            comb_dict = {
+                'frames': frames,
+                'common_agents': common_agents,
+                'total_agents': set.union(*agent_list),
+                'groups': get_frame_comb_groups(common_agents, groups)
+            }
             combs.append(comb_dict)
 
     return combs
 
 
+def get_frame_comb_groups(agents, groups):
+    """
+    Filter groups with agents that exist in frame combination.
+    :param agents: agents in frame combination
+    :param groups: groups to be filtered
+    :return: list of groups
+    """
+    comb_groups = []
+    for agent in agents:
+        for group in groups:
+            if agent in group and group not in comb_groups:
+                comb_groups.append(group)
+    # TODO check if removal of agents from groups is needed
+    return comb_groups
+
+
 def get_agent_data_for_frames(dataframe, agents, frames):
-    '''
+    """
     Returns a list of tuples with location and velocity data for each frame and agent
     :param dataframe: dataframe to retrieve data
     :param agents: list of agents for who to retrieve data
     :param frames: list of frames for which to retrieve data
     :return: list of lists of data of each agent
-    '''
+    """
     data = dataframe[dataframe['frame_id'].isin(frames) & dataframe['agent_id'].isin(agents)]
     return list(data.groupby('agent_id')['measurement'].apply(list).values)
 
 
 def get_pair_label(groups, agents):
-    '''
+    """
     Checks if agents are in the same group.
     :param groups: list of groups to search
     :param agents: tuple of agents to check
     :return: True if agents are in the same, otherwise False
-    '''
+    """
     return any(all(agent in group for agent in agents) for group in groups)
 
 
 def scene_sample(dataframe, groups, pair_agents, context_agents, frames, data, labels):
-    '''
+    """
     Sampling scene by getting agents and label data.
     :param dataframe: dataframe to retrieve data
     :param groups: list of groups to search
-    :param agents: list of agents in the scene
+    :param pair_agents: list of pair agents in the scene
+    :param context_agents: list of context agents in the scene
     :param frames: list of frames for which to get data
     :param data: list to store agent data
     :param labels: list to store group relationship
     :return: nothing
-    '''
+    """
     pair_data = get_agent_data_for_frames(dataframe, pair_agents, frames)
     context_data = get_agent_data_for_frames(dataframe, context_agents, frames)
     pair_data.extend(context_data)
@@ -257,12 +279,12 @@ def scene_sample(dataframe, groups, pair_agents, context_agents, frames, data, l
 
 
 def filter_scene_pairs(pairs, group_pairs):
-    '''
+    """
     Filter pairs in order to have balanced samples.
     :param pairs: list of pairs in scene
     :param group_pairs: list of pairs in same group
     :return: filtered list of pairs
-    '''
+    """
     same = []
     different = []
     for pair in pairs:
@@ -275,21 +297,24 @@ def filter_scene_pairs(pairs, group_pairs):
 
 
 def dataset_reformat(dataframe, groups, group_pairs, frame_comb_data, agents_minimum, scene_samples):
-    '''
+    """
     Gather data from all possible scenes based on given parameters.
     :param dataframe: dataframe to retrieve data
     :param groups: list of groups
+    :param group_pairs: pairs of agents in the same group
     :param frame_comb_data: valid continuous frame combinations
     :param agents_minimum: minimum agents (pair + context) in a scene
     :param scene_samples: maximum samples to get from a scene for each pair
     :return: dataset
-    '''
+    """
     data = []
     labels = []
     frames = []
+    combs_groups = []
     for frame_comb in frame_comb_data:
         comb_frames = frame_comb['frames']
         comb_agents = frame_comb['common_agents']
+        comb_groups = frame_comb['groups']
 
         pairs = list(combinations(comb_agents, 2))
         pairs = filter_scene_pairs(pairs, group_pairs)
@@ -299,15 +324,16 @@ def dataset_reformat(dataframe, groups, group_pairs, frame_comb_data, agents_min
                 context_agents = random.sample(scene_agents, agents_minimum - 2)
                 scene_sample(dataframe, groups, pair_agents, context_agents, comb_frames, data, labels)
                 frames.append(comb_frames)
-    return np.asarray(data), np.asarray(labels), np.asarray(frames)
+                combs_groups.append(comb_groups)
+    return np.asarray(data), np.asarray(labels), np.asarray(frames), np.asarray(combs_groups, dtype=object)
 
 
 def get_group_pairs(groups):
-    '''
+    """
     Get pairs of agents that are in same group.
     :param groups: list of groups
     :return: list of pairs of agents
-    '''
+    """
     pairs = []
     for group in groups:
         pairs.extend(list(combinations(group, 2)))
@@ -319,7 +345,7 @@ def get_args():
 
     parser.add_argument('-r', '--report', action="store_true", default=False)
     parser.add_argument('-p', '--plot', action="store_true", default=False)
-    parser.add_argument('-f', '--frames', type=int, default=1)
+    parser.add_argument('-f', '--frames', type=int, default=10)
     parser.add_argument('-a', '--agents', type=int, default=10)
     parser.add_argument('-ss', '--scene_samples', type=int, default=5)
     parser.add_argument('-d', '--dataset', type=str, default='eth')
@@ -330,6 +356,7 @@ def get_args():
 
 if __name__ == '__main__':
     start = datetime.now()
+    print('Started...')
 
     args = get_args()
 
@@ -356,6 +383,8 @@ if __name__ == '__main__':
         groups_size_hist(groups_dict, './group_size_plot.png')
 
     for dataset in datasets_dict.keys():
+        dataset_start = datetime.now()
+
         df = datasets_dict[dataset]['df']
         groups = datasets_dict[dataset]['groups']
         group_pairs = get_group_pairs(groups)
@@ -367,12 +396,13 @@ if __name__ == '__main__':
 
         # get frame combinations data
         combs = get_frame_combs_data(dataframe=df, agents_minimum=args.agents,
-                                     consecutive_frames=args.frames, difference_between_frames=difference)
+                                     consecutive_frames=args.frames, difference_between_frames=difference,
+                                     groups=groups)
 
         # format dataset to be used by proposed approach
-        data, labels, frames = dataset_reformat(dataframe=df, groups=groups, group_pairs=group_pairs,
-                                                frame_comb_data=combs, agents_minimum=args.agents,
-                                                scene_samples=args.scene_samples)
+        data, labels, frames, filtered_groups = dataset_reformat(dataframe=df, groups=groups, group_pairs=group_pairs,
+                                                                 frame_comb_data=combs, agents_minimum=args.agents,
+                                                                 scene_samples=args.scene_samples)
 
         filename = '{}/{}_{}_{}_data.npy'.format(args.save_folder, dataset, args.frames, args.agents)
         np.save(filename, data)
@@ -380,7 +410,12 @@ if __name__ == '__main__':
         np.save(filename, labels)
         filename = '{}/{}_{}_{}_frames.npy'.format(args.save_folder, dataset, args.frames, args.agents)
         np.save(filename, frames)
+        filename = '{}/{}_{}_{}_groups.npy'.format(args.save_folder, dataset, args.frames, args.agents)
+        np.save(filename, filtered_groups)
 
         end = datetime.now()
-        print('Dataset: {}, Duration: {}'.format(dataset, end - start))
-        start = end
+        print('Dataset: {}, finished in: {}'.format(dataset, end - dataset_start))
+        dataset_start = end
+
+    end = datetime.now()
+    print('Finished in: {}'.format(end - start))
