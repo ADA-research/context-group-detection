@@ -286,18 +286,20 @@ def dataset_reformat(dataframe, groups, group_pairs, frame_comb_data, agents_min
     '''
     data = []
     labels = []
+    frames = []
     for frame_comb in frame_comb_data:
-        frames = frame_comb['frames']
-        agents = frame_comb['common_agents']
+        comb_frames = frame_comb['frames']
+        comb_agents = frame_comb['common_agents']
 
-        pairs = list(combinations(agents, 2))
+        pairs = list(combinations(comb_agents, 2))
         pairs = filter_scene_pairs(pairs, group_pairs)
         for pair_agents in pairs:
-            scene_agents = agents - set(pair_agents)
+            scene_agents = comb_agents - set(pair_agents)
             for i in range(scene_samples):
                 context_agents = random.sample(scene_agents, agents_minimum - 2)
-                scene_sample(dataframe, groups, pair_agents, context_agents, frames, data, labels)
-    return np.asarray(data), np.asarray(labels)
+                scene_sample(dataframe, groups, pair_agents, context_agents, comb_frames, data, labels)
+                frames.append(comb_frames)
+    return np.asarray(data), np.asarray(labels), np.asarray(frames)
 
 
 def get_group_pairs(groups):
@@ -317,7 +319,7 @@ def get_args():
 
     parser.add_argument('-r', '--report', action="store_true", default=False)
     parser.add_argument('-p', '--plot', action="store_true", default=False)
-    parser.add_argument('-f', '--frames', type=int, default=10)
+    parser.add_argument('-f', '--frames', type=int, default=1)
     parser.add_argument('-a', '--agents', type=int, default=10)
     parser.add_argument('-ss', '--scene_samples', type=int, default=5)
     parser.add_argument('-d', '--dataset', type=str, default='eth')
@@ -368,17 +370,17 @@ if __name__ == '__main__':
                                      consecutive_frames=args.frames, difference_between_frames=difference)
 
         # format dataset to be used by proposed approach
-        data, labels = dataset_reformat(dataframe=df, groups=groups, group_pairs=group_pairs, frame_comb_data=combs,
-                                        agents_minimum=args.agents, scene_samples=args.scene_samples)
+        data, labels, frames = dataset_reformat(dataframe=df, groups=groups, group_pairs=group_pairs,
+                                                frame_comb_data=combs, agents_minimum=args.agents,
+                                                scene_samples=args.scene_samples)
 
         filename = '{}/{}_{}_{}_data.npy'.format(args.save_folder, dataset, args.frames, args.agents)
         np.save(filename, data)
         filename = '{}/{}_{}_{}_labels.npy'.format(args.save_folder, dataset, args.frames, args.agents)
         np.save(filename, labels)
+        filename = '{}/{}_{}_{}_frames.npy'.format(args.save_folder, dataset, args.frames, args.agents)
+        np.save(filename, frames)
 
         end = datetime.now()
-        print('Duration: {}'.format(end - start))
+        print('Dataset: {}, Duration: {}'.format(dataset, end - start))
         start = end
-
-    end = datetime.now()
-    print('Duration: {}'.format(end - start))
