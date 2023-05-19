@@ -87,8 +87,8 @@ def get_args():
     parser.add_argument('-d', '--dataset', type=str, default="eth")
     parser.add_argument('-e', '--epochs', type=int, default=100)
     parser.add_argument('-f', '--features', type=int, default=4)
-    parser.add_argument('-cs', '--context_size', type=int, default=8)
-    parser.add_argument('-cf', '--consecutive_frames', type=int, default=1)
+    parser.add_argument('-a', '--agents', type=int, default=10)
+    parser.add_argument('-cf', '--frames', type=int, default=10)
     parser.add_argument('-bs', '--batch_size', type=int, default=1024)
     parser.add_argument('-r', '--reg', type=float, default=0.0000001)
     parser.add_argument('-drop', '--dropout', type=float, default=0.35)
@@ -100,23 +100,23 @@ def get_args():
 if __name__ == '__main__':
     args = get_args()
 
-    data_filename = '../datasets/reformatted/{}_{}_{}_data.npy'.format(args.dataset, args.consecutive_frames,
-                                                                       args.context_size + 2)
+    data_filename = '../datasets/reformatted/{}_{}_{}_data.npy'.format(args.dataset, args.frames,
+                                                                       args.agents)
     data = np.load(data_filename)
     X = []
-    for i in range(args.context_size + 2):
+    for i in range(args.agents + 2):
         X.append(data[:, i])
 
-    labels_filename = '../datasets/reformatted/{}_{}_{}_labels.npy'.format(args.dataset, args.consecutive_frames,
-                                                                           args.context_size + 2)
+    labels_filename = '../datasets/reformatted/{}_{}_{}_labels.npy'.format(args.dataset, args.frames,
+                                                                           args.agents)
     Y_train = np.load(labels_filename)
 
-    frames_filename = '../datasets/reformatted/{}_{}_{}_frames.npy'.format(args.dataset, args.consecutive_frames,
-                                                                           args.context_size + 2)
+    frames_filename = '../datasets/reformatted/{}_{}_{}_frames.npy'.format(args.dataset, args.frames,
+                                                                           args.agents)
     frames = np.load(frames_filename)
 
-    groups_filename = '../datasets/reformatted/{}_{}_{}_groups.npy'.format(args.dataset, args.consecutive_frames,
-                                                                           args.context_size + 2)
+    groups_filename = '../datasets/reformatted/{}_{}_{}_groups.npy'.format(args.dataset, args.frames,
+                                                                           args.agents)
     groups = np.load(groups_filename, allow_pickle=True)
 
     kf = KFold(n_splits=5, shuffle=True, random_state=0)
@@ -125,7 +125,7 @@ if __name__ == '__main__':
         print("\tTrain: index={}".format(train_index))
         print("\tTest:  index={}".format(test_index))
 
-        model = build_model(args.context_size, args.consecutive_frames, args.features, 64, args.reg, args.dropout,
+        model = build_model(args.agents - 2, args.frames, args.features, 64, args.reg, args.dropout,
                             args.learning_rate)
 
         early_stop = EarlyStopping(monitor='val_loss', patience=5)

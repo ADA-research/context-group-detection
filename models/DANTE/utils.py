@@ -393,7 +393,7 @@ def train_and_save_model_updated(global_filters, individual_filters, combined_fi
     # file.close()
 
 
-def dante_load(path, context_size, features):
+def dante_load(path, agents, features):
     '''
     Load dataset and reformat it to match model input.
     :param path: string of path to data
@@ -402,14 +402,17 @@ def dante_load(path, context_size, features):
     :return: train and test data
     '''
     X = np.load(path + '_data.npy')
-    X = X.reshape((len(X), 1, context_size + 2, features))
+    X = X.reshape((len(X), 1, agents, features))
     y = np.load(path + '_labels.npy')
-    X_train, X_test, y_train, y_test = train_test_split(X, y)
-    train = ([X_train[:, :, 2:], X_train[:, :, :2]], y_train)
-    test = ([X_test[:, :, 2:], X_test[:, :, :2]], y_test)
     frames = np.load(path + '_frames.npy')
     groups = np.load(path + '_groups.npy', allow_pickle=True)
-    return train, test, frames, groups
+    # TODO check if samples of same frames should be together
+    X_train, X_test, y_train, y_test, frames_train, frames_test, groups_train, groups_test = train_test_split(X, y,
+                                                                                                              frames,
+                                                                                                              groups)
+    train = ([X_train[:, :, 2:], X_train[:, :, :2]], y_train, frames_train, groups_train)
+    test = ([X_test[:, :, 2:], X_test[:, :, :2]], y_test, frames_test, groups_test)
+    return train, test
 
 
 def get_args():
@@ -420,7 +423,7 @@ def get_args():
     parser.add_argument('-d', '--dropout', type=float, default=0.35)
     parser.add_argument('-e', '--epochs', type=int, default=100)
     parser.add_argument('-f', '--features', type=int, default=4)
-    parser.add_argument('-c', '--context_size', type=int, default=8)
+    parser.add_argument('-a', '--agents', type=int, default=10)
     parser.add_argument('--dataset', type=str, default="eth")
     parser.add_argument('-p', '--no_pointnet', action="store_true", default=False)
     parser.add_argument('-s', '--symmetric', action="store_true", default=False)
@@ -433,9 +436,9 @@ if __name__ == "__main__":
 
     # get data
     # test, train, val = load_data("../../datasets/cocktail_party/fold_" + args.fold)
-    train, test, frames, groups = dante_load(
-        '../../datasets/reformatted/{}_1_{}'.format(args.dataset, args.context_size + 2),
-        args.context_size, args.features)
+    train, test = dante_load(
+        '../../datasets/reformatted/{}_1_{}'.format(args.dataset, args.agents),
+        args.agents, args.features)
 
     # set model architecture
     global_filters = [64, 128, 512]
