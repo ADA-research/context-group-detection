@@ -347,7 +347,8 @@ def get_args():
     parser.add_argument('-p', '--plot', action="store_true", default=False)
     parser.add_argument('-f', '--frames', type=int, default=10)
     parser.add_argument('-a', '--agents', type=int, default=10)
-    parser.add_argument('-ss', '--scene_samples', type=int, default=5)
+    # parser.add_argument('-ss', '--scene_samples', type=int, default=5)
+    parser.add_argument('-ts', '--target_size', type=int, default=100000)
     parser.add_argument('-d', '--dataset', type=str, default='eth')
     parser.add_argument('-sf', '--save_folder', type=str, default='./reformatted')
 
@@ -399,22 +400,28 @@ if __name__ == '__main__':
                                      consecutive_frames=args.frames, difference_between_frames=difference,
                                      groups=groups)
 
+        # estimate samples needed to reach dataset target size
+        agents_avg = sum(len(comb['common_agents']) for comb in combs) / len(combs)
+        samples = int((args.target_size / len(combs)) / agents_avg)
+
         # format dataset to be used by proposed approach
         data, labels, frames, filtered_groups = dataset_reformat(dataframe=df, groups=groups, group_pairs=group_pairs,
                                                                  frame_comb_data=combs, agents_minimum=args.agents,
-                                                                 scene_samples=args.scene_samples)
+                                                                 scene_samples=samples)
 
-        filename = '{}/{}_{}_{}_data.npy'.format(args.save_folder, dataset, args.frames, args.agents)
+        path = '{}/{}_{}_{}_'.format(args.save_folder, dataset, args.frames, args.agents)
+        filename = path + 'data.npy'
         np.save(filename, data)
-        filename = '{}/{}_{}_{}_labels.npy'.format(args.save_folder, dataset, args.frames, args.agents)
+        filename = path + 'labels.npy'
         np.save(filename, labels)
-        filename = '{}/{}_{}_{}_frames.npy'.format(args.save_folder, dataset, args.frames, args.agents)
+        filename = path + 'frames.npy'
         np.save(filename, frames)
-        filename = '{}/{}_{}_{}_groups.npy'.format(args.save_folder, dataset, args.frames, args.agents)
+        filename = path + 'groups.npy'
         np.save(filename, filtered_groups)
 
         end = datetime.now()
         print('Dataset: {}, finished in: {}'.format(dataset, end - dataset_start))
+        print('samples: {}, data: {}'.format(samples, len(data)))
         dataset_start = end
 
     end = datetime.now()
