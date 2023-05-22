@@ -1,7 +1,6 @@
 import argparse
 import os
 import pickle
-import sys
 
 import numpy as np
 import tensorflow as tf
@@ -13,10 +12,8 @@ from keras.regularizers import l2
 from sklearn.model_selection import train_test_split
 
 from F1_calc import F1_calc, F1_calc_clone
-from datasets.preparer import dataset_data
+from datasets.preparer import read_obsmat
 from reformat_data import add_time, import_data
-
-sys.path.append("../../datasets")
 
 
 def load_matrix(file):
@@ -70,93 +67,43 @@ def predict(data, model, groups_at_time, dataset="SALSA_all", positions=None):
 
         return F1_calc(2 / 3, preds, frames, groups_at_time, positions, n_people, n_features), \
             F1_calc(1, preds, frames, groups_at_time, positions, n_people, n_features)
-    elif "eth" in dataset:
-        n_people = 360
-        n_features = 4
-    elif "hotel" in dataset:
-        n_people = 390
-        n_features = 4
-    elif "zara01" in dataset:
-        n_people = 148
-        n_features = 4
-    elif "zara02" in dataset:
-        n_people = 204
-        n_features = 4
-    elif "students03" in dataset:
-        n_people = 428
-        n_features = 4
+    elif dataset in ["eth", "hotel", "zara01", "zara02", "students03"]:
+        pass
+    # elif "eth" in dataset:
+    #     n_people = 360
+    # elif "hotel" in dataset:
+    #     n_people = 390
+    # elif "zara01" in dataset:
+    #     n_people = 148
+    # elif "zara02" in dataset:
+    #     n_people = 204
+    # elif "students03" in dataset:
+    #     n_people = 428
     else:
         raise Exception("unknown dataset")
 
     X, y, frames, groups = data
     preds = model.predict(X)
     # TODO make it work
-    return F1_calc_clone(2 / 3, preds, frames, groups_at_time, positions, n_people, n_features), \
-        F1_calc_clone(1, preds, frames, groups_at_time, positions, n_people, n_features)
+    return F1_calc_clone(2 / 3, preds, frames, groups_at_time, positions), \
+        F1_calc_clone(1, preds, frames, groups_at_time, positions)
 
 
 class ValLoss(Callback):
     # record train and val losses and mse
-    def __init__(self, val_data, dataset):
+    def __init__(self, val_data, dataset, dataset_path):
         super(ValLoss, self).__init__()
         self.val_data = val_data
         self.dataset = dataset
+        self.dataset_path = dataset_path
 
         # each dataset has different params and possibly different F1 calc code
-        if "cocktail_party" in dataset:
-            self.positions, groups = import_data("cocktail_party")
-            self.groups_at_time = add_time(groups)
-        else:
-            raise Exception("unrecognized dataset")
-
-        self.best_model = None
-        self.best_val_mse = float("inf")
-        self.best_epoch = -1
-
-        self.val_f1_one_obj = {"f1s": [], "best_f1": float('-inf')}
-        self.val_f1_two_thirds_obj = {"f1s": [], "best_f1": float('-inf')}
-
-        self.val_losses = []
-        self.train_losses = []
-
-        self.val_mses = []
-        self.train_mses = []
-
-    def on_epoch_end(self, epoch, logs={}):
-        if logs['val_mse'] < self.best_val_mse:
-            self.best_model = self.model
-            self.best_val_mse = logs['val_mse']
-            self.best_epoch = epoch
-
-        (f1_two_thirds, _, _,), (f1_one, _, _) = predict(self.val_data, self.model, self.groups_at_time,
-                                                         dataset=self.dataset, positions=self.positions)
-
-        for f1, obj in [(f1_one, self.val_f1_one_obj), (f1_two_thirds, self.val_f1_two_thirds_obj)]:
-            if f1 > obj['best_f1']:
-                obj['best_f1'] = f1
-                obj['epoch'] = epoch
-                obj['model'] = self.model
-            obj['f1s'].append(f1)
-        self.val_losses.append(logs['val_loss'])
-        self.train_losses.append(logs['loss'])
-        self.val_mses.append(logs['val_mse'])
-        self.train_mses.append(logs['mse'])
-
-
-class ValLoss_clone(Callback):
-    # record train and val losses and mse
-    def __init__(self, val_data, dataset):
-        super(ValLoss_clone, self).__init__()
-        self.val_data = val_data
-        self.dataset = dataset
-
-        # each dataset has different params and possibly different F1 calc code
-        if "cocktail_party" in dataset:
-            self.positions, groups = import_data("cocktail_party")
+        if dataset in ["cocktail_party"]:
+            self.positions, groups = import_data(dataset_path)
             self.groups_at_time = add_time(groups)
         elif dataset in ["eth", "hotel", "zara01", "zara02", "students03"]:
             # TODO make it work
-            self.positions = dataset_data(dataset)
+            self.positions = read_obsmat(dataset_path)
             self.groups_at_time = val_data[3]
         else:
             raise Exception("unrecognized dataset")
@@ -309,7 +256,7 @@ def build_model(reg_amt, drop_amt, max_people, d, global_filters,
 # constructs a model, trains it with early stopping based on validation loss, and then
 # saves the output to a .txt file.
 def train_and_save_model(global_filters, individual_filters, combined_filters,
-                         train, val, test, epochs, dataset, reg=0.0000001, dropout=.35, fold_num=0,
+                         train, val, test, epochs, dataset, dataset_path, reg=0.0000001, dropout=.35, fold_num=0,
                          no_pointnet=False, symmetric=False):
     # ensures repeatability
     tf.random.set_seed(0)
@@ -335,7 +282,7 @@ def train_and_save_model(global_filters, individual_filters, combined_filters,
 
     # train model
     early_stop = EarlyStopping(monitor='val_loss', patience=50)
-    history = ValLoss(val, dataset)
+    history = ValLoss(val, dataset, dataset_path)
     print("MODEL IS IN {}".format(path))
     tensorboard = TensorBoard(log_dir='./logs')
 
@@ -371,7 +318,7 @@ def train_and_save_model(global_filters, individual_filters, combined_filters,
 # constructs a model, trains it with early stopping based on validation loss, and then
 # saves the output to a .txt file.
 def train_and_save_model_clone(global_filters, individual_filters, combined_filters,
-                               train, test, epochs, dataset, reg=0.0000001, dropout=.35, fold_num=0,
+                               train, test, epochs, dataset, dataset_path, reg=0.0000001, dropout=.35, fold_num=0,
                                no_pointnet=False, symmetric=False):
     # ensures repeatability
     tf.random.set_seed(0)
@@ -397,7 +344,7 @@ def train_and_save_model_clone(global_filters, individual_filters, combined_filt
 
     # train model
     early_stop = EarlyStopping(monitor='val_loss', patience=50)
-    history = ValLoss_clone(test, dataset)
+    history = ValLoss(test, dataset, dataset_path)
     print("MODEL IS IN {}".format(path))
     tensorboard = TensorBoard(log_dir='./logs')
 
@@ -452,10 +399,11 @@ def dante_load(path, agents, features):
     X = np.load(path + '_data.npy')
     X = X.reshape((len(X), 1, agents, features))
     y = np.load(path + '_labels.npy')
-    frames = np.load(path + '_frames.npy')
+    frames = np.load(path + '_frames.npy', allow_pickle=True)
     groups = np.load(path + '_groups.npy', allow_pickle=True)
     # TODO check if samples of same frames should be together
-    idx_train, idx_test = train_test_split_frames(frames)
+    frame_ids = [frame[0] for frame in frames]
+    idx_train, idx_test = train_test_split_frames(frame_ids)
     train = ([X[idx_train, :, 2:], X[idx_train, :, :2]], y[idx_train], frames[idx_train], groups[idx_train])
     test = ([X[idx_test, :, 2:], X[idx_test, :, :2]], y[idx_test], frames[idx_test], groups[idx_test])
     return train, test
@@ -471,7 +419,9 @@ def get_args():
     parser.add_argument('-f', '--features', type=int, default=4)
     parser.add_argument('-a', '--agents', type=int, default=10)
     # parser.add_argument('--dataset', type=str, default="cocktail_party")
+    # parser.add_argument('--dataset_path', type=str, default="../../datasets/cocktail_party")
     parser.add_argument('--dataset', type=str, default="eth")
+    parser.add_argument('--dataset_path', type=str, default="../../datasets/ETH/seq_eth")
     parser.add_argument('-p', '--no_pointnet', action="store_true", default=False)
     parser.add_argument('-s', '--symmetric', action="store_true", default=False)
 
@@ -482,22 +432,25 @@ if __name__ == "__main__":
     args = get_args()
 
     # get data
-    # test, train, val = load_data("../../datasets/cocktail_party/fold_" + args.fold)
-    train, test = dante_load(
-        '../../datasets/reformatted/{}_1_{}'.format(args.dataset, args.agents),
-        args.agents, args.features)
+    if args.dataset == 'cocktail_party':
+        test, train, val = load_data("../../datasets/cocktail_party/fold_" + args.fold)
+    else:
+        train, test = dante_load(
+            '../../datasets/reformatted/{}_1_{}'.format(args.dataset, args.agents),
+            args.agents, args.features)
 
     # set model architecture
     global_filters = [64, 128, 512]
     individual_filters = [16, 64, 128]
     combined_filters = [256, 64]
 
-    # train_and_save_model(global_filters, individual_filters, combined_filters,
-    #                      train, val, test, args.epochs, args.dataset,
-    #                      reg=args.reg, dropout=args.dropout, fold_num=args.fold, no_pointnet=args.no_pointnet,
-    #                      symmetric=args.symmetric)
-
-    train_and_save_model_clone(global_filters, individual_filters, combined_filters,
-                               train, test, args.epochs, args.dataset,
-                               reg=args.reg, dropout=args.dropout, fold_num=args.fold, no_pointnet=args.no_pointnet,
-                               symmetric=args.symmetric)
+    if args.dataset == 'cocktail_party':
+        train_and_save_model(global_filters, individual_filters, combined_filters,
+                             train, val, test, args.epochs, args.dataset, args.dataset_path,
+                             reg=args.reg, dropout=args.dropout, fold_num=args.fold, no_pointnet=args.no_pointnet,
+                             symmetric=args.symmetric)
+    else:
+        train_and_save_model_clone(global_filters, individual_filters, combined_filters,
+                                   train, test, args.epochs, args.dataset, args.dataset_path,
+                                   reg=args.reg, dropout=args.dropout, fold_num=args.fold, no_pointnet=args.no_pointnet,
+                                   symmetric=args.symmetric)
