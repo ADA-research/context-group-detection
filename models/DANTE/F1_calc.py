@@ -65,28 +65,24 @@ def F1_calc(group_thres, affinities, times, Groups_at_time, Positions, n_people,
     return f1_avg, avg_results[0], avg_results[1]
 
 
-def F1_calc_clone(group_thres, affinities, frames, groups_at_time, positions, n_people, n_features, non_reusable=False,
-                  dominant_sets=True):
+def F1_calc_clone(group_thres, affinities, frames, groups_at_time, positions, non_reusable=False, dominant_sets=True):
     T = group_thres
     avg_results = np.array([0.0, 0.0])
 
     # this assumes affinities and times are the same length
     # TODO adapt to new approach
-    frames = frames.flatten()
-    unique_frames = np.unique(frames)
     num_times = 1
-    for unique_frame in unique_frames:
-        idx = [i for i, frame in enumerate(frames) if frame == unique_frame]
+    frame_ids = [frame[0] for frame in frames]
+    for unique_frame in np.unique(frame_ids):
+        idx = [i for i, frame in enumerate(frame_ids) if frame == unique_frame]
         predictions = affinities[idx].flatten()
 
-        # TODO get positions (features of agents for each frame)
-        frame_idx = list(positions[:, 0]).index(unique_frame)
-        frame_positions = positions[frame_idx]
+        n_people = len(positions[positions.frame_id == unique_frame])
 
         if dominant_sets:
-            bool_groups = iterate_climb_learned_clone(predictions, frame_positions, n_people, n_features=n_features)
+            bool_groups = iterate_climb_learned_clone(predictions, n_people, frames[idx])
         else:
-            bool_groups = naive_group_clone(predictions, frame_positions, n_people, n_features=n_features)
+            bool_groups = naive_group_clone(predictions, n_people, frames[idx])
 
         groups_at_time = groups_at_time[idx]
         TP_n, FN_n, FP_n, precision, recall = group_correctness_clone(group_names_clone(bool_groups, n_people),
