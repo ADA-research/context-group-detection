@@ -12,7 +12,7 @@ from keras.optimizers import Adam
 from keras.regularizers import l2
 from sklearn.model_selection import train_test_split
 
-from F1_calc import F1_calc
+from F1_calc import F1_calc, F1_calc_updated
 from reformat_data import add_time, import_data
 
 sys.path.append("../../datasets")
@@ -71,8 +71,7 @@ def predict(data, model, groups_at_time, dataset="SALSA_all", positions=None):
     elif "FM_Synth" in dataset:
         n_people = 10
         n_features = 3
-        _, _, GDSR = F1_calc(2 / 3, preds, timestamps, groups_at_time, positions,
-                             n_people, 1e-5, n_features)
+        _, _, GDSR = F1_calc(2 / 3, preds, timestamps, groups_at_time, positions, n_people, n_features)
         return (GDSR, None, None), (GDSR, None, None)
     elif "cocktail_party" in dataset:
         n_people = 6
@@ -83,12 +82,14 @@ def predict(data, model, groups_at_time, dataset="SALSA_all", positions=None):
     elif "eth" in dataset:
         n_people = 10
         n_features = 4
+        # TODO make it work
+        return F1_calc_updated(2 / 3, preds, timestamps, groups_at_time, positions, n_people, n_features), \
+            F1_calc_updated(1, preds, timestamps, groups_at_time, positions, n_people, n_features)
     else:
         raise Exception("unkown dataset")
 
-    return F1_calc(2 / 3, preds, timestamps, groups_at_time, positions,
-                   n_people, 1e-5, n_features), F1_calc(1, preds, timestamps, groups_at_time, positions,
-                                                        n_people, 1e-5, n_features)
+    return F1_calc(2 / 3, preds, timestamps, groups_at_time, positions, n_people, n_features), \
+        F1_calc(1, preds, timestamps, groups_at_time, positions, n_people, n_features)
 
 
 class ValLoss(Callback):
@@ -424,7 +425,8 @@ def get_args():
     parser.add_argument('-e', '--epochs', type=int, default=100)
     parser.add_argument('-f', '--features', type=int, default=4)
     parser.add_argument('-a', '--agents', type=int, default=10)
-    parser.add_argument('--dataset', type=str, default="eth")
+    parser.add_argument('--dataset', type=str, default="cocktail_party")
+    # parser.add_argument('--dataset', type=str, default="eth")
     parser.add_argument('-p', '--no_pointnet', action="store_true", default=False)
     parser.add_argument('-s', '--symmetric', action="store_true", default=False)
 
@@ -435,17 +437,22 @@ if __name__ == "__main__":
     args = get_args()
 
     # get data
-    # test, train, val = load_data("../../datasets/cocktail_party/fold_" + args.fold)
-    train, test = dante_load(
-        '../../datasets/reformatted/{}_1_{}'.format(args.dataset, args.agents),
-        args.agents, args.features)
+    test, train, val = load_data("../../datasets/cocktail_party/fold_" + args.fold)
+    # train, test = dante_load(
+    #     '../../datasets/reformatted/{}_1_{}'.format(args.dataset, args.agents),
+    #     args.agents, args.features)
 
     # set model architecture
     global_filters = [64, 128, 512]
     individual_filters = [16, 64, 128]
     combined_filters = [256, 64]
 
-    train_and_save_model_updated(global_filters, individual_filters, combined_filters,
-                                 train, test, args.epochs, args.dataset,
-                                 reg=args.reg, dropout=args.dropout, fold_num=args.fold, no_pointnet=args.no_pointnet,
-                                 symmetric=args.symmetric)
+    train_and_save_model(global_filters, individual_filters, combined_filters,
+                         train, val, test, args.epochs, args.dataset,
+                         reg=args.reg, dropout=args.dropout, fold_num=args.fold, no_pointnet=args.no_pointnet,
+                         symmetric=args.symmetric)
+
+    # train_and_save_model_updated(global_filters, individual_filters, combined_filters,
+    #                              train, test, args.epochs, args.dataset,
+    #                              reg=args.reg, dropout=args.dropout, fold_num=args.fold, no_pointnet=args.no_pointnet,
+    #                              symmetric=args.symmetric)

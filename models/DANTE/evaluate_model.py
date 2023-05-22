@@ -111,7 +111,7 @@ if __name__ == "__main__":
             n_people = 10
             n_features = 3
             _, _, GDSR = F1_calc(2 / 3, preds, timestamps, groups_at_time, positions,
-                                 n_people, 1e-5, n_features)
+                                 n_people, n_features)
             print("GDSR: ", GDSR)
             quit()
         elif "cocktail_party" in args.dataset:
@@ -122,11 +122,9 @@ if __name__ == "__main__":
         else:
             raise Exception("unrecognized dataset")
 
-        f_2_3, _, _ = F1_calc(2 / 3, preds, timestamps, groups_at_time, positions,
-                              n_people, 1e-5, n_features)
+        f_2_3, _, _ = F1_calc(2 / 3, preds, timestamps, groups_at_time, positions, n_people, n_features)
 
-        f_1, _, _ = F1_calc(1, preds, timestamps, groups_at_time, positions,
-                            n_people, 1e-5, n_features)
+        f_1, _, _ = F1_calc(1, preds, timestamps, groups_at_time, positions, n_people, n_features)
 
         print("F_2/3: ", f_2_3)
         print("F_1: ", f_1)
