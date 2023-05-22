@@ -12,7 +12,7 @@ from keras.optimizers import Adam
 from keras.regularizers import l2
 from sklearn.model_selection import train_test_split
 
-from F1_calc import F1_calc, F1_calc_updated
+from F1_calc import F1_calc, F1_calc_clone
 from reformat_data import add_time, import_data
 
 sys.path.append("../../datasets")
@@ -62,34 +62,32 @@ def get_path(dataset, no_pointnet=False):
 def predict(data, model, groups_at_time, dataset="SALSA_all", positions=None):
     X, y, timestamps = data
     preds = model.predict(X)
-    if "CoffeeBreak" in dataset:
-        n_people = 14
-        n_features = 4
-    elif "SALSA_all" in dataset:
-        n_people = 18
-        n_features = 5
-    elif "FM_Synth" in dataset:
-        n_people = 10
-        n_features = 3
-        _, _, GDSR = F1_calc(2 / 3, preds, timestamps, groups_at_time, positions, n_people, n_features)
-        return (GDSR, None, None), (GDSR, None, None)
-    elif "cocktail_party" in dataset:
+    if "cocktail_party" in dataset:
         n_people = 6
         n_features = 4
-    elif "CocktailParty14" in dataset:
-        n_people = 14
-        n_features = 4
+        return F1_calc(2 / 3, preds, timestamps, groups_at_time, positions, n_people, n_features), \
+            F1_calc(1, preds, timestamps, groups_at_time, positions, n_people, n_features)
     elif "eth" in dataset:
-        n_people = 10
+        n_people = 360
         n_features = 4
-        # TODO make it work
-        return F1_calc_updated(2 / 3, preds, timestamps, groups_at_time, positions, n_people, n_features), \
-            F1_calc_updated(1, preds, timestamps, groups_at_time, positions, n_people, n_features)
+    elif "hotel" in dataset:
+        n_people = 390
+        n_features = 4
+    elif "zara01" in dataset:
+        n_people = 148
+        n_features = 4
+    elif "zara02" in dataset:
+        n_people = 204
+        n_features = 4
+    elif "students03" in dataset:
+        n_people = 428
+        n_features = 4
     else:
-        raise Exception("unkown dataset")
+        raise Exception("unknown dataset")
 
-    return F1_calc(2 / 3, preds, timestamps, groups_at_time, positions, n_people, n_features), \
-        F1_calc(1, preds, timestamps, groups_at_time, positions, n_people, n_features)
+    # TODO make it work
+    return F1_calc_clone(2 / 3, preds, timestamps, groups_at_time, positions, n_people, n_features), \
+        F1_calc_clone(1, preds, timestamps, groups_at_time, positions, n_people, n_features)
 
 
 class ValLoss(Callback):
@@ -100,23 +98,13 @@ class ValLoss(Callback):
         self.dataset = dataset
 
         # each dataset has different params and possibly different F1 calc code
-        if "CoffeeBreak" in dataset:
-            self.positions, groups = import_data("CoffeeBreak")
-            self.groups_at_time = add_time(groups)
-        elif "SALSA_all" in dataset:
-            self.positions, groups = import_data("SALSA_all")
-            self.groups_at_time = add_time(groups)
-        elif "FM_Synth" in dataset:
-            self.positions, groups = import_data("FM_Synth")
-            self.groups_at_time = add_time(groups)
-        elif "cocktail_party" in dataset:
+        if "cocktail_party" in dataset:
             self.positions, groups = import_data("cocktail_party")
             self.groups_at_time = add_time(groups)
-        elif "eth" in dataset:
+        elif dataset in ["eth", "hotel", "zara01", "zara02", "students03"]:
             # TODO make it work
-            pass
-            # self.positions, groups = import_data("eth")
-            # self.groups_at_time = add_time(groups)
+            self.positions = None
+            self.groups_at_time = val_data[3]
         else:
             raise Exception("unrecognized dataset")
 
@@ -289,8 +277,7 @@ def train_and_save_model(global_filters, individual_filters, combined_filters,
     X_val, Y_val, timestamps_val = val
 
     # build model
-    model = build_model(reg, dropout, max_people, d,
-                        global_filters, individual_filters, combined_filters,
+    model = build_model(reg, dropout, max_people, d, global_filters, individual_filters, combined_filters,
                         no_pointnet=no_pointnet, symmetric=symmetric)
 
     # train model
@@ -330,9 +317,9 @@ def train_and_save_model(global_filters, individual_filters, combined_filters,
 
 # constructs a model, trains it with early stopping based on validation loss, and then
 # saves the output to a .txt file.
-def train_and_save_model_updated(global_filters, individual_filters, combined_filters,
-                                 train, test, epochs, dataset, reg=0.0000001, dropout=.35, fold_num=0,
-                                 no_pointnet=False, symmetric=False):
+def train_and_save_model_clone(global_filters, individual_filters, combined_filters,
+                               train, test, epochs, dataset, reg=0.0000001, dropout=.35, fold_num=0,
+                               no_pointnet=False, symmetric=False):
     # ensures repeatability
     tf.random.set_seed(0)
     np.random.seed(0)
@@ -348,50 +335,49 @@ def train_and_save_model_updated(global_filters, individual_filters, combined_fi
     best_val_mses = []
     best_val_f1s_one = []
     best_val_f1s_two_thirds = []
-    X_train, Y_train = train
-    X_val, Y_val = test
+    X_train, Y_train, frames_train, groups_train = train
+    X_val, Y_val, frames_val, groups_val = test
 
     # build model
-    model = build_model(reg, dropout, max_people, d,
-                        global_filters, individual_filters, combined_filters,
+    model = build_model(reg, dropout, max_people, d, global_filters, individual_filters, combined_filters,
                         no_pointnet=no_pointnet, symmetric=symmetric)
 
     # train model
     early_stop = EarlyStopping(monitor='val_loss', patience=50)
-    # history = ValLoss(test, dataset)
+    history = ValLoss(test, dataset)
     print("MODEL IS IN {}".format(path))
     tensorboard = TensorBoard(log_dir='./logs')
 
     model.fit(X_train, Y_train, epochs=epochs, batch_size=1024,
               validation_data=(X_val, Y_val),
-              callbacks=[tensorboard, early_stop]
-              # callbacks=[tensorboard, history, early_stop]
+              # callbacks=[tensorboard, early_stop]
+              callbacks=[tensorboard, history, early_stop]
               )
 
-    # best_val_mses.append(history.best_val_mse)
-    # best_val_f1s_one.append(history.val_f1_one_obj['best_f1'])
-    # best_val_f1s_two_thirds.append(history.val_f1_two_thirds_obj['best_f1'])
-    #
-    # # save model
-    # name = path + '/val_fold_' + str(fold_num)
-    # if not os.path.isdir(name):
-    #     os.makedirs(name)
-    #
-    # write_history(name + '/results.txt', history, test)
-    #
-    # history.val_f1_one_obj['model'].save(name + '/best_val_model.h5')
-    # print("saved best val model as " + '/best_val_model.h5')
-    #
-    # file.write("\n\nbest overall val loss: " + str(min(best_val_mses)))
-    # file.write("\nbest val losses per fold: " + str(best_val_mses))
-    #
-    # file.write("\n\nbest overall f1 1: " + str(max(best_val_f1s_one)))
-    # file.write("\nbest f1 1s per fold: " + str(best_val_f1s_one))
-    #
-    # file.write("\n\nbest overall f1 2/3: " + str(max(best_val_f1s_two_thirds)))
-    # file.write("\nbest f1 2/3s per fold: " + str(best_val_f1s_two_thirds))
-    #
-    # file.close()
+    best_val_mses.append(history.best_val_mse)
+    best_val_f1s_one.append(history.val_f1_one_obj['best_f1'])
+    best_val_f1s_two_thirds.append(history.val_f1_two_thirds_obj['best_f1'])
+
+    # save model
+    name = path + '/val_fold_' + str(fold_num)
+    if not os.path.isdir(name):
+        os.makedirs(name)
+
+    write_history(name + '/results.txt', history, test)
+
+    history.val_f1_one_obj['model'].save(name + '/best_val_model.h5')
+    print("saved best val model as " + '/best_val_model.h5')
+
+    file.write("\n\nbest overall val loss: " + str(min(best_val_mses)))
+    file.write("\nbest val losses per fold: " + str(best_val_mses))
+
+    file.write("\n\nbest overall f1 1: " + str(max(best_val_f1s_one)))
+    file.write("\nbest f1 1s per fold: " + str(best_val_f1s_one))
+
+    file.write("\n\nbest overall f1 2/3: " + str(max(best_val_f1s_two_thirds)))
+    file.write("\nbest f1 2/3s per fold: " + str(best_val_f1s_two_thirds))
+
+    file.close()
 
 
 def dante_load(path, agents, features):
@@ -452,7 +438,7 @@ if __name__ == "__main__":
                          reg=args.reg, dropout=args.dropout, fold_num=args.fold, no_pointnet=args.no_pointnet,
                          symmetric=args.symmetric)
 
-    # train_and_save_model_updated(global_filters, individual_filters, combined_filters,
+    # train_and_save_model_clone(global_filters, individual_filters, combined_filters,
     #                              train, test, args.epochs, args.dataset,
     #                              reg=args.reg, dropout=args.dropout, fold_num=args.fold, no_pointnet=args.no_pointnet,
     #                              symmetric=args.symmetric)
