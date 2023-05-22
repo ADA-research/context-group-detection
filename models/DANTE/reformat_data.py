@@ -13,12 +13,10 @@ from shift_data import *
 
 
 # generates feature and ground-truth group matrices from data files
-def import_data(dataset):
-    dataset = str(dataset)
-    path = "../../datasets/"  # this should get you to these files, edit if it doesn't
-    Positions = np.genfromtxt(path + dataset + "/DS_utils/features.txt", dtype='str')
-    Groups = np.genfromtxt(path + dataset + "/DS_utils/group_names.txt", dtype='str', delimiter=',')
-    return Positions, Groups
+def import_data(dataset_path):
+    positions = np.genfromtxt(dataset_path + "/DS_utils/features.txt", dtype='str')
+    groups = np.genfromtxt(dataset_path + "/DS_utils/group_names.txt", dtype='str', delimiter=',')
+    return positions, groups
 
 
 # run this to generate Groups_at_time, Groups is from import_gc_data()
