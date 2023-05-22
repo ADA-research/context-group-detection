@@ -65,51 +65,36 @@ def F1_calc(group_thres, affinities, times, Groups_at_time, Positions, n_people,
     return f1_avg, avg_results[0], avg_results[1]
 
 
-def F1_calc_clone(group_thres, affinities, times, Groups_at_time, Positions, n_people, n_features, non_reusable=False,
+def F1_calc_clone(group_thres, affinities, frames, groups_at_time, positions, n_people, n_features, non_reusable=False,
                   dominant_sets=True):
     T = group_thres
     avg_results = np.array([0.0, 0.0])
 
     # this assumes affinities and times are the same length
     # TODO adapt to new approach
-    done = False
-    prev_time_arr = [-1, -1]
-    start_idx = 0
-    num_times = 0
-    while not done:
-        num_times += 1
-        looking = True
-        end_idx = start_idx
-        prev_time_arr[0] = times[start_idx].split(':')[0]
-        prev_time_arr[1] = times[start_idx].split(':')[3]
-        while looking:
-            if end_idx == len(times):
-                done = True
-                break
-            time = times[end_idx]
-            if time.split(':')[0] == prev_time_arr[0] and time.split(':')[3] == prev_time_arr[1]:
-                end_idx += 1
-                continue
-            else:
-                break
+    frames = frames.flatten()
+    unique_frames = np.unique(frames)
+    num_times = 1
+    for unique_frame in unique_frames:
+        idx = [i for i, frame in enumerate(frames) if frame == unique_frame]
+        predictions = affinities[idx].flatten()
 
-        predictions = affinities[start_idx:end_idx].flatten()
-
-        time = times[start_idx].split(':')[0]
-        frame_idx = list(Positions[:, 0]).index(time)
-        frame = Positions[frame_idx]
+        # TODO get positions (features of agents for each frame)
+        frame_idx = list(positions[:, 0]).index(unique_frame)
+        frame_positions = positions[frame_idx]
 
         if dominant_sets:
-            bool_groups = iterate_climb_learned_clone(predictions, frame, n_people, n_features=n_features)
+            bool_groups = iterate_climb_learned_clone(predictions, frame_positions, n_people, n_features=n_features)
         else:
-            bool_groups = naive_group_clone(predictions, frame, n_people, n_features=n_features)
+            bool_groups = naive_group_clone(predictions, frame_positions, n_people, n_features=n_features)
 
-        TP_n, FN_n, FP_n, precision, recall = group_correctness_updated(group_names(bool_groups, n_people),
-                                                                        Groups_at_time[time], T,
-                                                                        non_reusable=non_reusable)
+        groups_at_time = groups_at_time[idx]
+        TP_n, FN_n, FP_n, precision, recall = group_correctness_clone(group_names_clone(bool_groups, n_people),
+                                                                      groups_at_time, T,
+                                                                      non_reusable=non_reusable)
 
         avg_results += np.array([precision, recall])
-        start_idx = end_idx
+        num_times += 1
 
     avg_results /= num_times
 
@@ -171,40 +156,9 @@ def group_correctness(guesses, truth, T, non_reusable=False):
         return TP, FN, FP, precision, recall
 
 
-def group_correctness_updated(guesses, truth, T, non_reusable=False):
-    TP = 0
-    FN = 0
-    FP = 0
-
+def group_correctness_clone(guesses, truth, T, non_reusable=False):
     n_true_groups = len(truth)
     n_guess_groups = len(guesses)
-
-    for true_group in truth:
-        if len(true_group) <= 1:
-            n_true_groups -= 1
-
-    for guess in guesses:
-        if len(guess) <= 1:
-            n_guess_groups -= 1
-            continue
-
-    for true_group in truth:
-        if len(true_group) <= 1:
-            continue
-
-        for guess in guesses:
-            if len(guess) <= 1:
-                continue
-
-            n_found = 0
-            for person in guess:
-                if person in true_group:
-                    n_found += 1
-
-            if float(n_found) / max(len(true_group), len(guess)) >= T:
-                if non_reusable:
-                    guesses.remove(guess)
-                TP += 1
 
     if n_true_groups == 0 and n_guess_groups == 0:
         return 0, 0, 0, 1, 1
@@ -214,8 +168,35 @@ def group_correctness_updated(guesses, truth, T, non_reusable=False):
 
     elif n_guess_groups == 0:
         return 0, 0, n_true_groups, 1, 0
-
     else:
+        TP = 0
+        for true_group in truth:
+            if len(true_group) <= 1:
+                n_true_groups -= 1
+
+        for guess in guesses:
+            if len(guess) <= 1:
+                n_guess_groups -= 1
+                continue
+
+        for true_group in truth:
+            if len(true_group) <= 1:
+                continue
+
+            for guess in guesses:
+                if len(guess) <= 1:
+                    continue
+
+                n_found = 0
+                for person in guess:
+                    if person in true_group:
+                        n_found += 1
+
+                if float(n_found) / max(len(true_group), len(guess)) >= T:
+                    if non_reusable:
+                        guesses.remove(guess)
+                    TP += 1
+
         FP = n_guess_groups - TP
         FN = n_true_groups - TP
         precision = float(TP) / (TP + FP)
@@ -236,7 +217,7 @@ def group_names(bool_groups, n_people):
     return groups
 
 
-def group_names_updated(bool_groups, n_people):
+def group_names_clone(bool_groups, n_people):
     groups = []
     for bool_group in bool_groups:
         group = []
