@@ -8,7 +8,6 @@ import numpy as np
 def learned_affinity(n_people, truth_arr, frame, n_features):
     A = np.zeros((n_people, n_people))
     idx = 0
-    always_counting_idx = -1
     for i in range(n_people):
         if frame[i * n_features + 1] == 'fake':
             continue
@@ -79,7 +78,7 @@ def vector_climb(A, allowed, n_people, original_A, thres=1e-5):
 
 
 # Finds vectors x of people which maximize f. Then removes those people and repeats
-def iterate_climb_learned(predictions, frame, n_people, thres, n_features):
+def iterate_climb_learned(predictions, frame, n_people, n_features):
     allowed = np.ones(n_people)
     groups = []
 
@@ -101,7 +100,7 @@ def iterate_climb_learned(predictions, frame, n_people, thres, n_features):
 
 # Groups according to the algorithm in "Recognizing F-Formations in the Open World"
 # https://ieeexplore.ieee.org/abstract/document/8673233
-def naive_group(predictions, frame, n_people, thres, n_features):
+def naive_group(predictions, frame, n_people, n_features):
     groups = []
 
     A = learned_affinity(n_people, predictions, frame, n_features)
