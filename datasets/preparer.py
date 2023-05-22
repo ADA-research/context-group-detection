@@ -232,7 +232,7 @@ def get_frame_comb_groups(agents, groups):
         for group in groups:
             if agent in group and group not in comb_groups:
                 comb_groups.append(group)
-    # TODO check if removal of agents from groups is needed
+    # TODO check if removal of not yet in scene agents from groups is needed
     return comb_groups
 
 
