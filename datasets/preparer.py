@@ -232,8 +232,8 @@ def get_frame_comb_groups(agents, groups):
         for group in groups:
             if agent in group and group not in comb_groups:
                 comb_groups.append(group)
-    # TODO check if removal of not yet in scene agents from groups is needed
-    return comb_groups
+    comb_groups_filtered = [[agent for agent in comb_group if agent in agents] for comb_group in comb_groups]
+    return comb_groups_filtered
 
 
 def get_agent_data_for_frames(dataframe, agents, frames):
