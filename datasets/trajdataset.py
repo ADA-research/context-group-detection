@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
-from kalman_smoother import KalmanModel
+from datasets.kalman_smoother import KalmanModel
 
 pd.options.mode.chained_assignment = None  # default='warn'
 

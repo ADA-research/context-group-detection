@@ -10,7 +10,7 @@ import seaborn as sns
 import xlsxwriter
 from matplotlib import pyplot as plt
 
-from loader import read_obsmat, read_groups
+from datasets.loader import read_obsmat, read_groups
 
 random.seed(14)
 

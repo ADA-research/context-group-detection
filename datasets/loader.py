@@ -3,7 +3,7 @@ from collections import Counter
 import numpy as np
 import pandas as pd
 
-from trajdataset import TrajDataset
+from datasets.trajdataset import TrajDataset
 
 
 def load_eth(path, **kwargs):
