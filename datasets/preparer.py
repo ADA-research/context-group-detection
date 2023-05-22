@@ -323,7 +323,7 @@ def dataset_reformat(dataframe, groups, group_pairs, frame_comb_data, agents_min
             for i in range(scene_samples):
                 context_agents = random.sample(scene_agents, agents_minimum - 2)
                 scene_sample(dataframe, groups, pair_agents, context_agents, comb_frames, data, labels)
-                frames.append(comb_frames)
+                frames.append((comb_frames, pair_agents))
                 combs_groups.append(comb_groups)
     return np.asarray(data), np.asarray(labels), np.asarray(frames), np.asarray(combs_groups, dtype=object)
 
@@ -345,7 +345,7 @@ def get_args():
 
     parser.add_argument('-r', '--report', action="store_true", default=False)
     parser.add_argument('-p', '--plot', action="store_true", default=False)
-    parser.add_argument('-f', '--frames', type=int, default=10)
+    parser.add_argument('-f', '--frames', type=int, default=1)
     parser.add_argument('-a', '--agents', type=int, default=10)
     # parser.add_argument('-ss', '--scene_samples', type=int, default=5)
     parser.add_argument('-ts', '--target_size', type=int, default=100000)
