@@ -5,7 +5,7 @@ import numpy as np
 # http://homepage.tudelft.nl/3e2t5/HungKrose_ICMI2011.pdf
 
 # fills an n_people x n_people matrix with affinity values.
-def learned_affinity(n_people, truth_arr, frame, n_features):
+def learned_affinity(truth_arr, frame, n_people, n_features):
     A = np.zeros((n_people, n_people))
     idx = 0
     for i in range(n_people):
@@ -24,15 +24,19 @@ def learned_affinity(n_people, truth_arr, frame, n_features):
 
 
 # TODO modify
-def learned_affinity_clone(n_people, truth_arr, frame, n_features):
+def learned_affinity_clone(truth_arr, n_people, frames):
     A = np.zeros((n_people, n_people))
+
+    # TODO map agents to index for adjacentry matrix
+    #  maybe use dictionary
+    #  for each pair update adjacency matrix with prediction
+    frame_pairs = [frame[1] for frame in frames]
+    agents = np.unique(frame_pairs)
+    unique_pairs = set(frame_pairs)
+
     idx = 0
     for i in range(n_people):
-        if frame[i * n_features + 1] == 'fake':
-            continue
         for j in range(n_people):
-            if frame[j * n_features + 1] == 'fake':
-                continue
             if i == j:
                 continue
             A[i, j] += truth_arr[idx] / 2
@@ -101,7 +105,7 @@ def iterate_climb_learned(predictions, frame, n_people, n_features):
     allowed = np.ones(n_people)
     groups = []
 
-    A = learned_affinity(n_people, predictions, frame, n_features)
+    A = learned_affinity(predictions, frame, n_people, n_features)
     original_A = A.copy()
     while np.sum(allowed) > 1:
         A[allowed == False] = 0
@@ -118,11 +122,11 @@ def iterate_climb_learned(predictions, frame, n_people, n_features):
 
 
 # TODO modify
-def iterate_climb_learned_clone(predictions, frame, n_people, n_features):
+def iterate_climb_learned_clone(predictions, n_people, frames):
     allowed = np.ones(n_people)
     groups = []
 
-    A = learned_affinity_clone(n_people, predictions, frame, n_features)
+    A = learned_affinity_clone(predictions, n_people, frames)
     original_A = A.copy()
     while np.sum(allowed) > 1:
         A[allowed == False] = 0
@@ -177,10 +181,10 @@ def naive_group(predictions, frame, n_people, n_features):
 
 
 # TODO modify
-def naive_group_clone(predictions, frame, n_people, n_features):
+def naive_group_clone(predictions, n_people, frames):
     groups = []
 
-    A = learned_affinity_clone(n_people, predictions, frame, n_features)
+    A = learned_affinity_clone(predictions, n_people, frames)
     A = np.random.randn(n_people, n_people)
     A = A > .5
     for i in range(n_people):
