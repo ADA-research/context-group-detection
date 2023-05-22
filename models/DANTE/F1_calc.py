@@ -65,12 +65,13 @@ def F1_calc(group_thres, affinities, times, Groups_at_time, Positions, n_people,
     return f1_avg, avg_results[0], avg_results[1]
 
 
-def F1_calc_updated(group_thres, affinities, times, Groups_at_time, Positions, n_people, n_features, non_reusable=False,
-            dominant_sets=True):
+def F1_calc_clone(group_thres, affinities, times, Groups_at_time, Positions, n_people, n_features, non_reusable=False,
+                  dominant_sets=True):
     T = group_thres
     avg_results = np.array([0.0, 0.0])
 
     # this assumes affinities and times are the same length
+    # TODO adapt to new approach
     done = False
     prev_time_arr = [-1, -1]
     start_idx = 0
@@ -99,9 +100,9 @@ def F1_calc_updated(group_thres, affinities, times, Groups_at_time, Positions, n
         frame = Positions[frame_idx]
 
         if dominant_sets:
-            bool_groups = iterate_climb_learned(predictions, frame, n_people, n_features=n_features)
+            bool_groups = iterate_climb_learned_clone(predictions, frame, n_people, n_features=n_features)
         else:
-            bool_groups = naive_group(predictions, frame, n_people, n_features=n_features)
+            bool_groups = naive_group_clone(predictions, frame, n_people, n_features=n_features)
 
         TP_n, FN_n, FP_n, precision, recall = group_correctness_updated(group_names(bool_groups, n_people),
                                                                         Groups_at_time[time], T,
