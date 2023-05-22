@@ -13,6 +13,7 @@ from keras.regularizers import l2
 from sklearn.model_selection import train_test_split
 
 from F1_calc import F1_calc, F1_calc_clone
+from datasets.preparer import dataset_data
 from reformat_data import add_time, import_data
 
 sys.path.append("../../datasets")
@@ -60,13 +61,15 @@ def get_path(dataset, no_pointnet=False):
 
 # gives T=1 and T=2/3 F1 scores
 def predict(data, model, groups_at_time, dataset="SALSA_all", positions=None):
-    X, y, timestamps = data
-    preds = model.predict(X)
     if "cocktail_party" in dataset:
         n_people = 6
         n_features = 4
-        return F1_calc(2 / 3, preds, timestamps, groups_at_time, positions, n_people, n_features), \
-            F1_calc(1, preds, timestamps, groups_at_time, positions, n_people, n_features)
+
+        X, y, frames = data
+        preds = model.predict(X)
+
+        return F1_calc(2 / 3, preds, frames, groups_at_time, positions, n_people, n_features), \
+            F1_calc(1, preds, frames, groups_at_time, positions, n_people, n_features)
     elif "eth" in dataset:
         n_people = 360
         n_features = 4
@@ -85,40 +88,11 @@ def predict(data, model, groups_at_time, dataset="SALSA_all", positions=None):
     else:
         raise Exception("unknown dataset")
 
-    # TODO make it work
-    return F1_calc_clone(2 / 3, preds, timestamps, groups_at_time, positions, n_people, n_features), \
-        F1_calc_clone(1, preds, timestamps, groups_at_time, positions, n_people, n_features)
-
-
-def predict_clone(data, model, groups_at_time, dataset="SALSA_all", positions=None):
-    X, y, timestamps, groups = data
+    X, y, frames, groups = data
     preds = model.predict(X)
-    if "cocktail_party" in dataset:
-        n_people = 6
-        n_features = 4
-        return F1_calc(2 / 3, preds, timestamps, groups_at_time, positions, n_people, n_features), \
-            F1_calc(1, preds, timestamps, groups_at_time, positions, n_people, n_features)
-    elif "eth" in dataset:
-        n_people = 360
-        n_features = 4
-    elif "hotel" in dataset:
-        n_people = 390
-        n_features = 4
-    elif "zara01" in dataset:
-        n_people = 148
-        n_features = 4
-    elif "zara02" in dataset:
-        n_people = 204
-        n_features = 4
-    elif "students03" in dataset:
-        n_people = 428
-        n_features = 4
-    else:
-        raise Exception("unknown dataset")
-
     # TODO make it work
-    return F1_calc_clone(2 / 3, preds, timestamps, groups_at_time, positions, n_people, n_features), \
-        F1_calc_clone(1, preds, timestamps, groups_at_time, positions, n_people, n_features)
+    return F1_calc_clone(2 / 3, preds, frames, groups_at_time, positions, n_people, n_features), \
+        F1_calc_clone(1, preds, frames, groups_at_time, positions, n_people, n_features)
 
 
 class ValLoss(Callback):
@@ -132,10 +106,6 @@ class ValLoss(Callback):
         if "cocktail_party" in dataset:
             self.positions, groups = import_data("cocktail_party")
             self.groups_at_time = add_time(groups)
-        elif dataset in ["eth", "hotel", "zara01", "zara02", "students03"]:
-            # TODO make it work
-            self.positions = None
-            self.groups_at_time = val_data[3]
         else:
             raise Exception("unrecognized dataset")
 
@@ -186,7 +156,7 @@ class ValLoss_clone(Callback):
             self.groups_at_time = add_time(groups)
         elif dataset in ["eth", "hotel", "zara01", "zara02", "students03"]:
             # TODO make it work
-            self.positions = None
+            self.positions = dataset_data(dataset)
             self.groups_at_time = val_data[3]
         else:
             raise Exception("unrecognized dataset")
@@ -210,8 +180,8 @@ class ValLoss_clone(Callback):
             self.best_val_mse = logs['val_mse']
             self.best_epoch = epoch
 
-        (f1_two_thirds, _, _,), (f1_one, _, _) = predict_clone(self.val_data, self.model, self.groups_at_time,
-                                                               dataset=self.dataset, positions=self.positions)
+        (f1_two_thirds, _, _,), (f1_one, _, _) = predict(self.val_data, self.model, self.groups_at_time,
+                                                         dataset=self.dataset, positions=self.positions)
 
         for f1, obj in [(f1_one, self.val_f1_one_obj), (f1_two_thirds, self.val_f1_two_thirds_obj)]:
             if f1 > obj['best_f1']:
