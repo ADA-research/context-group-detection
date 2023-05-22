@@ -23,6 +23,25 @@ def learned_affinity(n_people, truth_arr, frame, n_features):
     return A
 
 
+# TODO modify
+def learned_affinity_clone(n_people, truth_arr, frame, n_features):
+    A = np.zeros((n_people, n_people))
+    idx = 0
+    for i in range(n_people):
+        if frame[i * n_features + 1] == 'fake':
+            continue
+        for j in range(n_people):
+            if frame[j * n_features + 1] == 'fake':
+                continue
+            if i == j:
+                continue
+            A[i, j] += truth_arr[idx] / 2
+            A[j, i] += truth_arr[idx] / 2
+            idx += 1
+
+    return A
+
+
 # d-sets function k
 def k(S, i, A):
     sum_affs = 0
@@ -98,12 +117,70 @@ def iterate_climb_learned(predictions, frame, n_people, n_features):
     return groups
 
 
+# TODO modify
+def iterate_climb_learned_clone(predictions, frame, n_people, n_features):
+    allowed = np.ones(n_people)
+    groups = []
+
+    A = learned_affinity_clone(n_people, predictions, frame, n_features)
+    original_A = A.copy()
+    while np.sum(allowed) > 1:
+        A[allowed == False] = 0
+        A[:, allowed == False] = 0
+        if np.sum(np.dot(allowed, A)) == 0:
+            break
+        x = vector_climb(A, allowed, n_people, original_A, thres=1e-5)
+        if len(x) == 0:
+            break
+        groups.append(x)
+        allowed = np.multiply(x == False, allowed)
+
+    return groups
+
+
 # Groups according to the algorithm in "Recognizing F-Formations in the Open World"
 # https://ieeexplore.ieee.org/abstract/document/8673233
 def naive_group(predictions, frame, n_people, n_features):
     groups = []
 
     A = learned_affinity(n_people, predictions, frame, n_features)
+    A = np.random.randn(n_people, n_people)
+    A = A > .5
+    for i in range(n_people):
+        A[i, i] = True
+
+    A = 1 * A
+    while np.sum(A) > 0:
+        most_overlap = -float("inf")
+        pos = (-1, -1)
+
+        for i in range(n_people - 1):
+            B_i = A[i]
+            for j in range(i + 1, n_people):
+                B_j = A[j]
+                overlap = B_i.dot(B_j)
+
+                if overlap > most_overlap:
+                    most_overlap = overlap
+                    pos = (i, j)
+        if most_overlap <= 0:
+            break
+
+        group = (A[pos[0]] + A[pos[1]]) > .5
+        groups.append(group)
+        for i in range(n_people):
+            if group[i]:
+                A[i, :] = 0
+                A[:, i] = 0
+
+    return groups
+
+
+# TODO modify
+def naive_group_clone(predictions, frame, n_people, n_features):
+    groups = []
+
+    A = learned_affinity_clone(n_people, predictions, frame, n_features)
     A = np.random.randn(n_people, n_people)
     A = A > .5
     for i in range(n_people):
