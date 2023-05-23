@@ -57,7 +57,7 @@ def get_path(dataset, no_pointnet=False):
 
 
 # gives T=1 and T=2/3 F1 scores
-def predict(data, model, groups, dataset="SALSA_all", positions=None):
+def predict(data, model, groups, samples, dataset, positions=None):
     if "cocktail_party" in dataset:
         n_people = 6
         n_features = 4
@@ -85,17 +85,18 @@ def predict(data, model, groups, dataset="SALSA_all", positions=None):
     X, y, frames, groups = data
     preds = model.predict(X)
 
-    return F1_calc_clone(2 / 3, preds, frames, groups, positions), \
-        F1_calc_clone(1, preds, frames, groups, positions)
+    return F1_calc_clone(2 / 3, preds, frames, groups, positions, samples), \
+        F1_calc_clone(1, preds, frames, groups, positions, samples)
 
 
 class ValLoss(Callback):
     # record train and val losses and mse
-    def __init__(self, val_data, dataset, dataset_path):
+    def __init__(self, val_data, dataset, dataset_path, samples):
         super(ValLoss, self).__init__()
         self.val_data = val_data
         self.dataset = dataset
         self.dataset_path = dataset_path
+        self.samples = samples
 
         # each dataset has different params and possibly different F1 calc code
         if dataset in ["cocktail_party"]:
@@ -126,8 +127,8 @@ class ValLoss(Callback):
             self.best_val_mse = logs['val_mse']
             self.best_epoch = epoch
 
-        (f1_two_thirds, _, _,), (f1_one, _, _) = predict(self.val_data, self.model, self.groups,
-                                                         dataset=self.dataset, positions=self.positions)
+        (f1_two_thirds, _, _,), (f1_one, _, _) = predict(self.val_data, self.model, self.groups, self.samples,
+                                                         self.dataset, self.positions)
 
         for f1, obj in [(f1_one, self.val_f1_one_obj), (f1_two_thirds, self.val_f1_two_thirds_obj)]:
             if f1 > obj['best_f1']:
@@ -142,7 +143,7 @@ class ValLoss(Callback):
 
 
 # saves the information in the model.history object to a .txt file
-def write_history(file_name, history, test):
+def write_history(file_name, history, test, samples):
     file = open(file_name, 'w+')
 
     file.write("best_val: " + str(history.best_val_mse))
@@ -151,8 +152,8 @@ def write_history(file_name, history, test):
     file.write("\nbest_val_f1_1: " + str(history.val_f1_one_obj['best_f1']))
     file.write("\nepoch: " + str(history.val_f1_one_obj['epoch']))
     (f1_two_thirds, p_2_3, r_2_3), (f1_one, p_1, r_1) = predict(test, history.val_f1_one_obj['model'],
-                                                                history.groups,
-                                                                dataset=history.dataset, positions=history.positions)
+                                                                history.groups, samples, history.dataset,
+                                                                history.positions)
     file.write("\ntest_f1s: " + str(f1_two_thirds) + " " + str(f1_one))
     file.write('\nprecisions: ' + str(p_2_3) + " " + str(p_1))
     file.write('\nrecalls: ' + str(r_2_3) + " " + str(r_1))
@@ -160,8 +161,8 @@ def write_history(file_name, history, test):
     file.write("\nbest_val_f1_2/3: " + str(history.val_f1_two_thirds_obj['best_f1']))
     file.write("\nepoch: " + str(history.val_f1_two_thirds_obj['epoch']))
     (f1_two_thirds, p_2_3, r_2_3), (f1_one, p_1, r_1) = predict(test, history.val_f1_two_thirds_obj['model'],
-                                                                history.groups,
-                                                                dataset=history.dataset, positions=history.positions)
+                                                                history.groups, samples, history.dataset,
+                                                                history.positions)
     file.write("\ntest_f1s: " + str(f1_two_thirds) + " " + str(f1_one))
     file.write('\nprecisions: ' + str(p_2_3) + " " + str(p_1))
     file.write('\nrecalls: ' + str(r_2_3) + " " + str(r_1))
@@ -281,7 +282,7 @@ def train_and_save_model(global_filters, individual_filters, combined_filters,
 
     # train model
     early_stop = EarlyStopping(monitor='val_loss', patience=50)
-    history = ValLoss(val, dataset, dataset_path)
+    history = ValLoss(val, dataset, dataset_path, None)
     print("MODEL IS IN {}".format(path))
     tensorboard = TensorBoard(log_dir='./logs')
 
@@ -297,7 +298,7 @@ def train_and_save_model(global_filters, individual_filters, combined_filters,
     if not os.path.isdir(name):
         os.makedirs(name)
 
-    write_history(name + '/results.txt', history, test)
+    write_history(name + '/results.txt', history, test, None)
 
     history.val_f1_one_obj['model'].save(name + '/best_val_model.h5')
     print("saved best val model as " + '/best_val_model.h5')
@@ -317,7 +318,8 @@ def train_and_save_model(global_filters, individual_filters, combined_filters,
 # constructs a model, trains it with early stopping based on validation loss, and then
 # saves the output to a .txt file.
 def train_and_save_model_clone(global_filters, individual_filters, combined_filters,
-                               train, test, epochs, dataset, dataset_path, reg=0.0000001, dropout=.35, fold_num=0,
+                               train, test, epochs, dataset, dataset_path, samples, reg=0.0000001, dropout=.35,
+                               fold_num=0,
                                no_pointnet=False, symmetric=False):
     # ensures repeatability
     tf.random.set_seed(0)
@@ -344,7 +346,7 @@ def train_and_save_model_clone(global_filters, individual_filters, combined_filt
 
     # train model
     early_stop = EarlyStopping(monitor='val_loss', patience=50)
-    history = ValLoss(test, dataset, dataset_path)
+    history = ValLoss(test, dataset, dataset_path, samples)
     print("MODEL IS IN {}".format(path))
     tensorboard = TensorBoard(log_dir='./logs')
 
@@ -363,7 +365,7 @@ def train_and_save_model_clone(global_filters, individual_filters, combined_filt
     if not os.path.isdir(name):
         os.makedirs(name)
 
-    write_history(name + '/results.txt', history, test)
+    write_history(name + '/results.txt', history, test, samples)
 
     history.val_f1_one_obj['model'].save(name + '/best_val_model.h5')
     print("saved best val model as " + '/best_val_model.h5')
@@ -409,12 +411,19 @@ def dante_load(path, agents, features):
     y = np.load(path + '_labels.npy')
     frames = np.load(path + '_frames.npy', allow_pickle=True)
     groups = np.load(path + '_groups.npy', allow_pickle=True)
+
+    samples = 0
+    for frame in frames:
+        if frame[0] == frames[0][0] and frame[1] == frames[0][1]:
+            samples += 1
+
     frame_ids = [frame[0] for frame in frames]
     idx_train, idx_test = train_test_split_frames(frame_ids)
     groups_train, groups_test = train_test_split_groups(groups, frames[idx_train], frames[idx_test])
+
     train = ([X[idx_train, :, 2:], X[idx_train, :, :2]], y[idx_train], frames[idx_train], groups_train)
     test = ([X[idx_test, :, 2:], X[idx_test, :, :2]], y[idx_test], frames[idx_test], groups_test)
-    return train, test
+    return train, test, samples
 
 
 def get_args():
@@ -439,26 +448,25 @@ def get_args():
 if __name__ == "__main__":
     args = get_args()
 
-    # get data
-    if args.dataset == 'cocktail_party':
-        test, train, val = load_data("../../datasets/cocktail_party/fold_" + args.fold)
-    else:
-        train, test = dante_load(
-            '../../datasets/reformatted/{}_1_{}'.format(args.dataset, args.agents),
-            args.agents, args.features)
-
     # set model architecture
     global_filters = [64, 128, 512]
     individual_filters = [16, 64, 128]
     combined_filters = [256, 64]
 
+    # get data
     if args.dataset == 'cocktail_party':
+        test, train, val = load_data("../../datasets/cocktail_party/fold_" + args.fold)
+
         train_and_save_model(global_filters, individual_filters, combined_filters,
                              train, val, test, args.epochs, args.dataset, args.dataset_path,
                              reg=args.reg, dropout=args.dropout, fold_num=args.fold, no_pointnet=args.no_pointnet,
                              symmetric=args.symmetric)
     else:
+        train, test, samples = dante_load(
+            '../../datasets/reformatted/{}_1_{}'.format(args.dataset, args.agents),
+            args.agents, args.features)
+
         train_and_save_model_clone(global_filters, individual_filters, combined_filters,
-                                   train, test, args.epochs, args.dataset, args.dataset_path,
+                                   train, test, args.epochs, args.dataset, args.dataset_path, samples,
                                    reg=args.reg, dropout=args.dropout, fold_num=args.fold, no_pointnet=args.no_pointnet,
                                    symmetric=args.symmetric)

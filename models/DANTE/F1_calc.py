@@ -65,17 +65,12 @@ def F1_calc(group_thres, affinities, times, Groups_at_time, Positions, n_people,
     return f1_avg, avg_results[0], avg_results[1]
 
 
-def F1_calc_clone(group_thres, affinities, frames, groups, positions, non_reusable=False, dominant_sets=True):
+def F1_calc_clone(group_thres, affinities, frames, groups, positions, samples, non_reusable=False, dominant_sets=True):
     T = group_thres
     avg_results = np.array([0.0, 0.0])
 
     num_times = 1
     frame_ids = [frame[0] for frame in frames]
-
-    count_samples = 0
-    for frame in frames:
-        if frame[0] == frames[0][0] and frame[1] == frames[0][1]:
-            count_samples += 1
 
     for unique_frame in np.unique(frame_ids):
         idx = [i for i, frame in enumerate(frame_ids) if frame == unique_frame]
@@ -84,9 +79,9 @@ def F1_calc_clone(group_thres, affinities, frames, groups, positions, non_reusab
         n_people = len(positions[positions.frame_id == unique_frame])
 
         if dominant_sets:
-            bool_groups, agents_map = iterate_climb_learned_clone(predictions, n_people, frames[idx], count_samples)
+            bool_groups, agents_map = iterate_climb_learned_clone(predictions, n_people, frames[idx], samples)
         else:
-            bool_groups, agents_map = naive_group_clone(predictions, n_people, frames[idx], count_samples)
+            bool_groups, agents_map = naive_group_clone(predictions, n_people, frames[idx], samples)
 
         groups_at_time = [group[1] for group in groups if group[0] == unique_frame][0]
         TP_n, FN_n, FP_n, precision, recall = group_correctness_clone(
