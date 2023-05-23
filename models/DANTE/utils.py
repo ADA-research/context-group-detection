@@ -382,6 +382,11 @@ def train_and_save_model_clone(global_filters, individual_filters, combined_filt
 
 
 def train_test_split_frames(frames):
+    """
+    Split train, test and val indices.
+    :param frames: list of frames
+    :return: train, test and val indices
+    """
     frame_ids = [frame[0] for frame in frames]
     frame_values = np.unique(frame_ids)
     train, test = train_test_split(frame_values, test_size=0.3, random_state=0)
@@ -396,6 +401,14 @@ def train_test_split_frames(frames):
 
 
 def train_test_split_groups(groups, frames_train, frames_test, frames_val):
+    """
+    Split groups in train, test and val groups.
+    :param groups: list of groups per frame
+    :param frames_train: list of train frames
+    :param frames_test: list of test frames
+    :param frames_val: list of val frames
+    :return:
+    """
     frame_ids_train = np.unique([frame[0] for frame in frames_train])
     frame_ids_test = np.unique([frame[0] for frame in frames_test])
     frame_ids_val = np.unique([frame[0] for frame in frames_val])
@@ -409,7 +422,7 @@ def dante_load(path, agents, features):
     '''
     Load dataset and reformat it to match model input.
     :param path: string of path to data
-    :param context_size: number of context size
+    :param agents: number of agents
     :param features: number of features
     :return: train and test data
     '''
