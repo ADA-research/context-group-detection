@@ -318,7 +318,7 @@ def train_and_save_model(global_filters, individual_filters, combined_filters,
 # constructs a model, trains it with early stopping based on validation loss, and then
 # saves the output to a .txt file.
 def train_and_save_model_clone(global_filters, individual_filters, combined_filters,
-                               train, test, epochs, dataset, dataset_path, samples, reg=0.0000001, dropout=.35,
+                               train, test, val, epochs, dataset, dataset_path, samples, reg=0.0000001, dropout=.35,
                                fold_num=0,
                                no_pointnet=False, symmetric=False):
     # ensures repeatability
@@ -337,8 +337,7 @@ def train_and_save_model_clone(global_filters, individual_filters, combined_filt
     best_val_f1s_one = []
     best_val_f1s_two_thirds = []
     X_train, Y_train, frames_train, groups_train = train
-    # TODO use subset of test for val
-    X_val, Y_val, frames_val, groups_val = test
+    X_val, Y_val, frames_val, groups_val = val
 
     # build model
     model = build_model(reg, dropout, max_people, d, global_filters, individual_filters, combined_filters,
@@ -346,7 +345,7 @@ def train_and_save_model_clone(global_filters, individual_filters, combined_filt
 
     # train model
     early_stop = EarlyStopping(monitor='val_loss', patience=50)
-    history = ValLoss(test, dataset, dataset_path, samples)
+    history = ValLoss(val, dataset, dataset_path, samples)
     print("MODEL IS IN {}".format(path))
     tensorboard = TensorBoard(log_dir='./logs')
 
@@ -383,19 +382,27 @@ def train_and_save_model_clone(global_filters, individual_filters, combined_filt
 
 
 def train_test_split_frames(frames):
-    frame_values = np.unique(frames)
-    train, test = train_test_split(frame_values)
-    idx_train = [i for i, frame in enumerate(frames) if frame in train]
-    idx_test = [i for i, frame in enumerate(frames) if frame in test]
-    return idx_train, idx_test
+    frame_ids = [frame[0] for frame in frames]
+    frame_values = np.unique(frame_ids)
+    train, test = train_test_split(frame_values, test_size=0.3, random_state=0)
+    idx_train = [i for i, frame in enumerate(frame_ids) if frame in train]
+    frame_ids_train = [frame[0] for frame in frames[idx_train]]
+    frame_values_train = np.unique(frame_ids_train)
+    train, val = train_test_split(frame_values_train, test_size=0.2, random_state=0)
+    idx_train = [i for i, frame in enumerate(frame_ids) if frame in train]
+    idx_test = [i for i, frame in enumerate(frame_ids) if frame in test]
+    idx_val = [i for i, frame in enumerate(frame_ids) if frame in val]
+    return idx_train, idx_test, idx_val
 
 
-def train_test_split_groups(groups, frames_train, frames_test):
+def train_test_split_groups(groups, frames_train, frames_test, frames_val):
     frame_ids_train = np.unique([frame[0] for frame in frames_train])
     frame_ids_test = np.unique([frame[0] for frame in frames_test])
+    frame_ids_val = np.unique([frame[0] for frame in frames_val])
     groups_train = [group for group in groups if group[0] in frame_ids_train]
     groups_test = [group for group in groups if group[0] in frame_ids_test]
-    return groups_train, groups_test
+    groups_val = [group for group in groups if group[0] in frame_ids_val]
+    return groups_train, groups_test, groups_val
 
 
 def dante_load(path, agents, features):
@@ -417,13 +424,14 @@ def dante_load(path, agents, features):
         if frame[0] == frames[0][0] and frame[1] == frames[0][1]:
             samples += 1
 
-    frame_ids = [frame[0] for frame in frames]
-    idx_train, idx_test = train_test_split_frames(frame_ids)
-    groups_train, groups_test = train_test_split_groups(groups, frames[idx_train], frames[idx_test])
+    idx_train, idx_test, idx_val = train_test_split_frames(frames)
+    groups_train, groups_test, groups_val = \
+        train_test_split_groups(groups, frames[idx_train], frames[idx_test], frames[idx_val])
 
     train = ([X[idx_train, :, 2:], X[idx_train, :, :2]], y[idx_train], frames[idx_train], groups_train)
     test = ([X[idx_test, :, 2:], X[idx_test, :, :2]], y[idx_test], frames[idx_test], groups_test)
-    return train, test, samples
+    val = ([X[idx_val, :, 2:], X[idx_val, :, :2]], y[idx_val], frames[idx_val], groups_val)
+    return train, test, val, samples
 
 
 def get_args():
@@ -432,7 +440,7 @@ def get_args():
     parser.add_argument('-k', '--fold', type=str, default='0')
     parser.add_argument('-r', '--reg', type=float, default=0.0000001)
     parser.add_argument('-d', '--dropout', type=float, default=0.35)
-    parser.add_argument('-e', '--epochs', type=int, default=10)
+    parser.add_argument('-e', '--epochs', type=int, default=100)
     parser.add_argument('-f', '--features', type=int, default=4)
     parser.add_argument('-a', '--agents', type=int, default=10)
     # parser.add_argument('--dataset', type=str, default="cocktail_party")
@@ -462,11 +470,11 @@ if __name__ == "__main__":
                              reg=args.reg, dropout=args.dropout, fold_num=args.fold, no_pointnet=args.no_pointnet,
                              symmetric=args.symmetric)
     else:
-        train, test, samples = dante_load(
+        train, test, val, samples = dante_load(
             '../../datasets/reformatted/{}_1_{}'.format(args.dataset, args.agents),
             args.agents, args.features)
 
         train_and_save_model_clone(global_filters, individual_filters, combined_filters,
-                                   train, test, args.epochs, args.dataset, args.dataset_path, samples,
+                                   train, test, val, args.epochs, args.dataset, args.dataset_path, samples,
                                    reg=args.reg, dropout=args.dropout, fold_num=args.fold, no_pointnet=args.no_pointnet,
                                    symmetric=args.symmetric)
