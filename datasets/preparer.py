@@ -324,7 +324,7 @@ def dataset_reformat(dataframe, groups, group_pairs, frame_comb_data, agents_min
                 context_agents = random.sample(scene_agents, agents_minimum - 2)
                 scene_sample(dataframe, groups, pair_agents, context_agents, comb_frames, data, labels)
                 frames.append((comb_frames, pair_agents))
-                combs_groups.append(comb_groups)
+        combs_groups.append((comb_frames, comb_groups))
     return np.asarray(data), np.asarray(labels), np.asarray(frames), np.asarray(combs_groups, dtype=object)
 
 
