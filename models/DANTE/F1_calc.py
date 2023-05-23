@@ -69,8 +69,6 @@ def F1_calc_clone(group_thres, affinities, frames, groups_at_time, positions, no
     T = group_thres
     avg_results = np.array([0.0, 0.0])
 
-    # this assumes affinities and times are the same length
-    # TODO adapt to new approach
     num_times = 1
     frame_ids = [frame[0] for frame in frames]
     for unique_frame in np.unique(frame_ids):

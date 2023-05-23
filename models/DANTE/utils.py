@@ -84,7 +84,7 @@ def predict(data, model, groups_at_time, dataset="SALSA_all", positions=None):
 
     X, y, frames, groups = data
     preds = model.predict(X)
-    # TODO make it work
+
     return F1_calc_clone(2 / 3, preds, frames, groups_at_time, positions), \
         F1_calc_clone(1, preds, frames, groups_at_time, positions)
 
@@ -102,7 +102,6 @@ class ValLoss(Callback):
             self.positions, groups = import_data(dataset_path)
             self.groups_at_time = add_time(groups)
         elif dataset in ["eth", "hotel", "zara01", "zara02", "students03"]:
-            # TODO make it work
             self.positions = read_obsmat(dataset_path)
             self.groups_at_time = val_data[3]
         else:
@@ -401,7 +400,6 @@ def dante_load(path, agents, features):
     y = np.load(path + '_labels.npy')
     frames = np.load(path + '_frames.npy', allow_pickle=True)
     groups = np.load(path + '_groups.npy', allow_pickle=True)
-    # TODO check if samples of same frames should be together
     frame_ids = [frame[0] for frame in frames]
     idx_train, idx_test = train_test_split_frames(frame_ids)
     train = ([X[idx_train, :, 2:], X[idx_train, :, :2]], y[idx_train], frames[idx_train], groups[idx_train])
