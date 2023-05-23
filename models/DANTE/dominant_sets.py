@@ -23,27 +23,28 @@ def learned_affinity(truth_arr, frame, n_people, n_features):
     return A
 
 
-# TODO modify
 def learned_affinity_clone(truth_arr, n_people, frames):
     A = np.zeros((n_people, n_people))
 
-    # TODO map agents to index for adjacentry matrix
-    #  maybe use dictionary
-    #  for each pair update adjacency matrix with prediction
     frame_pairs = [frame[1] for frame in frames]
     agents = np.unique(frame_pairs)
-    unique_pairs = set(frame_pairs)
+    agents_map = {value: number for number, value in enumerate(agents)}
 
-    idx = 0
-    for i in range(n_people):
-        for j in range(n_people):
-            if i == j:
-                continue
-            A[i, j] += truth_arr[idx] / 2
-            A[j, i] += truth_arr[idx] / 2
-            idx += 1
+    count_samples = 0
+    unique_pair = frame_pairs[0]
+    for frame_pair in frame_pairs:
+        if frame_pair == unique_pair:
+            count_samples += 1
 
-    return A
+    for idx, pair in enumerate(frame_pairs):
+        i = agents_map[pair[0]]
+        j = agents_map[pair[1]]
+        A[i, j] += truth_arr[idx]
+        A[j, i] += truth_arr[idx]
+
+    A = A / count_samples
+
+    return A, {value:key for key, value in agents_map.items()}
 
 
 # d-sets function k
@@ -121,12 +122,11 @@ def iterate_climb_learned(predictions, frame, n_people, n_features):
     return groups
 
 
-# TODO modify
 def iterate_climb_learned_clone(predictions, n_people, frames):
     allowed = np.ones(n_people)
     groups = []
 
-    A = learned_affinity_clone(predictions, n_people, frames)
+    A, agents_map = learned_affinity_clone(predictions, n_people, frames)
     original_A = A.copy()
     while np.sum(allowed) > 1:
         A[allowed == False] = 0
@@ -139,7 +139,7 @@ def iterate_climb_learned_clone(predictions, n_people, frames):
         groups.append(x)
         allowed = np.multiply(x == False, allowed)
 
-    return groups
+    return groups, agents_map
 
 
 # Groups according to the algorithm in "Recognizing F-Formations in the Open World"
@@ -184,7 +184,7 @@ def naive_group(predictions, frame, n_people, n_features):
 def naive_group_clone(predictions, n_people, frames):
     groups = []
 
-    A = learned_affinity_clone(predictions, n_people, frames)
+    A, agents_map = learned_affinity_clone(predictions, n_people, frames)
     A = np.random.randn(n_people, n_people)
     A = A > .5
     for i in range(n_people):
@@ -214,4 +214,4 @@ def naive_group_clone(predictions, n_people, frames):
                 A[i, :] = 0
                 A[:, i] = 0
 
-    return groups
+    return groups, agents_map

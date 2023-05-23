@@ -65,7 +65,7 @@ def F1_calc(group_thres, affinities, times, Groups_at_time, Positions, n_people,
     return f1_avg, avg_results[0], avg_results[1]
 
 
-def F1_calc_clone(group_thres, affinities, frames, groups_at_time, positions, non_reusable=False, dominant_sets=True):
+def F1_calc_clone(group_thres, affinities, frames, groups, positions, non_reusable=False, dominant_sets=True):
     T = group_thres
     avg_results = np.array([0.0, 0.0])
 
@@ -78,14 +78,15 @@ def F1_calc_clone(group_thres, affinities, frames, groups_at_time, positions, no
         n_people = len(positions[positions.frame_id == unique_frame])
 
         if dominant_sets:
-            bool_groups = iterate_climb_learned_clone(predictions, n_people, frames[idx])
+            bool_groups, agents_map = iterate_climb_learned_clone(predictions, n_people, frames[idx])
         else:
-            bool_groups = naive_group_clone(predictions, n_people, frames[idx])
+            bool_groups, agents_map = naive_group_clone(predictions, n_people, frames[idx])
 
-        groups_at_time = groups_at_time[idx]
-        TP_n, FN_n, FP_n, precision, recall = group_correctness_clone(group_names_clone(bool_groups, n_people),
-                                                                      groups_at_time, T,
-                                                                      non_reusable=non_reusable)
+        groups_at_time = groups[idx[0]]
+        TP_n, FN_n, FP_n, precision, recall = group_correctness_clone(
+            group_names_clone(bool_groups, agents_map, n_people),
+            groups_at_time, T,
+            non_reusable=non_reusable)
 
         avg_results += np.array([precision, recall])
         num_times += 1
@@ -211,12 +212,12 @@ def group_names(bool_groups, n_people):
     return groups
 
 
-def group_names_clone(bool_groups, n_people):
+def group_names_clone(bool_groups, agents_map, n_people):
     groups = []
     for bool_group in bool_groups:
         group = []
         for i in range(n_people):
             if bool_group[i]:
-                group.append("ID_00" + str(i + 1))
+                group.append(agents_map[i])
         groups.append(group)
     return groups
