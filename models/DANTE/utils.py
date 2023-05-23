@@ -335,6 +335,7 @@ def train_and_save_model_clone(global_filters, individual_filters, combined_filt
     best_val_f1s_one = []
     best_val_f1s_two_thirds = []
     X_train, Y_train, frames_train, groups_train = train
+    # TODO use subset of test for val
     X_val, Y_val, frames_val, groups_val = test
 
     # build model
