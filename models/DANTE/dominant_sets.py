@@ -23,18 +23,12 @@ def learned_affinity(truth_arr, frame, n_people, n_features):
     return A
 
 
-def learned_affinity_clone(truth_arr, n_people, frames):
+def learned_affinity_clone(truth_arr, n_people, frames, samples):
     A = np.zeros((n_people, n_people))
 
     frame_pairs = [frame[1] for frame in frames]
     agents = np.unique(frame_pairs)
     agents_map = {value: number for number, value in enumerate(agents)}
-
-    count_samples = 0
-    unique_pair = frame_pairs[0]
-    for frame_pair in frame_pairs:
-        if frame_pair == unique_pair:
-            count_samples += 1
 
     for idx, pair in enumerate(frame_pairs):
         i = agents_map[pair[0]]
@@ -42,9 +36,9 @@ def learned_affinity_clone(truth_arr, n_people, frames):
         A[i, j] += truth_arr[idx]
         A[j, i] += truth_arr[idx]
 
-    A = A / count_samples
+    A = A / samples
 
-    return A, {value:key for key, value in agents_map.items()}
+    return A, {value: key for key, value in agents_map.items()}
 
 
 # d-sets function k
@@ -122,11 +116,11 @@ def iterate_climb_learned(predictions, frame, n_people, n_features):
     return groups
 
 
-def iterate_climb_learned_clone(predictions, n_people, frames):
+def iterate_climb_learned_clone(predictions, n_people, frames, samples):
     allowed = np.ones(n_people)
     groups = []
 
-    A, agents_map = learned_affinity_clone(predictions, n_people, frames)
+    A, agents_map = learned_affinity_clone(predictions, n_people, frames, samples)
     original_A = A.copy()
     while np.sum(allowed) > 1:
         A[allowed == False] = 0
@@ -180,12 +174,11 @@ def naive_group(predictions, frame, n_people, n_features):
     return groups
 
 
-# TODO modify
-def naive_group_clone(predictions, n_people, frames):
+def naive_group_clone(predictions, n_people, frames, samples):
     groups = []
 
-    A, agents_map = learned_affinity_clone(predictions, n_people, frames)
-    A = np.random.randn(n_people, n_people)
+    A, agents_map = learned_affinity_clone(predictions, n_people, frames, samples)
+
     A = A > .5
     for i in range(n_people):
         A[i, i] = True

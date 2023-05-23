@@ -71,6 +71,12 @@ def F1_calc_clone(group_thres, affinities, frames, groups, positions, non_reusab
 
     num_times = 1
     frame_ids = [frame[0] for frame in frames]
+
+    count_samples = 0
+    for frame in frames:
+        if frame[0] == frames[0][0] and frame[1] == frames[0][1]:
+            count_samples += 1
+
     for unique_frame in np.unique(frame_ids):
         idx = [i for i, frame in enumerate(frame_ids) if frame == unique_frame]
         predictions = affinities[idx].flatten()
@@ -78,11 +84,11 @@ def F1_calc_clone(group_thres, affinities, frames, groups, positions, non_reusab
         n_people = len(positions[positions.frame_id == unique_frame])
 
         if dominant_sets:
-            bool_groups, agents_map = iterate_climb_learned_clone(predictions, n_people, frames[idx])
+            bool_groups, agents_map = iterate_climb_learned_clone(predictions, n_people, frames[idx], count_samples)
         else:
-            bool_groups, agents_map = naive_group_clone(predictions, n_people, frames[idx])
+            bool_groups, agents_map = naive_group_clone(predictions, n_people, frames[idx], count_samples)
 
-        groups_at_time = groups[idx[0]]
+        groups_at_time = [group[1] for group in groups if group[0] == unique_frame][0]
         TP_n, FN_n, FP_n, precision, recall = group_correctness_clone(
             group_names_clone(bool_groups, agents_map, n_people),
             groups_at_time, T,

@@ -57,7 +57,7 @@ def get_path(dataset, no_pointnet=False):
 
 
 # gives T=1 and T=2/3 F1 scores
-def predict(data, model, groups_at_time, dataset="SALSA_all", positions=None):
+def predict(data, model, groups, dataset="SALSA_all", positions=None):
     if "cocktail_party" in dataset:
         n_people = 6
         n_features = 4
@@ -65,8 +65,8 @@ def predict(data, model, groups_at_time, dataset="SALSA_all", positions=None):
         X, y, frames = data
         preds = model.predict(X)
 
-        return F1_calc(2 / 3, preds, frames, groups_at_time, positions, n_people, n_features), \
-            F1_calc(1, preds, frames, groups_at_time, positions, n_people, n_features)
+        return F1_calc(2 / 3, preds, frames, groups, positions, n_people, n_features), \
+            F1_calc(1, preds, frames, groups, positions, n_people, n_features)
     elif dataset in ["eth", "hotel", "zara01", "zara02", "students03"]:
         pass
     # elif "eth" in dataset:
@@ -85,8 +85,8 @@ def predict(data, model, groups_at_time, dataset="SALSA_all", positions=None):
     X, y, frames, groups = data
     preds = model.predict(X)
 
-    return F1_calc_clone(2 / 3, preds, frames, groups_at_time, positions), \
-        F1_calc_clone(1, preds, frames, groups_at_time, positions)
+    return F1_calc_clone(2 / 3, preds, frames, groups, positions), \
+        F1_calc_clone(1, preds, frames, groups, positions)
 
 
 class ValLoss(Callback):
@@ -100,10 +100,10 @@ class ValLoss(Callback):
         # each dataset has different params and possibly different F1 calc code
         if dataset in ["cocktail_party"]:
             self.positions, groups = import_data(dataset_path)
-            self.groups_at_time = add_time(groups)
+            self.groups = add_time(groups)
         elif dataset in ["eth", "hotel", "zara01", "zara02", "students03"]:
             self.positions = read_obsmat(dataset_path)
-            self.groups_at_time = val_data[3]
+            self.groups = val_data[3]
         else:
             raise Exception("unrecognized dataset")
 
@@ -126,7 +126,7 @@ class ValLoss(Callback):
             self.best_val_mse = logs['val_mse']
             self.best_epoch = epoch
 
-        (f1_two_thirds, _, _,), (f1_one, _, _) = predict(self.val_data, self.model, self.groups_at_time,
+        (f1_two_thirds, _, _,), (f1_one, _, _) = predict(self.val_data, self.model, self.groups,
                                                          dataset=self.dataset, positions=self.positions)
 
         for f1, obj in [(f1_one, self.val_f1_one_obj), (f1_two_thirds, self.val_f1_two_thirds_obj)]:
@@ -151,7 +151,7 @@ def write_history(file_name, history, test):
     file.write("\nbest_val_f1_1: " + str(history.val_f1_one_obj['best_f1']))
     file.write("\nepoch: " + str(history.val_f1_one_obj['epoch']))
     (f1_two_thirds, p_2_3, r_2_3), (f1_one, p_1, r_1) = predict(test, history.val_f1_one_obj['model'],
-                                                                history.groups_at_time,
+                                                                history.groups,
                                                                 dataset=history.dataset, positions=history.positions)
     file.write("\ntest_f1s: " + str(f1_two_thirds) + " " + str(f1_one))
     file.write('\nprecisions: ' + str(p_2_3) + " " + str(p_1))
@@ -160,7 +160,7 @@ def write_history(file_name, history, test):
     file.write("\nbest_val_f1_2/3: " + str(history.val_f1_two_thirds_obj['best_f1']))
     file.write("\nepoch: " + str(history.val_f1_two_thirds_obj['epoch']))
     (f1_two_thirds, p_2_3, r_2_3), (f1_one, p_1, r_1) = predict(test, history.val_f1_two_thirds_obj['model'],
-                                                                history.groups_at_time,
+                                                                history.groups,
                                                                 dataset=history.dataset, positions=history.positions)
     file.write("\ntest_f1s: " + str(f1_two_thirds) + " " + str(f1_one))
     file.write('\nprecisions: ' + str(p_2_3) + " " + str(p_1))
@@ -383,9 +383,17 @@ def train_and_save_model_clone(global_filters, individual_filters, combined_filt
 def train_test_split_frames(frames):
     frame_values = np.unique(frames)
     train, test = train_test_split(frame_values)
-    train_idx = [i for i, frame in enumerate(frames) if frame in train]
-    test_idx = [i for i, frame in enumerate(frames) if frame in test]
-    return train_idx, test_idx
+    idx_train = [i for i, frame in enumerate(frames) if frame in train]
+    idx_test = [i for i, frame in enumerate(frames) if frame in test]
+    return idx_train, idx_test
+
+
+def train_test_split_groups(groups, frames_train, frames_test):
+    frame_ids_train = np.unique([frame[0] for frame in frames_train])
+    frame_ids_test = np.unique([frame[0] for frame in frames_test])
+    groups_train = [group for group in groups if group[0] in frame_ids_train]
+    groups_test = [group for group in groups if group[0] in frame_ids_test]
+    return groups_train, groups_test
 
 
 def dante_load(path, agents, features):
@@ -403,8 +411,9 @@ def dante_load(path, agents, features):
     groups = np.load(path + '_groups.npy', allow_pickle=True)
     frame_ids = [frame[0] for frame in frames]
     idx_train, idx_test = train_test_split_frames(frame_ids)
-    train = ([X[idx_train, :, 2:], X[idx_train, :, :2]], y[idx_train], frames[idx_train], groups[idx_train])
-    test = ([X[idx_test, :, 2:], X[idx_test, :, :2]], y[idx_test], frames[idx_test], groups[idx_test])
+    groups_train, groups_test = train_test_split_groups(groups, frames[idx_train], frames[idx_test])
+    train = ([X[idx_train, :, 2:], X[idx_train, :, :2]], y[idx_train], frames[idx_train], groups_train)
+    test = ([X[idx_test, :, 2:], X[idx_test, :, :2]], y[idx_test], frames[idx_test], groups_test)
     return train, test
 
 
@@ -414,7 +423,7 @@ def get_args():
     parser.add_argument('-k', '--fold', type=str, default='0')
     parser.add_argument('-r', '--reg', type=float, default=0.0000001)
     parser.add_argument('-d', '--dropout', type=float, default=0.35)
-    parser.add_argument('-e', '--epochs', type=int, default=100)
+    parser.add_argument('-e', '--epochs', type=int, default=10)
     parser.add_argument('-f', '--features', type=int, default=4)
     parser.add_argument('-a', '--agents', type=int, default=10)
     # parser.add_argument('--dataset', type=str, default="cocktail_party")
