@@ -345,7 +345,7 @@ def get_args():
 
     parser.add_argument('-r', '--report', action="store_true", default=False)
     parser.add_argument('-p', '--plot', action="store_true", default=False)
-    parser.add_argument('-f', '--frames', type=int, default=1)
+    parser.add_argument('-f', '--frames', type=int, default=10)
     parser.add_argument('-a', '--agents', type=int, default=10)
     # parser.add_argument('-ss', '--scene_samples', type=int, default=5)
     parser.add_argument('-ts', '--target_size', type=int, default=100000)
