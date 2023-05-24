@@ -1,4 +1,4 @@
-from dominant_sets import *
+from models.DANTE.dominant_sets import *
 
 
 # group_thres = T in most papers. The threshold for a correctly detected group
@@ -65,18 +65,29 @@ def F1_calc(group_thres, affinities, times, Groups_at_time, Positions, n_people,
     return f1_avg, avg_results[0], avg_results[1]
 
 
-def F1_calc_clone(group_thres, affinities, frames, groups, positions, samples, non_reusable=False, dominant_sets=True):
+def F1_calc_clone(group_thres, affinities, frames, groups, positions, samples, multi_frame=False, non_reusable=False,
+                  dominant_sets=True):
     T = group_thres
     avg_results = np.array([0.0, 0.0])
 
     num_times = 1
     frame_ids = [frame[0] for frame in frames]
 
-    for unique_frame in np.unique(frame_ids):
+    if multi_frame:
+        frame_values = [list(x) for x in set(tuple(frame_id) for frame_id in frame_ids)]
+    else:
+        frame_values = np.unique(frame_ids)
+    for unique_frame in frame_values:
         idx = [i for i, frame in enumerate(frame_ids) if frame == unique_frame]
         predictions = affinities[idx].flatten()
 
-        n_people = len(positions[positions.frame_id == unique_frame])
+        if multi_frame:
+            agents_by_frame = positions.groupby('frame_id')['agent_id'].apply(list).reset_index(name='agents')
+            agent_list = \
+                [set(agents_by_frame[agents_by_frame['frame_id'] == frame]['agents'].iloc[0]) for frame in unique_frame]
+            n_people = len(set.intersection(*agent_list))
+        else:
+            n_people = len(positions[positions.frame_id == unique_frame])
 
         if dominant_sets:
             bool_groups, agents_map = iterate_climb_learned_clone(predictions, n_people, frames[idx], samples)

@@ -1,10 +1,7 @@
-import re
-import argparse
-from shift_data import *
 import argparse
 import re
 
-from shift_data import *
+from models.DANTE.shift_data import *
 
 
 # primary set of functions for reformatting the data for use in the Tensorflow

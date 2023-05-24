@@ -11,9 +11,9 @@ from keras.optimizers import Adam
 from keras.regularizers import l2
 from sklearn.model_selection import train_test_split
 
-from F1_calc import F1_calc, F1_calc_clone
 from datasets.preparer import read_obsmat
-from reformat_data import add_time, import_data
+from models.DANTE.F1_calc import F1_calc, F1_calc_clone
+from models.DANTE.reformat_data import add_time, import_data
 
 
 def load_matrix(file):
@@ -57,7 +57,7 @@ def get_path(dataset, no_pointnet=False):
 
 
 # gives T=1 and T=2/3 F1 scores
-def predict(data, model, groups, samples, dataset, positions=None):
+def predict(data, model, groups, samples, dataset, multi_frame=False, positions=None):
     if "cocktail_party" in dataset:
         n_people = 6
         n_features = 4
@@ -69,34 +69,25 @@ def predict(data, model, groups, samples, dataset, positions=None):
             F1_calc(1, preds, frames, groups, positions, n_people, n_features)
     elif dataset in ["eth", "hotel", "zara01", "zara02", "students03"]:
         pass
-    # elif "eth" in dataset:
-    #     n_people = 360
-    # elif "hotel" in dataset:
-    #     n_people = 390
-    # elif "zara01" in dataset:
-    #     n_people = 148
-    # elif "zara02" in dataset:
-    #     n_people = 204
-    # elif "students03" in dataset:
-    #     n_people = 428
     else:
         raise Exception("unknown dataset")
 
     X, y, frames, groups = data
     preds = model.predict(X)
 
-    return F1_calc_clone(2 / 3, preds, frames, groups, positions, samples), \
-        F1_calc_clone(1, preds, frames, groups, positions, samples)
+    return F1_calc_clone(2 / 3, preds, frames, groups, positions, samples, multi_frame), \
+        F1_calc_clone(1, preds, frames, groups, positions, samples, multi_frame)
 
 
 class ValLoss(Callback):
     # record train and val losses and mse
-    def __init__(self, val_data, dataset, dataset_path, samples):
+    def __init__(self, val_data, dataset, dataset_path, samples, multi_frame=False):
         super(ValLoss, self).__init__()
         self.val_data = val_data
         self.dataset = dataset
         self.dataset_path = dataset_path
         self.samples = samples
+        self.multi_frame = multi_frame
 
         # each dataset has different params and possibly different F1 calc code
         if dataset in ["cocktail_party"]:
@@ -128,7 +119,7 @@ class ValLoss(Callback):
             self.best_epoch = epoch
 
         (f1_two_thirds, _, _,), (f1_one, _, _) = predict(self.val_data, self.model, self.groups, self.samples,
-                                                         self.dataset, self.positions)
+                                                         self.dataset, self.multi_frame, self.positions)
 
         for f1, obj in [(f1_one, self.val_f1_one_obj), (f1_two_thirds, self.val_f1_two_thirds_obj)]:
             if f1 > obj['best_f1']:
@@ -143,7 +134,7 @@ class ValLoss(Callback):
 
 
 # saves the information in the model.history object to a .txt file
-def write_history(file_name, history, test, samples):
+def write_history(file_name, history, test, samples, multi_frame=False):
     file = open(file_name, 'w+')
 
     file.write("best_val: " + str(history.best_val_mse))
@@ -152,7 +143,7 @@ def write_history(file_name, history, test, samples):
     file.write("\nbest_val_f1_1: " + str(history.val_f1_one_obj['best_f1']))
     file.write("\nepoch: " + str(history.val_f1_one_obj['epoch']))
     (f1_two_thirds, p_2_3, r_2_3), (f1_one, p_1, r_1) = predict(test, history.val_f1_one_obj['model'],
-                                                                history.groups, samples, history.dataset,
+                                                                history.groups, samples, history.dataset, multi_frame,
                                                                 history.positions)
     file.write("\ntest_f1s: " + str(f1_two_thirds) + " " + str(f1_one))
     file.write('\nprecisions: ' + str(p_2_3) + " " + str(p_1))
@@ -161,7 +152,7 @@ def write_history(file_name, history, test, samples):
     file.write("\nbest_val_f1_2/3: " + str(history.val_f1_two_thirds_obj['best_f1']))
     file.write("\nepoch: " + str(history.val_f1_two_thirds_obj['epoch']))
     (f1_two_thirds, p_2_3, r_2_3), (f1_one, p_1, r_1) = predict(test, history.val_f1_two_thirds_obj['model'],
-                                                                history.groups, samples, history.dataset,
+                                                                history.groups, samples, history.dataset, multi_frame,
                                                                 history.positions)
     file.write("\ntest_f1s: " + str(f1_two_thirds) + " " + str(f1_one))
     file.write('\nprecisions: ' + str(p_2_3) + " " + str(p_1))
@@ -262,7 +253,7 @@ def train_and_save_model(global_filters, individual_filters, combined_filters,
     tf.random.set_seed(0)
     np.random.seed(0)
 
-    num_train, _, max_people, d = train[0][0].shape
+    _, _, max_people, d = train[0][0].shape
     # save achitecture
     path = get_path(dataset, no_pointnet)
     file = open(path + '/architecture.txt', 'w+')
@@ -325,7 +316,7 @@ def train_and_save_model_clone(global_filters, individual_filters, combined_filt
     tf.random.set_seed(0)
     np.random.seed(0)
 
-    num_train, _, max_people, d = train[0][0].shape
+    _, _, max_people, d = train[0][0].shape
     # save achitecture
     path = get_path(dataset, no_pointnet)
     file = open(path + '/architecture.txt', 'w+')
