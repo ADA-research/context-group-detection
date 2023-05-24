@@ -31,20 +31,20 @@ def build_model(context_size, consecutive_frames, features, units, reg_amount, d
 
     pair_layers = []
     for pair_input in pair_inputs:
-        lstm = LSTM(64, batch_input_shape=(consecutive_frames, features))(pair_input)
+        lstm = LSTM(64, return_sequences=True)(pair_input)
         pair_layers.append(lstm)
 
-    reg = l2(reg_amount)
+    # reg = l2(reg_amount)
 
     pair_concatenated = concatenate(pair_layers)
-    pair_reshaped = Reshape((pair_concatenated.shape[1], 1))(pair_concatenated)
-    pair_conv = Conv1D(filters=64, kernel_size=3, kernel_regularizer=reg, activation=tf.nn.relu)(pair_reshaped)
-    drop = Dropout(drop_amount)(pair_conv)
-    batch_norm = BatchNormalization()(drop)
+    # pair_reshaped = Reshape((pair_concatenated.shape[1], 1))(pair_concatenated)
+    pair_conv = Conv1D(filters=32, kernel_size=3, activation='relu', name='pair_conv')(pair_concatenated)
+    # drop = Dropout(drop_amount)(pair_conv)
+    # batch_norm = BatchNormalization()(drop)
     # max_pool = MaxPooling1D()(batch_norm)
     # drop = Dropout(drop_amount)(max_pool)
     # batch_norm = BatchNormalization()(drop)
-    pair_layer = batch_norm
+    pair_layer = pair_conv
 
     # context branch
     context_inputs = []
@@ -55,25 +55,25 @@ def build_model(context_size, consecutive_frames, features, units, reg_amount, d
 
     context_layers = []
     for context_input in context_inputs:
-        lstm = LSTM(64, batch_input_shape=(consecutive_frames, features))(context_input)
+        lstm = LSTM(64, return_sequences=True)(context_input)
         context_layers.append(lstm)
 
     context_concatenated = concatenate(context_layers)
-    context_reshaped = Reshape((context_concatenated.shape[1], 1))(context_concatenated)
-    context_conv = Conv1D(filters=64, kernel_size=3, kernel_regularizer=reg, activation=tf.nn.relu)(context_reshaped)
-    drop = Dropout(drop_amount)(context_conv)
-    batch_norm = BatchNormalization()(drop)
+    # context_reshaped = Reshape((context_concatenated.shape[1], 1))(context_concatenated)
+    context_conv = Conv1D(filters=32, kernel_size=3, activation='relu', name='context_conv')(context_concatenated)
+    # drop = Dropout(drop_amount)(context_conv)
+    # batch_norm = BatchNormalization()(drop)
     # max_pool = MaxPooling1D()(batch_norm)
     # drop = Dropout(drop_amount)(max_pool)
     # batch_norm = BatchNormalization()(drop)
-    context_layer = batch_norm
+    context_layer = context_conv
 
     # Concatenate the outputs of the two branches
     combined = concatenate([pair_layer, context_layer], axis=1)
     flatten = Flatten()(combined)
     combined_dense = Dense(64)(flatten)
     # Output layer
-    output = Dense(1)(combined_dense)
+    output = Dense(1, activation='sigmoid')(combined_dense)
 
     # Create the model with two inputs and one output
     model = Model(inputs=[inputs], outputs=output)
