@@ -1,13 +1,16 @@
 import argparse
+import os
 
 import numpy as np
 import tensorflow as tf
-from keras.callbacks import EarlyStopping
-from keras.layers import Dense, Conv1D, LSTM, concatenate, Reshape, Dropout, BatchNormalization, MaxPooling1D, Input
+from keras.callbacks import EarlyStopping, TensorBoard
+from keras.layers import Dense, Conv1D, LSTM, concatenate, Reshape, Dropout, BatchNormalization, Input, Flatten
 from keras.models import Model
 from keras.optimizers import Adam
 from keras.regularizers import l2
 from sklearn.model_selection import train_test_split
+
+from models.DANTE.utils import ValLoss, get_path, write_history
 
 
 def conv(filters, reg, name=None):
@@ -28,7 +31,7 @@ def build_model(context_size, consecutive_frames, features, units, reg_amount, d
 
     pair_layers = []
     for pair_input in pair_inputs:
-        lstm = LSTM(units, batch_input_shape=(consecutive_frames, features))(pair_input)
+        lstm = LSTM(64, batch_input_shape=(consecutive_frames, features))(pair_input)
         pair_layers.append(lstm)
 
     reg = l2(reg_amount)
@@ -38,9 +41,9 @@ def build_model(context_size, consecutive_frames, features, units, reg_amount, d
     pair_conv = Conv1D(filters=64, kernel_size=3, kernel_regularizer=reg, activation=tf.nn.relu)(pair_reshaped)
     drop = Dropout(drop_amount)(pair_conv)
     batch_norm = BatchNormalization()(drop)
-    max_pool = MaxPooling1D()(batch_norm)
-    drop = Dropout(drop_amount)(max_pool)
-    batch_norm = BatchNormalization()(drop)
+    # max_pool = MaxPooling1D()(batch_norm)
+    # drop = Dropout(drop_amount)(max_pool)
+    # batch_norm = BatchNormalization()(drop)
     pair_layer = batch_norm
 
     # context branch
@@ -60,14 +63,15 @@ def build_model(context_size, consecutive_frames, features, units, reg_amount, d
     context_conv = Conv1D(filters=64, kernel_size=3, kernel_regularizer=reg, activation=tf.nn.relu)(context_reshaped)
     drop = Dropout(drop_amount)(context_conv)
     batch_norm = BatchNormalization()(drop)
-    max_pool = MaxPooling1D()(batch_norm)
-    drop = Dropout(drop_amount)(max_pool)
-    batch_norm = BatchNormalization()(drop)
+    # max_pool = MaxPooling1D()(batch_norm)
+    # drop = Dropout(drop_amount)(max_pool)
+    # batch_norm = BatchNormalization()(drop)
     context_layer = batch_norm
 
     # Concatenate the outputs of the two branches
     combined = concatenate([pair_layer, context_layer], axis=1)
-    combined_dense = Dense(32)(combined)
+    flatten = Flatten()(combined)
+    combined_dense = Dense(64)(flatten)
     # Output layer
     output = Dense(1)(combined_dense)
 
@@ -75,7 +79,7 @@ def build_model(context_size, consecutive_frames, features, units, reg_amount, d
     model = Model(inputs=[inputs], outputs=output)
 
     # Compile the model
-    opt = Adam(lr=learning_rate, beta_1=0.9, beta_2=0.999, decay=1e-5, amsgrad=False, clipvalue=0.5)
+    opt = Adam(learning_rate=learning_rate, beta_1=0.9, beta_2=0.999, decay=1e-5, amsgrad=False, clipvalue=0.5)
     model.compile(optimizer=opt, loss="binary_crossentropy", metrics=['mse'])
 
     return model
@@ -151,7 +155,8 @@ def load_data(path, agents):
 def get_args():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('-d', '--dataset', type=str, default="eth")
+    parser.add_argument('--dataset', type=str, default="eth")
+    parser.add_argument('--dataset_path', type=str, default="../datasets/ETH/seq_eth")
     parser.add_argument('-e', '--epochs', type=int, default=10)
     parser.add_argument('-f', '--features', type=int, default=4)
     parser.add_argument('-a', '--agents', type=int, default=10)
@@ -167,32 +172,60 @@ def get_args():
 if __name__ == '__main__':
     args = get_args()
 
-    # data_filename = '../datasets/reformatted/{}_{}_{}_data.npy'.format(args.dataset, args.frames, args.agents)
-    # data = np.load(data_filename)
-    # X = []
-    # for i in range(args.agents + 2):
-    #     X.append(data[:, i])
-    # labels_filename = '../datasets/reformatted/{}_{}_{}_labels.npy'.format(args.dataset, args.frames, args.agents)
-    # Y_train = np.load(labels_filename)
-    # frames_filename = '../datasets/reformatted/{}_{}_{}_frames.npy'.format(args.dataset, args.frames, args.agents)
-    # frames = np.load(frames_filename)
-    # groups_filename = '../datasets/reformatted/{}_{}_{}_groups.npy'.format(args.dataset, args.frames, args.agents)
-    # groups = np.load(groups_filename, allow_pickle=True)
-
     train, test, val, samples = load_data(
         '../datasets/reformatted/{}_{}_{}'.format(args.dataset, args.frames, args.agents), args.agents)
 
+    tf.random.set_seed(0)
+    np.random.seed(0)
+
+    best_val_mses = []
+    best_val_f1s_one = []
+    best_val_f1s_two_thirds = []
     X_train, y_train, frames_train, groups_train = train
     X_val, y_val, frames_val, groups_val = val
 
     model = build_model(args.agents - 2, args.frames, args.features, 64, args.reg, args.dropout, args.learning_rate)
+
     early_stop = EarlyStopping(monitor='val_loss', patience=5)
+    history = ValLoss(val, args.dataset, args.dataset_path, samples, True)
+    tensorboard = TensorBoard(log_dir='./logs')
 
     model.fit(X_train, y_train,
               epochs=args.epochs, batch_size=args.batch_size,
               validation_data=(X_val, y_val),
-              callbacks=[early_stop]
+              callbacks=[early_stop, history, tensorboard]
               )
+
+    best_val_mses.append(history.best_val_mse)
+    best_val_f1s_one.append(history.val_f1_one_obj['best_f1'])
+    best_val_f1s_two_thirds.append(history.val_f1_two_thirds_obj['best_f1'])
+
+    # save model
+    path = get_path(args.dataset, False)
+    file = open(path + '/architecture.txt', 'w+')
+    file.write(
+        # "global: " + str(global_filters) + "\nindividual: " +
+        # str(individual_filters) + "\ncombined: " + str(combined_filters) +
+        "\nreg= " + str(args.reg) + "\ndropout= " + str(args.dropout))
+    name = path + '/val_fold_' + str(0)
+    if not os.path.isdir(name):
+        os.makedirs(name)
+
+    write_history(name + '/results.txt', history, test, samples, True)
+
+    history.val_f1_one_obj['model'].save(name + '/best_val_model.h5')
+    print("saved best val model as " + '/best_val_model.h5')
+
+    file.write("\n\nbest overall val loss: " + str(min(best_val_mses)))
+    file.write("\nbest val losses per fold: " + str(best_val_mses))
+
+    file.write("\n\nbest overall f1 1: " + str(max(best_val_f1s_one)))
+    file.write("\nbest f1 1s per fold: " + str(best_val_f1s_one))
+
+    file.write("\n\nbest overall f1 2/3: " + str(max(best_val_f1s_two_thirds)))
+    file.write("\nbest f1 2/3s per fold: " + str(best_val_f1s_two_thirds))
+
+    file.close()
 
     # kf = KFold(n_splits=5, shuffle=True, random_state=0)
     # for i, (train_index, test_index) in enumerate(kf.split(X[0])):
