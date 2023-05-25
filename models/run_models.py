@@ -18,7 +18,11 @@ python run_models.py -d cocktail_party
 def get_args():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('-d', '--dataset', help="which dataset to use", default="cocktail_party")
+    # parser.add_argument('-d', '--dataset', help="which dataset to use", default="cocktail_party")
+    parser.add_argument('--dataset', type=str, default="cocktail_party")
+    parser.add_argument('--dataset_path', type=str, default="../datasets/cocktail_party")
+    # parser.add_argument('--dataset', type=str, default="eth")
+    # parser.add_argument('--dataset_path', type=str, default="../datasets/ETH/seq_eth")
     parser.add_argument('-p', '--no_pointnet', help="dont use global features", action='store_true')
     parser.add_argument('-s', '--symmetric', action="store_true", default=False, help="use this to run pointnet Dyad")
     parser.add_argument('-e', '--epochs', type=int, default=600, help="max number of epochs to run for")
@@ -71,6 +75,6 @@ if __name__ == "__main__":
                 print("global filters:", global_filters)
                 print("combined filters:", combined_filters)
                 train_and_save_model(global_filters, individual_filters, combined_filters,
-                                     train, val, test, args.epochs, args.dataset,
+                                     train, val, test, args.epochs, args.dataset, args.dataset_path,
                                      reg=reg, dropout=dropout, no_pointnet=args.no_pointnet,
                                      symmetric=args.symmetric)
