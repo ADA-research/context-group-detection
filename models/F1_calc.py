@@ -1,4 +1,4 @@
-from models.DANTE.dominant_sets import *
+from models.dominant_sets import *
 
 
 # group_thres = T in most papers. The threshold for a correctly detected group

@@ -12,7 +12,7 @@ from keras.regularizers import l2
 from sklearn.model_selection import train_test_split
 
 from datasets.preparer import read_obsmat
-from models.DANTE.F1_calc import F1_calc, F1_calc_clone
+from models.F1_calc import F1_calc, F1_calc_clone
 from models.DANTE.reformat_data import add_time, import_data
 
 

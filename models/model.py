@@ -4,13 +4,12 @@ import os
 import numpy as np
 import tensorflow as tf
 from keras.callbacks import EarlyStopping, TensorBoard
-from keras.layers import Dense, Conv1D, LSTM, concatenate, Reshape, Dropout, BatchNormalization, Input, Flatten
+from keras.layers import Dense, Conv1D, LSTM, concatenate, Input, Flatten
 from keras.models import Model
 from keras.optimizers import Adam
-from keras.regularizers import l2
 from sklearn.model_selection import train_test_split
 
-from models.DANTE.utils import ValLoss, get_path, write_history
+from models.utils import ValLoss, get_path, write_history
 
 
 def conv(filters, reg, name=None):

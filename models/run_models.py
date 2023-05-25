@@ -2,7 +2,7 @@ import argparse
 
 import numpy as np
 
-from utils import load_data, train_and_save_model
+from models.utils import load_data, train_and_save_model
 
 """
 Trains models with random architectures on each fold for a particular dataset.
