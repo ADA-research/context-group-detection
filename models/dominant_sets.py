@@ -5,7 +5,7 @@ import numpy as np
 # http://homepage.tudelft.nl/3e2t5/HungKrose_ICMI2011.pdf
 
 # fills an n_people x n_people matrix with affinity values.
-def learned_affinity(truth_arr, frame, n_people, n_features):
+def learned_affinity(truth_arr, n_people, frame, n_features):
     A = np.zeros((n_people, n_people))
     idx = 0
     for i in range(n_people):
@@ -96,11 +96,14 @@ def vector_climb(A, allowed, n_people, original_A, thres=1e-5):
 
 
 # Finds vectors x of people which maximize f. Then removes those people and repeats
-def iterate_climb_learned(predictions, frame, n_people, n_features):
+def iterate_climb_learned(predictions, n_people, frames, n_features=None, samples=None, new=False):
     allowed = np.ones(n_people)
     groups = []
 
-    A = learned_affinity(predictions, frame, n_people, n_features)
+    if new:
+        A, agents_map = learned_affinity_clone(predictions, n_people, frames, samples)
+    else:
+        A = learned_affinity(predictions, n_people, frames, n_features)
     original_A = A.copy()
     while np.sum(allowed) > 1:
         A[allowed == False] = 0
@@ -113,36 +116,21 @@ def iterate_climb_learned(predictions, frame, n_people, n_features):
         groups.append(x)
         allowed = np.multiply(x == False, allowed)
 
-    return groups
-
-
-def iterate_climb_learned_clone(predictions, n_people, frames, samples):
-    allowed = np.ones(n_people)
-    groups = []
-
-    A, agents_map = learned_affinity_clone(predictions, n_people, frames, samples)
-    original_A = A.copy()
-    while np.sum(allowed) > 1:
-        A[allowed == False] = 0
-        A[:, allowed == False] = 0
-        if np.sum(np.dot(allowed, A)) == 0:
-            break
-        x = vector_climb(A, allowed, n_people, original_A, thres=1e-5)
-        if len(x) == 0:
-            break
-        groups.append(x)
-        allowed = np.multiply(x == False, allowed)
-
-    return groups, agents_map
+    if new:
+        return groups, agents_map
+    else:
+        return groups
 
 
 # Groups according to the algorithm in "Recognizing F-Formations in the Open World"
 # https://ieeexplore.ieee.org/abstract/document/8673233
-def naive_group(predictions, frame, n_people, n_features):
+def naive_group(predictions, n_people, frames, n_features=None, samples=None, new=False):
     groups = []
 
-    A = learned_affinity(n_people, predictions, frame, n_features)
-    A = np.random.randn(n_people, n_people)
+    if new:
+        A, agents_map = learned_affinity_clone(predictions, n_people, frames, samples)
+    else:
+        A = learned_affinity(n_people, predictions, frames, n_features)
     A = A > .5
     for i in range(n_people):
         A[i, i] = True
@@ -171,40 +159,7 @@ def naive_group(predictions, frame, n_people, n_features):
                 A[i, :] = 0
                 A[:, i] = 0
 
-    return groups
-
-
-def naive_group_clone(predictions, n_people, frames, samples):
-    groups = []
-
-    A, agents_map = learned_affinity_clone(predictions, n_people, frames, samples)
-
-    A = A > .5
-    for i in range(n_people):
-        A[i, i] = True
-
-    A = 1 * A
-    while np.sum(A) > 0:
-        most_overlap = -float("inf")
-        pos = (-1, -1)
-
-        for i in range(n_people - 1):
-            B_i = A[i]
-            for j in range(i + 1, n_people):
-                B_j = A[j]
-                overlap = B_i.dot(B_j)
-
-                if overlap > most_overlap:
-                    most_overlap = overlap
-                    pos = (i, j)
-        if most_overlap <= 0:
-            break
-
-        group = (A[pos[0]] + A[pos[1]]) > .5
-        groups.append(group)
-        for i in range(n_people):
-            if group[i]:
-                A[i, :] = 0
-                A[:, i] = 0
-
-    return groups, agents_map
+    if new:
+        return groups, agents_map
+    else:
+        return groups

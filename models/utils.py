@@ -1,4 +1,3 @@
-import argparse
 import os
 import pickle
 
@@ -12,8 +11,8 @@ from keras.regularizers import l2
 from sklearn.model_selection import train_test_split
 
 from datasets.preparer import read_obsmat
-from models.F1_calc import F1_calc, F1_calc_clone
 from models.DANTE.reformat_data import add_time, import_data
+from models.F1_calc import F1_calc, F1_calc_clone
 
 
 def load_matrix(file):
@@ -23,41 +22,29 @@ def load_matrix(file):
 
 # must have run build_dataset.py first
 def load_data(path):
+    """
+    Loads train, test and val sets
+    :param path: string location of the files to be loaded
+    :return:
+    """
     train = load_matrix(path + '/train.p')
     test = load_matrix(path + '/test.p')
     val = load_matrix(path + '/val.p')
     return test, train, val
 
 
-# creates a new directory to save the model to
-def get_path(dataset, no_pointnet=False):
-    path = 'models/' + dataset
-    if not os.path.isdir(path):
-        os.makedirs(path)
-
-    if no_pointnet:
-        path += '/no_pointnet'
-        if not os.path.isdir(path):
-            os.makedirs(path)
-
-    path = path + '/pair_predictions_'
-    i = 1
-    while True:
-        if not os.path.isdir(path + str(i)):
-            path = path + str(i)
-            os.makedirs(path)
-            print('saving model to ' + path)
-            break
-        else:
-            i += 1
-
-        if i == 10000:
-            raise Exception("ERROR: could not find models directory")
-    return path
-
-
-# gives T=1 and T=2/3 F1 scores
-def predict(data, model, groups, samples, dataset, multi_frame=False, positions=None):
+def predict(data, model, groups, dataset, samples=None, multi_frame=False, positions=None):
+    """
+    Gives T=1 and T=2/3 F1 scores.
+    :param data: data to be used during prediction
+    :param model: model to be used for prediction
+    :param groups: groups at each scene
+    :param dataset: name of dataset
+    :param samples: number of samples per scene pair in dataset
+    :param multi_frame: True if scenes include multiple frames, otherwise False
+    :param positions: data in raw format
+    :return: T=1 and T=2/3 F1 scores
+    """
     if "cocktail_party" in dataset:
         n_people = 6
         n_features = 4
@@ -80,8 +67,11 @@ def predict(data, model, groups, samples, dataset, multi_frame=False, positions=
 
 
 class ValLoss(Callback):
-    # record train and val losses and mse
-    def __init__(self, val_data, dataset, dataset_path, samples, multi_frame=False):
+    """
+    Records train and val losses and mse.
+    """
+
+    def __init__(self, val_data, dataset, dataset_path, samples=None, multi_frame=False):
         super(ValLoss, self).__init__()
         self.val_data = val_data
         self.dataset = dataset
@@ -118,8 +108,8 @@ class ValLoss(Callback):
             self.best_val_mse = logs['val_mse']
             self.best_epoch = epoch
 
-        (f1_two_thirds, _, _,), (f1_one, _, _) = predict(self.val_data, self.model, self.groups, self.samples,
-                                                         self.dataset, self.multi_frame, self.positions)
+        (f1_two_thirds, _, _,), (f1_one, _, _) = predict(self.val_data, self.model, self.groups, self.dataset,
+                                                         self.samples, self.multi_frame, self.positions)
 
         for f1, obj in [(f1_one, self.val_f1_one_obj), (f1_two_thirds, self.val_f1_two_thirds_obj)]:
             if f1 > obj['best_f1']:
@@ -133,52 +123,6 @@ class ValLoss(Callback):
         self.train_mses.append(logs['mse'])
 
 
-# saves the information in the model.history object to a .txt file
-def write_history(file_name, history, test, samples, multi_frame=False):
-    file = open(file_name, 'w+')
-
-    file.write("best_val: " + str(history.best_val_mse))
-    file.write("\nepoch: " + str(history.best_epoch))
-
-    file.write("\nbest_val_f1_1: " + str(history.val_f1_one_obj['best_f1']))
-    file.write("\nepoch: " + str(history.val_f1_one_obj['epoch']))
-    (f1_two_thirds, p_2_3, r_2_3), (f1_one, p_1, r_1) = predict(test, history.val_f1_one_obj['model'],
-                                                                history.groups, samples, history.dataset, multi_frame,
-                                                                history.positions)
-    file.write("\ntest_f1s: " + str(f1_two_thirds) + " " + str(f1_one))
-    file.write('\nprecisions: ' + str(p_2_3) + " " + str(p_1))
-    file.write('\nrecalls: ' + str(r_2_3) + " " + str(r_1))
-
-    file.write("\nbest_val_f1_2/3: " + str(history.val_f1_two_thirds_obj['best_f1']))
-    file.write("\nepoch: " + str(history.val_f1_two_thirds_obj['epoch']))
-    (f1_two_thirds, p_2_3, r_2_3), (f1_one, p_1, r_1) = predict(test, history.val_f1_two_thirds_obj['model'],
-                                                                history.groups, samples, history.dataset, multi_frame,
-                                                                history.positions)
-    file.write("\ntest_f1s: " + str(f1_two_thirds) + " " + str(f1_one))
-    file.write('\nprecisions: ' + str(p_2_3) + " " + str(p_1))
-    file.write('\nrecalls: ' + str(r_2_3) + " " + str(r_1))
-
-    file.write("\ntrain loss:")
-    for loss in history.train_losses:
-        file.write('\n' + str(loss))
-    file.write("\nval loss:")
-    for loss in history.val_losses:
-        file.write('\n' + str(loss))
-    file.write("\ntrain mse:")
-    for loss in history.train_mses:
-        file.write('\n' + str(loss))
-    file.write("\nval mse:")
-    for loss in history.val_mses:
-        file.write('\n' + str(loss))
-    file.write("\nval 1 f1:")
-    for f1 in history.val_f1_one_obj['f1s']:
-        file.write('\n' + str(f1))
-    file.write("\nval 2/3 f1:")
-    for f1 in history.val_f1_two_thirds_obj['f1s']:
-        file.write('\n' + str(f1))
-    file.close()
-
-
 def conv(filters, reg, name=None):
     return Conv2D(filters=filters, kernel_size=1, padding='valid', kernel_initializer="he_normal",
                   use_bias='True', kernel_regularizer=reg, activation=tf.nn.relu, name=name)
@@ -186,6 +130,19 @@ def conv(filters, reg, name=None):
 
 def build_model(reg_amt, drop_amt, max_people, d, global_filters,
                 individual_filters, combined_filters, no_pointnet=False, symmetric=False):
+    """
+    Builds model based on given parameters.
+    :param reg_amt: regularization factor
+    :param drop_amt: dropout rate
+    :param max_people: context size
+    :param d: features
+    :param global_filters: filters for context branch
+    :param individual_filters: filters for pair branch
+    :param combined_filters: filters after concatenation
+    :param no_pointnet: TODO findout
+    :param symmetric: TODO findout
+    :return: model
+    """
     group_inputs = Input(shape=(1, max_people, d))
     pair_inputs = Input(shape=(1, 2, d))
 
@@ -238,152 +195,207 @@ def build_model(reg_amt, drop_amt, max_people, d, global_filters,
 
     model = Model(inputs=[group_inputs, pair_inputs], outputs=affinity)
 
-    opt = Adam(lr=0.0001, beta_1=0.9, beta_2=0.999, decay=1e-5, amsgrad=False, clipvalue=0.5)
+    opt = Adam(learning_rate=0.0001, beta_1=0.9, beta_2=0.999, decay=1e-5, amsgrad=False, clipvalue=0.5)
     model.compile(optimizer=opt, loss="binary_crossentropy", metrics=['mse'])
 
     return model
 
 
+# saves the information in the model.history object to a .txt file
+def write_history(file_name, history, test, samples=None, multi_frame=False):
+    """
+    Writes evaluation metrics in file.
+    :param file_name:
+    :param history: ValLoss to retrieve model and other parameters
+    :param test: test dataset to be evaluated on
+    :param samples: number of samples per scene pair in dataset
+    :param multi_frame: True if scenes include multiple frames, otherwise False
+    :return: nothing
+    """
+    file = open(file_name, 'w+')
+
+    file.write("best_val: " + str(history.best_val_mse))
+    file.write("\nepoch: " + str(history.best_epoch))
+
+    file.write("\nbest_val_f1_1: " + str(history.val_f1_one_obj['best_f1']))
+    file.write("\nepoch: " + str(history.val_f1_one_obj['epoch']))
+    (f1_two_thirds, p_2_3, r_2_3), (f1_one, p_1, r_1) = predict(test, history.val_f1_one_obj['model'],
+                                                                history.groups, history.dataset, samples, multi_frame,
+                                                                history.positions)
+    file.write("\ntest_f1s: " + str(f1_two_thirds) + " " + str(f1_one))
+    file.write('\nprecisions: ' + str(p_2_3) + " " + str(p_1))
+    file.write('\nrecalls: ' + str(r_2_3) + " " + str(r_1))
+
+    file.write("\nbest_val_f1_2/3: " + str(history.val_f1_two_thirds_obj['best_f1']))
+    file.write("\nepoch: " + str(history.val_f1_two_thirds_obj['epoch']))
+    (f1_two_thirds, p_2_3, r_2_3), (f1_one, p_1, r_1) = predict(test, history.val_f1_two_thirds_obj['model'],
+                                                                history.groups, history.dataset, samples, multi_frame,
+                                                                history.positions)
+    file.write("\ntest_f1s: " + str(f1_two_thirds) + " " + str(f1_one))
+    file.write('\nprecisions: ' + str(p_2_3) + " " + str(p_1))
+    file.write('\nrecalls: ' + str(r_2_3) + " " + str(r_1))
+
+    file.write("\ntrain loss:")
+    for loss in history.train_losses:
+        file.write('\n' + str(loss))
+    file.write("\nval loss:")
+    for loss in history.val_losses:
+        file.write('\n' + str(loss))
+    file.write("\ntrain mse:")
+    for loss in history.train_mses:
+        file.write('\n' + str(loss))
+    file.write("\nval mse:")
+    for loss in history.val_mses:
+        file.write('\n' + str(loss))
+    file.write("\nval 1 f1:")
+    for f1 in history.val_f1_one_obj['f1s']:
+        file.write('\n' + str(f1))
+    file.write("\nval 2/3 f1:")
+    for f1 in history.val_f1_two_thirds_obj['f1s']:
+        file.write('\n' + str(f1))
+    file.close()
+
+
+def get_path(dataset, no_pointnet=False):
+    """
+    # creates a new directory to save the model into.
+    :param dataset: name of dataset
+    :param no_pointnet: TODO findout
+    :return: path
+    """
+    path = 'models/' + dataset
+    if not os.path.isdir(path):
+        os.makedirs(path)
+
+    if no_pointnet:
+        path += '/no_pointnet'
+        if not os.path.isdir(path):
+            os.makedirs(path)
+
+    path = path + '/pair_predictions_'
+    i = 1
+    while True:
+        if not os.path.isdir(path + str(i)):
+            path = path + str(i)
+            os.makedirs(path)
+            print('saving model to ' + path)
+            break
+        else:
+            i += 1
+
+        if i == 10000:
+            raise Exception("ERROR: could not find models directory")
+    return path
+
+
+def save_model_data(dataset, reg, dropout, history, test, samples=None, multi_frame=False, no_pointnet=False):
+    """
+    Save model and metrics to files.
+    :param dataset: name of dataset
+    :param reg: regularization factor
+    :param dropout: dropout rate
+    :param history: ValLoss to retrieve model and other parameters
+    :param test: test dataset to be evaluated on
+    :param samples: number of samples per scene pair in dataset
+    :param multi_frame: True if scenes include multiple frames, otherwise False
+    :param no_pointnet: TODO findout
+    :return: nothing
+    """
+    best_val_mses = []
+    best_val_f1s_one = []
+    best_val_f1s_two_thirds = []
+    best_val_mses.append(history.best_val_mse)
+    best_val_f1s_one.append(history.val_f1_one_obj['best_f1'])
+    best_val_f1s_two_thirds.append(history.val_f1_two_thirds_obj['best_f1'])
+    path = get_path(dataset, no_pointnet)
+    file = open(path + '/architecture.txt', 'w+')
+    file.write("\nreg= " + str(reg) + "\ndropout= " + str(dropout))
+    name = path
+    if not os.path.isdir(name):
+        os.makedirs(name)
+    write_history(name + '/results.txt', history, test, samples, multi_frame)
+    history.val_f1_one_obj['model'].save(name + '/best_val_model.h5')
+    print("saved best val model as " + '/best_val_model.h5')
+    file.write("\n\nbest overall val loss: " + str(min(best_val_mses)))
+    file.write("\nbest val losses per fold: " + str(best_val_mses))
+    file.write("\n\nbest overall f1 1: " + str(max(best_val_f1s_one)))
+    file.write("\nbest f1 1s per fold: " + str(best_val_f1s_one))
+    file.write("\n\nbest overall f1 2/3: " + str(max(best_val_f1s_two_thirds)))
+    file.write("\nbest f1 2/3s per fold: " + str(best_val_f1s_two_thirds))
+    file.close()
+
+
 # constructs a model, trains it with early stopping based on validation loss, and then
 # saves the output to a .txt file.
 def train_and_save_model(global_filters, individual_filters, combined_filters,
-                         train, val, test, epochs, dataset, dataset_path, reg=0.0000001, dropout=.35, fold_num=0,
-                         no_pointnet=False, symmetric=False):
+                         train, test, val, epochs, dataset, dataset_path, samples=None, reg=0.0000001, dropout=.35,
+                         no_pointnet=False, symmetric=False, new=False):
+    """
+    Train and save model based on given parameters.
+    :param global_filters: filters for context branch
+    :param individual_filters: filters for pair branch
+    :param combined_filters: filters after concatenated
+    :param train: train set
+    :param test: test set
+    :param val: val set
+    :param epochs: epochs to train model
+    :param dataset: name of dataset
+    :param dataset_path: path to raw dataset
+    :param samples: number of samples per scene pair in dataset
+    :param reg: regularization factor
+    :param dropout: dropout rate
+    :param no_pointnet: TODO findout
+    :param symmetric: TODO findout
+    :param new: True for new datasets, otherwise False
+    :return: nothing
+    """
     # ensures repeatability
     tf.random.set_seed(0)
     np.random.seed(0)
 
     _, _, max_people, d = train[0][0].shape
-    # save achitecture
-    path = get_path(dataset, no_pointnet)
-    file = open(path + '/architecture.txt', 'w+')
-    file.write("global: " + str(global_filters) + "\nindividual: " +
-               str(individual_filters) + "\ncombined: " + str(combined_filters) +
-               "\nreg= " + str(reg) + "\ndropout= " + str(dropout))
-
-    best_val_mses = []
-    best_val_f1s_one = []
-    best_val_f1s_two_thirds = []
-    X_train, Y_train, timestamps_train = train
-    X_val, Y_val, timestamps_val = val
 
     # build model
     model = build_model(reg, dropout, max_people, d, global_filters, individual_filters, combined_filters,
                         no_pointnet=no_pointnet, symmetric=symmetric)
 
     # train model
-    early_stop = EarlyStopping(monitor='val_loss', patience=50)
-    history = ValLoss(val, dataset, dataset_path, None)
-    print("MODEL IS IN {}".format(path))
     tensorboard = TensorBoard(log_dir='./logs')
-
-    model.fit(X_train, Y_train, epochs=epochs, batch_size=1024,
-              validation_data=(X_val, Y_val), callbacks=[tensorboard, history, early_stop])
-
-    best_val_mses.append(history.best_val_mse)
-    best_val_f1s_one.append(history.val_f1_one_obj['best_f1'])
-    best_val_f1s_two_thirds.append(history.val_f1_two_thirds_obj['best_f1'])
-
-    # save model
-    name = path + '/val_fold_' + str(fold_num)
-    if not os.path.isdir(name):
-        os.makedirs(name)
-
-    write_history(name + '/results.txt', history, test, None)
-
-    history.val_f1_one_obj['model'].save(name + '/best_val_model.h5')
-    print("saved best val model as " + '/best_val_model.h5')
-
-    file.write("\n\nbest overall val loss: " + str(min(best_val_mses)))
-    file.write("\nbest val losses per fold: " + str(best_val_mses))
-
-    file.write("\n\nbest overall f1 1: " + str(max(best_val_f1s_one)))
-    file.write("\nbest f1 1s per fold: " + str(best_val_f1s_one))
-
-    file.write("\n\nbest overall f1 2/3: " + str(max(best_val_f1s_two_thirds)))
-    file.write("\nbest f1 2/3s per fold: " + str(best_val_f1s_two_thirds))
-
-    file.close()
-
-
-# constructs a model, trains it with early stopping based on validation loss, and then
-# saves the output to a .txt file.
-def train_and_save_model_clone(global_filters, individual_filters, combined_filters,
-                               train, test, val, epochs, dataset, dataset_path, samples, reg=0.0000001, dropout=.35,
-                               fold_num=0,
-                               no_pointnet=False, symmetric=False):
-    # ensures repeatability
-    tf.random.set_seed(0)
-    np.random.seed(0)
-
-    _, _, max_people, d = train[0][0].shape
-    # save achitecture
-    path = get_path(dataset, no_pointnet)
-    file = open(path + '/architecture.txt', 'w+')
-    file.write("global: " + str(global_filters) + "\nindividual: " +
-               str(individual_filters) + "\ncombined: " + str(combined_filters) +
-               "\nreg= " + str(reg) + "\ndropout= " + str(dropout))
-
-    best_val_mses = []
-    best_val_f1s_one = []
-    best_val_f1s_two_thirds = []
-    X_train, Y_train, frames_train, groups_train = train
-    X_val, Y_val, frames_val, groups_val = val
-
-    # build model
-    model = build_model(reg, dropout, max_people, d, global_filters, individual_filters, combined_filters,
-                        no_pointnet=no_pointnet, symmetric=symmetric)
-
-    # train model
     early_stop = EarlyStopping(monitor='val_loss', patience=50)
-    history = ValLoss(val, dataset, dataset_path, samples)
-    print("MODEL IS IN {}".format(path))
-    tensorboard = TensorBoard(log_dir='./logs')
+    if new:
+        history = ValLoss(val, dataset, dataset_path, samples)
+    else:
+        history = ValLoss(val, dataset, dataset_path)
 
-    model.fit(X_train, Y_train, epochs=epochs, batch_size=1024,
-              validation_data=(X_val, Y_val),
-              # callbacks=[tensorboard, early_stop]
-              callbacks=[tensorboard, history, early_stop]
-              )
+    model.fit(train[0], train[1], epochs=epochs, batch_size=1024,
+              validation_data=(val[0], val[1]), callbacks=[tensorboard, history, early_stop])
 
-    best_val_mses.append(history.best_val_mse)
-    best_val_f1s_one.append(history.val_f1_one_obj['best_f1'])
-    best_val_f1s_two_thirds.append(history.val_f1_two_thirds_obj['best_f1'])
-
-    # save model
-    name = path + '/val_fold_' + str(fold_num)
-    if not os.path.isdir(name):
-        os.makedirs(name)
-
-    write_history(name + '/results.txt', history, test, samples)
-
-    history.val_f1_one_obj['model'].save(name + '/best_val_model.h5')
-    print("saved best val model as " + '/best_val_model.h5')
-
-    file.write("\n\nbest overall val loss: " + str(min(best_val_mses)))
-    file.write("\nbest val losses per fold: " + str(best_val_mses))
-
-    file.write("\n\nbest overall f1 1: " + str(max(best_val_f1s_one)))
-    file.write("\nbest f1 1s per fold: " + str(best_val_f1s_one))
-
-    file.write("\n\nbest overall f1 2/3: " + str(max(best_val_f1s_two_thirds)))
-    file.write("\nbest f1 2/3s per fold: " + str(best_val_f1s_two_thirds))
-
-    file.close()
+    if new:
+        save_model_data(dataset, reg, dropout, history, test, samples)
+    else:
+        save_model_data(dataset, reg, dropout, history, test)
 
 
-def train_test_split_frames(frames):
+def train_test_split_frames(frames, multi_frame=False):
     """
     Split train, test and val indices.
     :param frames: list of frames
+    :param multi_frame: True if scenes include multiple frames, otherwise False
     :return: train, test and val indices
     """
     frame_ids = [frame[0] for frame in frames]
-    frame_values = np.unique(frame_ids)
-    train, test = train_test_split(frame_values, test_size=0.3, random_state=0)
-    idx_train = [i for i, frame in enumerate(frame_ids) if frame in train]
-    frame_ids_train = [frame[0] for frame in frames[idx_train]]
-    frame_values_train = np.unique(frame_ids_train)
+    if multi_frame:
+        frame_values = [list(x) for x in set(tuple(frame_id) for frame_id in frame_ids)]
+        train, test = train_test_split(frame_values, test_size=0.3, random_state=0)
+        idx_train = [i for i, frame in enumerate(frame_ids) if frame in train]
+        frame_ids_train = [frame[0] for frame in frames[idx_train]]
+        frame_values_train = [list(x) for x in set(tuple(frame_id) for frame_id in frame_ids_train)]
+    else:
+        frame_values = np.unique(frame_ids)
+        train, test = train_test_split(frame_values, test_size=0.3, random_state=0)
+        idx_train = [i for i, frame in enumerate(frame_ids) if frame in train]
+        frame_ids_train = [frame[0] for frame in frames[idx_train]]
+        frame_values_train = np.unique(frame_ids_train)
     train, val = train_test_split(frame_values_train, test_size=0.2, random_state=0)
     idx_train = [i for i, frame in enumerate(frame_ids) if frame in train]
     idx_test = [i for i, frame in enumerate(frame_ids) if frame in test]
@@ -391,34 +403,47 @@ def train_test_split_frames(frames):
     return idx_train, idx_test, idx_val
 
 
-def train_test_split_groups(groups, frames_train, frames_test, frames_val):
+def train_test_split_groups(groups, frames_train, frames_test, frames_val, multi_frame=False):
     """
     Split groups in train, test and val groups.
     :param groups: list of groups per frame
     :param frames_train: list of train frames
     :param frames_test: list of test frames
     :param frames_val: list of val frames
-    :return:
+    :param multi_frame: True if scenes include multiple frames, otherwise False
+    :return: groups split in train, test and val sets
     """
-    frame_ids_train = np.unique([frame[0] for frame in frames_train])
-    frame_ids_test = np.unique([frame[0] for frame in frames_test])
-    frame_ids_val = np.unique([frame[0] for frame in frames_val])
+    if multi_frame:
+        frame_ids_train = [frame[0] for frame in frames_train]
+        frame_ids_train = [list(x) for x in set(tuple(frame_id) for frame_id in frame_ids_train)]
+        frame_ids_test = [frame[0] for frame in frames_test]
+        frame_ids_test = [list(x) for x in set(tuple(frame_id) for frame_id in frame_ids_test)]
+        frame_ids_val = [frame[0] for frame in frames_val]
+        frame_ids_val = [list(x) for x in set(tuple(frame_id) for frame_id in frame_ids_val)]
+    else:
+
+        frame_ids_train = np.unique([frame[0] for frame in frames_train])
+        frame_ids_test = np.unique([frame[0] for frame in frames_test])
+        frame_ids_val = np.unique([frame[0] for frame in frames_val])
     groups_train = [group for group in groups if group[0] in frame_ids_train]
     groups_test = [group for group in groups if group[0] in frame_ids_test]
     groups_val = [group for group in groups if group[0] in frame_ids_val]
     return groups_train, groups_test, groups_val
 
 
-def dante_load(path, agents, features):
-    '''
+def load_dataset(path, agents, features=None, multi_frame=False):
+    """
     Load dataset and reformat it to match model input.
     :param path: string of path to data
     :param agents: number of agents
-    :param features: number of features
-    :return: train and test data
-    '''
+    :param features: number of features, only needed when multi_frame is frame
+    :param multi_frame: True if scenes include multiple frames, otherwise False
+    :return: train, test and val data
+    """
     X = np.load(path + '_data.npy')
-    X = X.reshape((len(X), 1, agents, features))
+    if not multi_frame:
+        X = X.reshape((len(X), 1, agents, features))
+
     y = np.load(path + '_labels.npy')
     frames = np.load(path + '_frames.npy', allow_pickle=True)
     groups = np.load(path + '_groups.npy', allow_pickle=True)
@@ -428,57 +453,16 @@ def dante_load(path, agents, features):
         if frame[0] == frames[0][0] and frame[1] == frames[0][1]:
             samples += 1
 
-    idx_train, idx_test, idx_val = train_test_split_frames(frames)
+    idx_train, idx_test, idx_val = train_test_split_frames(frames, multi_frame)
     groups_train, groups_test, groups_val = \
-        train_test_split_groups(groups, frames[idx_train], frames[idx_test], frames[idx_val])
+        train_test_split_groups(groups, frames[idx_train], frames[idx_test], frames[idx_val], multi_frame)
 
-    train = ([X[idx_train, :, 2:], X[idx_train, :, :2]], y[idx_train], frames[idx_train], groups_train)
-    test = ([X[idx_test, :, 2:], X[idx_test, :, :2]], y[idx_test], frames[idx_test], groups_test)
-    val = ([X[idx_val, :, 2:], X[idx_val, :, :2]], y[idx_val], frames[idx_val], groups_val)
-    return train, test, val, samples
-
-
-def get_args():
-    parser = argparse.ArgumentParser()
-
-    parser.add_argument('-k', '--fold', type=str, default='0')
-    parser.add_argument('-r', '--reg', type=float, default=0.0000001)
-    parser.add_argument('-d', '--dropout', type=float, default=0.35)
-    parser.add_argument('-e', '--epochs', type=int, default=100)
-    parser.add_argument('-f', '--features', type=int, default=4)
-    parser.add_argument('-a', '--agents', type=int, default=10)
-    # parser.add_argument('--dataset', type=str, default="cocktail_party")
-    # parser.add_argument('--dataset_path', type=str, default="../../datasets/cocktail_party")
-    parser.add_argument('--dataset', type=str, default="eth")
-    parser.add_argument('--dataset_path', type=str, default="../../datasets/ETH/seq_eth")
-    parser.add_argument('-p', '--no_pointnet', action="store_true", default=False)
-    parser.add_argument('-s', '--symmetric', action="store_true", default=False)
-
-    return parser.parse_args()
-
-
-if __name__ == "__main__":
-    args = get_args()
-
-    # set model architecture
-    global_filters = [64, 128, 512]
-    individual_filters = [16, 64, 128]
-    combined_filters = [256, 64]
-
-    # get data
-    if args.dataset == 'cocktail_party':
-        test, train, val = load_data("../../datasets/cocktail_party/fold_" + args.fold)
-
-        train_and_save_model(global_filters, individual_filters, combined_filters,
-                             train, val, test, args.epochs, args.dataset, args.dataset_path,
-                             reg=args.reg, dropout=args.dropout, fold_num=args.fold, no_pointnet=args.no_pointnet,
-                             symmetric=args.symmetric)
+    if multi_frame:
+        train = ([X[idx_train, :, i] for i in range(agents)], y[idx_train], frames[idx_train], groups_train)
+        test = ([X[idx_test, :, i] for i in range(agents)], y[idx_test], frames[idx_test], groups_test)
+        val = ([X[idx_val, :, i] for i in range(agents)], y[idx_val], frames[idx_val], groups_val)
     else:
-        train, test, val, samples = dante_load(
-            '../../datasets/reformatted/{}_1_{}'.format(args.dataset, args.agents),
-            args.agents, args.features)
-
-        train_and_save_model_clone(global_filters, individual_filters, combined_filters,
-                                   train, test, val, args.epochs, args.dataset, args.dataset_path, samples,
-                                   reg=args.reg, dropout=args.dropout, fold_num=args.fold, no_pointnet=args.no_pointnet,
-                                   symmetric=args.symmetric)
+        train = ([X[idx_train, :, 2:], X[idx_train, :, :2]], y[idx_train], frames[idx_train], groups_train)
+        test = ([X[idx_test, :, 2:], X[idx_test, :, :2]], y[idx_test], frames[idx_test], groups_test)
+        val = ([X[idx_val, :, 2:], X[idx_val, :, :2]], y[idx_val], frames[idx_val], groups_val)
+    return train, test, val, samples

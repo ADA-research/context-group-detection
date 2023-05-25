@@ -72,5 +72,5 @@ if __name__ == "__main__":
                 print("combined filters:", combined_filters)
                 train_and_save_model(global_filters, individual_filters, combined_filters,
                                      train, val, test, args.epochs, args.dataset,
-                                     reg=reg, dropout=dropout, fold_num=fold, no_pointnet=args.no_pointnet,
+                                     reg=reg, dropout=dropout, no_pointnet=args.no_pointnet,
                                      symmetric=args.symmetric)
