@@ -3,9 +3,15 @@ import numpy as np
 
 # functions to execute dominant sets clustering algorithm
 # http://homepage.tudelft.nl/3e2t5/HungKrose_ICMI2011.pdf
-
-# fills an n_people x n_people matrix with affinity values.
 def learned_affinity(truth_arr, n_people, frame, n_features):
+    """
+    Fills an n_people x n_people matrix with affinity values.
+    :param truth_arr: predicted affinities
+    :param n_people: number of agents
+    :param frame: timestamp to examine
+    :param n_features: number of features
+    :return:
+    """
     A = np.zeros((n_people, n_people))
     idx = 0
     for i in range(n_people):
@@ -24,6 +30,14 @@ def learned_affinity(truth_arr, n_people, frame, n_features):
 
 
 def learned_affinity_clone(truth_arr, n_people, frames, samples):
+    """
+    Fills an n_people x n_people matrix with affinity values.
+    :param truth_arr: predicted affinities
+    :param n_people: number of agents
+    :param frames: frames included in examined scene
+    :param samples: number of samples per scene pair in dataset
+    :return:
+    """
     A = np.zeros((n_people, n_people))
 
     frame_pairs = [frame[1] for frame in frames]
@@ -39,6 +53,11 @@ def learned_affinity_clone(truth_arr, n_people, frames, samples):
     A = A / samples
 
     return A, {value: key for key, value in agents_map.items()}
+
+
+# optimization function
+def f(x, A):
+    return np.dot(x.T, np.dot(A, x))
 
 
 # d-sets function k
@@ -70,11 +89,6 @@ def weight(S, i, A):
         return sum_weights
 
 
-# optimization function
-def f(x, A):
-    return np.dot(x.T, np.dot(A, x))
-
-
 # iteratively finds vector x which maximizes f
 def vector_climb(A, allowed, n_people, original_A, thres=1e-5):
     x = np.random.uniform(0, 1, n_people)
@@ -95,8 +109,17 @@ def vector_climb(A, allowed, n_people, original_A, thres=1e-5):
     return groups
 
 
-# Finds vectors x of people which maximize f. Then removes those people and repeats
 def iterate_climb_learned(predictions, n_people, frames, n_features=None, samples=None, new=False):
+    """
+    Finds vectors x of people which maximize f. Then removes those people and repeats.
+    :param predictions: model predicted affinities
+    :param n_people: number of agents
+    :param frames: frames included in examined scene
+    :param n_features: number of features
+    :param samples: number of samples per scene pair in dataset
+    :param new: True if new functionality is being used, otherwise False
+    :return: groups (+ agent mapping for new functionality)
+    """
     allowed = np.ones(n_people)
     groups = []
 
