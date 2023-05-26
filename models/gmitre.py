@@ -1,17 +1,3 @@
-def indices_to_clusters(indices):
-    """
-    args:
-        indices: indices of clusters, e.g.. [0,0,1,1]
-    return: clusters, e.g. [(0,1),(2,3)]
-    """
-    d = dict()
-    for i, v in enumerate(indices):
-        d[v] = d.get(v, [])
-        d[v].append(i)
-    clusters = list(d.values())
-    return clusters
-
-
 def compute_mitre(a, b):
     """
     compute mitre 
@@ -85,6 +71,20 @@ def compute_groupMitre(target, predict):
 def compute_gmitre_loss(target, predict):
     _, _, f1 = compute_groupMitre(target, predict)
     return 1 - f1
+
+
+def indices_to_clusters(indices):
+    """
+    args:
+        indices: indices of clusters, e.g.. [0,0,1,1]
+    return: clusters, e.g. [(0,1),(2,3)]
+    """
+    d = dict()
+    for i, v in enumerate(indices):
+        d[v] = d.get(v, [])
+        d[v].append(i)
+    clusters = list(d.values())
+    return clusters
 
 
 def compute_groupMitre_labels(target, predict):
