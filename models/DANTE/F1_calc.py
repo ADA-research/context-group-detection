@@ -14,7 +14,7 @@ def F1_calc(group_threshold, affinities, times, groups, positions, n_people, n_f
     :param n_features: number of features
     :param non_reusable: if predicted groups can be reused
     :param dominant_sets: True if dominant sets algorithm will be used, otherwise False a naive grouping algorithm is used
-    :return: average F1
+    :return: F1, precision, recall
     """
     T = group_threshold
     avg_results = np.array([0.0, 0.0])
@@ -61,11 +61,11 @@ def F1_calc(group_threshold, affinities, times, groups, positions, n_people, n_f
     avg_results /= num_times
 
     if avg_results[0] * avg_results[1] == 0:
-        f1_avg = 0
+        f1 = 0
     else:
-        f1_avg = float(2) * avg_results[0] * avg_results[1] / (avg_results[0] + avg_results[1])
+        f1 = float(2) * avg_results[0] * avg_results[1] / (avg_results[0] + avg_results[1])
 
-    return f1_avg, avg_results[0], avg_results[1]
+    return f1, avg_results[0], avg_results[1]
 
 
 def F1_calc_clone(group_threshold, affinities, frames, groups, positions, samples, multi_frame=False,
@@ -81,7 +81,7 @@ def F1_calc_clone(group_threshold, affinities, frames, groups, positions, sample
     :param multi_frame: True if scenes include multiple frames, otherwise False
     :param non_reusable: if predicted groups can be reused
     :param dominant_sets: True if dominant sets algorithm will be used, otherwise False
-    :return: average F1
+    :return: F1, precision, recall
     """
     T = group_threshold
     avg_results = np.array([0.0, 0.0])
@@ -123,11 +123,11 @@ def F1_calc_clone(group_threshold, affinities, frames, groups, positions, sample
     avg_results /= num_times
 
     if avg_results[0] * avg_results[1] == 0:
-        f1_avg = 0
+        f1 = 0
     else:
-        f1_avg = float(2) * avg_results[0] * avg_results[1] / (avg_results[0] + avg_results[1])
+        f1 = float(2) * avg_results[0] * avg_results[1] / (avg_results[0] + avg_results[1])
 
-    return f1_avg, avg_results[0], avg_results[1]
+    return f1, avg_results[0], avg_results[1]
 
 
 def group_correctness(guesses, truth, T, non_reusable=False):
