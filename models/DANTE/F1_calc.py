@@ -1,19 +1,22 @@
 from models.DANTE.dominant_sets import *
 
 
-# group_thres = T in most papers. The threshold for a correctly detected group
-# affinities = rows of affinity predictions
-# times = corresponding times
-# Groups_at_time = dictionary from time to groups
-# Positions = matrix of features at times. Form of row: time, ID001, x, y, ....
-# ds_precision_thres = threshold for ending iterative dominant sets matrix algorithm. standard value is 1e-5
-# n_features = number of features per person in Positions matrix, including name. eg (ID001, x, y, theta) is 4 features
-# non_resuable = flag to set. if True, can't get multiple true groups with the same guess if the accuracy meets the threshold 
-# 					for multiple GT groups with the same guess
-# dominant_sets = flag to set. if True, uses dominant sets algorithm. if False, uses a naive grouping algorithm
-def F1_calc(group_thres, affinities, times, Groups_at_time, Positions, n_people, n_features, non_reusable=False,
+def F1_calc(group_threshold, affinities, times, groups, positions, n_people, n_features, non_reusable=False,
             dominant_sets=True):
-    T = group_thres
+    """
+    Calculates average F1 for given threshold T.
+    :param group_threshold: threshold for group to be considered correctly detected
+    :param affinities: predicted affinities
+    :param times: list of timestamps
+    :param groups: list of groups per timestamp
+    :param positions: data in raw format
+    :param n_people: number of agents
+    :param n_features: number of features
+    :param non_reusable: if predicted groups can be reused
+    :param dominant_sets: True if dominant sets algorithm will be used, otherwise False a naive grouping algorithm is used
+    :return: average F1
+    """
+    T = group_threshold
     avg_results = np.array([0.0, 0.0])
 
     # this assumes affinities and times are the same length
@@ -41,8 +44,8 @@ def F1_calc(group_thres, affinities, times, Groups_at_time, Positions, n_people,
         predictions = affinities[start_idx:end_idx].flatten()
 
         time = times[start_idx].split(':')[0]
-        frame_idx = list(Positions[:, 0]).index(time)
-        frame = Positions[frame_idx]
+        frame_idx = list(positions[:, 0]).index(time)
+        frame = positions[frame_idx]
 
         if dominant_sets:
             bool_groups = iterate_climb_learned(predictions, n_people, frame, n_features=n_features)
@@ -50,7 +53,7 @@ def F1_calc(group_thres, affinities, times, Groups_at_time, Positions, n_people,
             bool_groups = naive_group(predictions, n_people, frame, n_features=n_features)
 
         TP_n, FN_n, FP_n, precision, recall = \
-            group_correctness(group_names(bool_groups, n_people), Groups_at_time[time], T, non_reusable=non_reusable)
+            group_correctness(group_names(bool_groups, n_people), groups[time], T, non_reusable=non_reusable)
 
         avg_results += np.array([precision, recall])
         start_idx = end_idx
@@ -65,9 +68,22 @@ def F1_calc(group_thres, affinities, times, Groups_at_time, Positions, n_people,
     return f1_avg, avg_results[0], avg_results[1]
 
 
-def F1_calc_clone(group_thres, affinities, frames, groups, positions, samples, multi_frame=False, non_reusable=False,
-                  dominant_sets=True):
-    T = group_thres
+def F1_calc_clone(group_threshold, affinities, frames, groups, positions, samples, multi_frame=False,
+                  non_reusable=False, dominant_sets=True):
+    """
+    Calculates average F1 for given threshold T.
+    :param group_threshold: threshold for group to be considered correctly detected
+    :param affinities: predicted affinities
+    :param frames: list of frames
+    :param groups: list of groups per scene
+    :param positions: data in raw format
+    :param samples: number of samples per scene pair in dataset
+    :param multi_frame: True if scenes include multiple frames, otherwise False
+    :param non_reusable: if predicted groups can be reused
+    :param dominant_sets: True if dominant sets algorithm will be used, otherwise False
+    :return: average F1
+    """
+    T = group_threshold
     avg_results = np.array([0.0, 0.0])
 
     num_times = 1
@@ -114,9 +130,16 @@ def F1_calc_clone(group_thres, affinities, frames, groups, positions, samples, m
     return f1_avg, avg_results[0], avg_results[1]
 
 
-# calculates true positives, false negatives, and false positives
-# given the guesses, the true groups, and the threshold T
 def group_correctness(guesses, truth, T, non_reusable=False):
+    """
+    Calculates true positives, false negatives, and false positives.
+    Given the guesses, the true groups, and the threshold T.
+    :param guesses: predicted groups
+    :param truth: ground truth groups
+    :param T: threshold for group to be considered correctly detected
+    :param non_reusable: if predicted groups can be reused
+    :return: true positives, false negatives, false positives, precision, recall
+    """
     n_true_groups = len(truth)
     n_guess_groups = len(guesses)
 
@@ -164,9 +187,13 @@ def group_correctness(guesses, truth, T, non_reusable=False):
         return TP, FN, FP, precision, recall
 
 
-# for a set of vectors of the form [0,1,0,...,1], return a set of vectors of group names
-# for more efficiency later, we should represent groups the first way, but for now we do this
 def group_names(bool_groups, n_people):
+    """
+    For a set of vectors of the form [0,1,0,...,1], return a set of vectors of group names.
+    :param bool_groups: list of lists, each list shows which agents are included in a group.
+    :param n_people: number of agents in the scene
+    :return: groups with agent ids
+    """
     groups = []
     for bool_group in bool_groups:
         group = []
@@ -178,6 +205,13 @@ def group_names(bool_groups, n_people):
 
 
 def group_names_clone(bool_groups, agents_map, n_people):
+    """
+    For a set of vectors of the form [0,1,0,...,1], return a set of vectors of group names.
+    :param bool_groups: list of lists, each list shows which agents are included in a group.
+    :param agents_map: mapping of indices to agent ids
+    :param n_people: number of agents in the scene
+    :return: groups with agent ids
+    """
     groups = []
     for bool_group in bool_groups:
         group = []
