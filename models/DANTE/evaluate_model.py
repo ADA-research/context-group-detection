@@ -6,7 +6,7 @@ import keras
 import numpy as np
 import tensorflow as tf
 
-from models.F1_calc import F1_calc
+from models.DANTE.F1_calc import F1_calc
 from reformat_data import add_time, import_data
 from models.utils import load_data
 
