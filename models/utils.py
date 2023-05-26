@@ -329,7 +329,7 @@ def save_model_data(dataset, reg, dropout, history, test, samples=None, multi_fr
 # saves the output to a .txt file.
 def train_and_save_model(global_filters, individual_filters, combined_filters,
                          train, test, val, epochs, dataset, dataset_path, samples=None, reg=0.0000001, dropout=.35,
-                         no_pointnet=False, symmetric=False, new=False):
+                         no_pointnet=False, symmetric=False, new=False, batch_size=64, patience=50):
     """
     Train and save model based on given parameters.
     :param global_filters: filters for context branch
@@ -347,6 +347,8 @@ def train_and_save_model(global_filters, individual_filters, combined_filters,
     :param no_pointnet: TODO findout
     :param symmetric: TODO findout
     :param new: True for new datasets, otherwise False
+    :param batch_size: batch size used in training of model
+    :param patience: number of epochs to be used in EarlyStopping callback
     :return: nothing
     """
     # ensures repeatability
@@ -361,13 +363,13 @@ def train_and_save_model(global_filters, individual_filters, combined_filters,
 
     # train model
     tensorboard = TensorBoard(log_dir='./logs')
-    early_stop = EarlyStopping(monitor='val_loss', patience=50)
+    early_stop = EarlyStopping(monitor='val_loss', patience=patience)
     if new:
         history = ValLoss(val, dataset, dataset_path, samples)
     else:
         history = ValLoss(val, dataset, dataset_path)
 
-    model.fit(train[0], train[1], epochs=epochs, batch_size=1024,
+    model.fit(train[0], train[1], epochs=epochs, batch_size=batch_size,
               validation_data=(val[0], val[1]), callbacks=[tensorboard, history, early_stop])
 
     if new:
