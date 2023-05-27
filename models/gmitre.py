@@ -97,3 +97,9 @@ def compute_groupMitre_labels(target, predict):
     predict = indices_to_clusters(predict)
     recall, precision, f1 = compute_groupMitre(target, predict)
     return recall, precision, f1
+
+
+def GMitre_calc(guesses, truth):
+    # TODO modify + check if it needs to be changed
+    return 0, 0, 1
+    # return compute_groupMitre(truth, guesses)

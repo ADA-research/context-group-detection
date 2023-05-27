@@ -101,6 +101,7 @@ def get_args():
     parser.add_argument('-r', '--reg', type=float, default=0.0000001)
     parser.add_argument('-drop', '--dropout', type=float, default=0.35)
     parser.add_argument('-lr', '--learning_rate', type=float, default=0.0001)
+    parser.add_argument('-gm', '--gmitre_calc', action="store_true", default=False)
 
     return parser.parse_args()
 
@@ -119,9 +120,9 @@ if __name__ == '__main__':
 
     tensorboard = TensorBoard(log_dir='./logs')
     early_stop = EarlyStopping(monitor='val_loss', patience=5)
-    history = ValLoss(val, args.dataset, args.dataset_path, samples, True)
+    history = ValLoss(val, args.dataset, args.dataset_path, samples, True, args.gmitre_calc)
 
     model.fit(train[0], train[1], epochs=args.epochs, batch_size=args.batch_size,
               validation_data=(val[0], val[1]), callbacks=[tensorboard, early_stop, history])
 
-    save_model_data(args.dataset, args.reg, args.dropout, history, test, samples, True)
+    save_model_data(args.dataset, args.reg, args.dropout, history, test, samples, True, gmitre_calc=args.gmitre_calc)

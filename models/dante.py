@@ -18,6 +18,7 @@ def get_args():
     parser.add_argument('--dataset_path', type=str, default="../datasets/ETH/seq_eth")
     parser.add_argument('-p', '--no_pointnet', action="store_true", default=False)
     parser.add_argument('-s', '--symmetric', action="store_true", default=False)
+    parser.add_argument('-gm', '--gmitre_calc', action="store_true", default=False)
 
     return parser.parse_args()
 
@@ -37,7 +38,7 @@ if __name__ == "__main__":
         train_and_save_model(global_filters, individual_filters, combined_filters,
                              train, test, val, args.epochs, args.dataset, args.dataset_path,
                              reg=args.reg, dropout=args.dropout, no_pointnet=args.no_pointnet,
-                             symmetric=args.symmetric)
+                             symmetric=args.symmetric, gmitre_calc=args.gmitre_calc)
     else:
         train, test, val, samples = load_dataset(
             '../datasets/reformatted/{}_1_{}'.format(args.dataset, args.agents),
@@ -46,4 +47,4 @@ if __name__ == "__main__":
         train_and_save_model(global_filters, individual_filters, combined_filters,
                              train, test, val, args.epochs, args.dataset, args.dataset_path, samples,
                              reg=args.reg, dropout=args.dropout, no_pointnet=args.no_pointnet,
-                             symmetric=args.symmetric, new=True)
+                             symmetric=args.symmetric, new=True, gmitre_calc=args.gmitre_calc)

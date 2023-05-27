@@ -11,8 +11,8 @@ from keras.regularizers import l2
 from sklearn.model_selection import train_test_split
 
 from datasets.preparer import read_obsmat
-from models.DANTE.reformat_data import add_time, import_data
 from models.DANTE.F1_calc import F1_calc, F1_calc_clone
+from models.DANTE.reformat_data import add_time, import_data
 
 
 def load_matrix(file):
@@ -33,7 +33,7 @@ def load_data(path):
     return test, train, val
 
 
-def predict(data, model, groups, dataset, samples=None, multi_frame=False, positions=None):
+def predict(data, model, groups, dataset, samples=None, multi_frame=False, positions=None, gmitre_calc=False):
     """
     Gives T=1 and T=2/3 F1 scores.
     :param data: data to be used during prediction
@@ -43,6 +43,7 @@ def predict(data, model, groups, dataset, samples=None, multi_frame=False, posit
     :param samples: number of samples per scene pair in dataset
     :param multi_frame: True if scenes include multiple frames, otherwise False
     :param positions: data in raw format
+    :param gmitre_calc: True if group mitre should be calculated, otherwise False
     :return: T=1 and T=2/3 F1 scores
     """
     if "cocktail_party" in dataset:
@@ -52,8 +53,7 @@ def predict(data, model, groups, dataset, samples=None, multi_frame=False, posit
         X, y, frames = data
         predictions = model.predict(X)
 
-        return F1_calc(2 / 3, predictions, frames, groups, positions, n_people, n_features), \
-            F1_calc(1, predictions, frames, groups, positions, n_people, n_features)
+        return F1_calc([2 / 3, 1], predictions, frames, groups, positions, n_people, n_features)
     elif dataset in ["eth", "hotel", "zara01", "zara02", "students03"]:
         pass
     else:
@@ -62,8 +62,8 @@ def predict(data, model, groups, dataset, samples=None, multi_frame=False, posit
     X, y, frames, groups = data
     predictions = model.predict(X)
 
-    return F1_calc_clone(2 / 3, predictions, frames, groups, positions, samples, multi_frame), \
-        F1_calc_clone(1, predictions, frames, groups, positions, samples, multi_frame)
+    return F1_calc_clone([2 / 3, 1], predictions, frames, groups, positions, samples, multi_frame=multi_frame,
+                         gmitre_calc=gmitre_calc)
 
 
 class ValLoss(Callback):
@@ -71,13 +71,14 @@ class ValLoss(Callback):
     Records train and val losses and mse.
     """
 
-    def __init__(self, val_data, dataset, dataset_path, samples=None, multi_frame=False):
+    def __init__(self, val_data, dataset, dataset_path, samples=None, multi_frame=False, gmitre_calc=False):
         super(ValLoss, self).__init__()
         self.val_data = val_data
         self.dataset = dataset
         self.dataset_path = dataset_path
         self.samples = samples
         self.multi_frame = multi_frame
+        self.gmitre_calc = gmitre_calc
 
         # each dataset has different params and possibly different F1 calc code
         if dataset in ["cocktail_party"]:
@@ -95,6 +96,7 @@ class ValLoss(Callback):
 
         self.val_f1_one_obj = {"f1s": [], "best_f1": float('-inf')}
         self.val_f1_two_thirds_obj = {"f1s": [], "best_f1": float('-inf')}
+        self.val_f1_gmitre_obj = {"f1s": [], "best_f1": float('-inf')}
 
         self.val_losses = []
         self.train_losses = []
@@ -108,10 +110,12 @@ class ValLoss(Callback):
             self.best_val_mse = logs['val_mse']
             self.best_epoch = epoch
 
-        (f1_two_thirds, _, _,), (f1_one, _, _) = predict(self.val_data, self.model, self.groups, self.dataset,
-                                                         self.samples, self.multi_frame, self.positions)
+        results = predict(self.val_data, self.model, self.groups, self.dataset, self.samples, self.multi_frame,
+                          self.positions, self.gmitre_calc)
 
-        for f1, obj in [(f1_one, self.val_f1_one_obj), (f1_two_thirds, self.val_f1_two_thirds_obj)]:
+        objs = [self.val_f1_one_obj, self.val_f1_two_thirds_obj, self.val_f1_gmitre_obj]
+        for result, obj in zip(results, objs):
+            f1 = result[0]
             if f1 > obj['best_f1']:
                 obj['best_f1'] = f1
                 obj['epoch'] = epoch
@@ -201,8 +205,7 @@ def build_model(reg_amt, drop_amt, max_people, d, global_filters,
     return model
 
 
-# saves the information in the model.history object to a .txt file
-def write_history(file_name, history, test, samples=None, multi_frame=False):
+def write_history(file_name, history, test, samples=None, multi_frame=False, gmitre_calc=False):
     """
     Writes evaluation metrics in file.
     :param file_name:
@@ -210,6 +213,7 @@ def write_history(file_name, history, test, samples=None, multi_frame=False):
     :param test: test dataset to be evaluated on
     :param samples: number of samples per scene pair in dataset
     :param multi_frame: True if scenes include multiple frames, otherwise False
+    :param gmitre_calc: True if group mitre should be calculated, otherwise False
     :return: nothing
     """
     file = open(file_name, 'w+')
@@ -219,21 +223,21 @@ def write_history(file_name, history, test, samples=None, multi_frame=False):
 
     file.write("\nbest_val_f1_1: " + str(history.val_f1_one_obj['best_f1']))
     file.write("\nepoch: " + str(history.val_f1_one_obj['epoch']))
-    (f1_two_thirds, p_2_3, r_2_3), (f1_one, p_1, r_1) = predict(test, history.val_f1_one_obj['model'],
-                                                                history.groups, history.dataset, samples, multi_frame,
-                                                                history.positions)
-    file.write("\ntest_f1s: " + str(f1_two_thirds) + " " + str(f1_one))
-    file.write('\nprecisions: ' + str(p_2_3) + " " + str(p_1))
-    file.write('\nrecalls: ' + str(r_2_3) + " " + str(r_1))
+    results = predict(test, history.val_f1_one_obj['model'], history.groups, history.dataset, samples, multi_frame,
+                      history.positions, gmitre_calc)
+    file.write(' '.join(['\ntest_f1s:', ' '.join([str(result[0]) for result in results])]))
+    file.write(' '.join(['\nprecisions:', ' '.join([str(result[1]) for result in results])]))
+    file.write(' '.join(['\nrecalls:', ' '.join([str(result[2]) for result in results])]))
 
     file.write("\nbest_val_f1_2/3: " + str(history.val_f1_two_thirds_obj['best_f1']))
     file.write("\nepoch: " + str(history.val_f1_two_thirds_obj['epoch']))
-    (f1_two_thirds, p_2_3, r_2_3), (f1_one, p_1, r_1) = predict(test, history.val_f1_two_thirds_obj['model'],
-                                                                history.groups, history.dataset, samples, multi_frame,
-                                                                history.positions)
-    file.write("\ntest_f1s: " + str(f1_two_thirds) + " " + str(f1_one))
-    file.write('\nprecisions: ' + str(p_2_3) + " " + str(p_1))
-    file.write('\nrecalls: ' + str(r_2_3) + " " + str(r_1))
+    results = predict(test, history.val_f1_two_thirds_obj['model'], history.groups, history.dataset, samples,
+                      multi_frame, history.positions, gmitre_calc)
+    file.write(' '.join(['\ntest_f1s:', ' '.join([str(result[0]) for result in results])]))
+    file.write(' '.join(['\nprecisions:', ' '.join([str(result[1]) for result in results])]))
+    file.write(' '.join(['\nrecalls:', ' '.join([str(result[2]) for result in results])]))
+
+    # TODO add results for best gmitre model + modify final format
 
     file.write("\ntrain loss:")
     for loss in history.train_losses:
@@ -253,6 +257,10 @@ def write_history(file_name, history, test, samples=None, multi_frame=False):
     file.write("\nval 2/3 f1:")
     for f1 in history.val_f1_two_thirds_obj['f1s']:
         file.write('\n' + str(f1))
+    if gmitre_calc:
+        file.write("\nval gmitre f1:")
+        for f1 in history.val_f1_gmitre_obj['f1s']:
+            file.write('\n' + str(f1))
     file.close()
 
 
@@ -288,7 +296,8 @@ def get_path(dataset, no_pointnet=False):
     return path
 
 
-def save_model_data(dataset, reg, dropout, history, test, samples=None, multi_frame=False, no_pointnet=False):
+def save_model_data(dataset, reg, dropout, history, test, samples=None, multi_frame=False, no_pointnet=False,
+                    gmitre_calc=False):
     """
     Save model and metrics to files.
     :param dataset: name of dataset
@@ -299,13 +308,16 @@ def save_model_data(dataset, reg, dropout, history, test, samples=None, multi_fr
     :param samples: number of samples per scene pair in dataset
     :param multi_frame: True if scenes include multiple frames, otherwise False
     :param no_pointnet: TODO findout
+    :param gmitre_calc: True if group mitre should be calculated, otherwise False
     :return: nothing
     """
     best_val_mses = []
     best_val_f1s_one = []
+    best_val_f1s_gmitre = []
     best_val_f1s_two_thirds = []
     best_val_mses.append(history.best_val_mse)
     best_val_f1s_one.append(history.val_f1_one_obj['best_f1'])
+    best_val_f1s_gmitre.append(history.val_f1_gmitre_obj['best_f1'])
     best_val_f1s_two_thirds.append(history.val_f1_two_thirds_obj['best_f1'])
     path = get_path(dataset, no_pointnet)
     file = open(path + '/architecture.txt', 'w+')
@@ -313,7 +325,7 @@ def save_model_data(dataset, reg, dropout, history, test, samples=None, multi_fr
     name = path
     if not os.path.isdir(name):
         os.makedirs(name)
-    write_history(name + '/results.txt', history, test, samples, multi_frame)
+    write_history(name + '/results.txt', history, test, samples, multi_frame, gmitre_calc)
     history.val_f1_one_obj['model'].save(name + '/best_val_model.h5')
     print("saved best val model as " + '/best_val_model.h5')
     file.write("\n\nbest overall val loss: " + str(min(best_val_mses)))
@@ -322,14 +334,15 @@ def save_model_data(dataset, reg, dropout, history, test, samples=None, multi_fr
     file.write("\nbest f1 1s per fold: " + str(best_val_f1s_one))
     file.write("\n\nbest overall f1 2/3: " + str(max(best_val_f1s_two_thirds)))
     file.write("\nbest f1 2/3s per fold: " + str(best_val_f1s_two_thirds))
+    if gmitre_calc:
+        file.write("\n\nbest overall f1 gmitre: " + str(max(best_val_f1s_gmitre)))
+        file.write("\nbest f1 gmitres per fold: " + str(best_val_f1s_gmitre))
     file.close()
 
 
-# constructs a model, trains it with early stopping based on validation loss, and then
-# saves the output to a .txt file.
 def train_and_save_model(global_filters, individual_filters, combined_filters,
                          train, test, val, epochs, dataset, dataset_path, samples=None, reg=0.0000001, dropout=.35,
-                         no_pointnet=False, symmetric=False, new=False, batch_size=64, patience=50):
+                         no_pointnet=False, symmetric=False, new=False, batch_size=64, patience=50, gmitre_calc=False):
     """
     Train and save model based on given parameters.
     :param global_filters: filters for context branch
@@ -349,6 +362,7 @@ def train_and_save_model(global_filters, individual_filters, combined_filters,
     :param new: True for new datasets, otherwise False
     :param batch_size: batch size used in training of model
     :param patience: number of epochs to be used in EarlyStopping callback
+    :param gmitre_calc: True if group mitre should be calculated, otherwise False
     :return: nothing
     """
     # ensures repeatability
@@ -373,9 +387,9 @@ def train_and_save_model(global_filters, individual_filters, combined_filters,
               validation_data=(val[0], val[1]), callbacks=[tensorboard, history, early_stop])
 
     if new:
-        save_model_data(dataset, reg, dropout, history, test, samples)
+        save_model_data(dataset, reg, dropout, history, test, samples, gmitre_calc=gmitre_calc)
     else:
-        save_model_data(dataset, reg, dropout, history, test)
+        save_model_data(dataset, reg, dropout, history, test, gmitre_calc=gmitre_calc)
 
 
 def train_test_split_frames(frames, multi_frame=False):

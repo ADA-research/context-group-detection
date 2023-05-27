@@ -1,11 +1,30 @@
 from models.DANTE.dominant_sets import *
+from models.gmitre import compute_groupMitre
 
 
-def F1_calc(group_threshold, affinities, times, groups, positions, n_people, n_features, non_reusable=False,
+def calculate_f1(avg_results, num_times):
+    """
+    Calculates f1 for each metric.
+    :param avg_results: list of tuples (precision, recall)
+    :param num_times: number of frames to be averaged
+    :return: list of tuples (F1, precision, recall)
+    """
+    f1s = []
+    for i in range(len(avg_results)):
+        avg_results[i] = avg_results[i] / num_times
+        if avg_results[i][0] * avg_results[i][1] == 0:
+            f1 = 0
+        else:
+            f1 = float(2) * avg_results[i][0] * avg_results[i][1] / (avg_results[i][0] + avg_results[i][1])
+        f1s.append(f1)
+    return [(f1s[i], avg_result[0], avg_result[1]) for i, avg_result in enumerate(avg_results)]
+
+
+def F1_calc(group_thresholds, affinities, times, groups, positions, n_people, n_features, non_reusable=False,
             dominant_sets=True):
     """
     Calculates average F1 for given threshold T.
-    :param group_threshold: threshold for group to be considered correctly detected
+    :param group_thresholds: threshold for group to be considered correctly detected
     :param affinities: predicted affinities
     :param times: list of timestamps
     :param groups: list of groups per timestamp
@@ -16,8 +35,7 @@ def F1_calc(group_threshold, affinities, times, groups, positions, n_people, n_f
     :param dominant_sets: True if dominant sets algorithm will be used, otherwise False a naive grouping algorithm is used
     :return: F1, precision, recall
     """
-    T = group_threshold
-    avg_results = np.array([0.0, 0.0])
+    avg_results = [np.array([0.0, 0.0]), np.array([0.0, 0.0])]
 
     # this assumes affinities and times are the same length
     done = False
@@ -52,27 +70,22 @@ def F1_calc(group_threshold, affinities, times, groups, positions, n_people, n_f
         else:
             bool_groups = naive_group(predictions, n_people, frame, n_features=n_features)
 
-        TP_n, FN_n, FP_n, precision, recall = \
-            group_correctness(group_names(bool_groups, n_people), groups[time], T, non_reusable=non_reusable)
+        for i, T in enumerate(group_thresholds):
+            _, _, _, precision, recall = group_correctness(
+                group_names(bool_groups, n_people), groups[time], T, non_reusable=non_reusable)
+            avg_results[i] += np.array([precision, recall])
 
-        avg_results += np.array([precision, recall])
         start_idx = end_idx
 
-    avg_results /= num_times
-
-    if avg_results[0] * avg_results[1] == 0:
-        f1 = 0
-    else:
-        f1 = float(2) * avg_results[0] * avg_results[1] / (avg_results[0] + avg_results[1])
-
-    return f1, avg_results[0], avg_results[1]
+    return calculate_f1(avg_results, num_times)
 
 
-def F1_calc_clone(group_threshold, affinities, frames, groups, positions, samples, multi_frame=False,
-                  non_reusable=False, dominant_sets=True):
+def F1_calc_clone(group_thresholds, affinities, frames, groups, positions, samples, multi_frame=False,
+                  non_reusable=False,
+                  dominant_sets=True, gmitre_calc=False):
     """
-    Calculates average F1 for given threshold T.
-    :param group_threshold: threshold for group to be considered correctly detected
+    Calculates average F1 for thresholds 2/3, 1 and group mitre.
+    :param group_thresholds: threshold for group to be considered correctly detected
     :param affinities: predicted affinities
     :param frames: list of frames
     :param groups: list of groups per scene
@@ -81,10 +94,10 @@ def F1_calc_clone(group_threshold, affinities, frames, groups, positions, sample
     :param multi_frame: True if scenes include multiple frames, otherwise False
     :param non_reusable: if predicted groups can be reused
     :param dominant_sets: True if dominant sets algorithm will be used, otherwise False
-    :return: F1, precision, recall
+    :param gmitre_calc: True if group mitre should be calculated, otherwise False
+    :return: list of F1, precision, recall for T=2/3, T=1 and group mitre
     """
-    T = group_threshold
-    avg_results = np.array([0.0, 0.0])
+    avg_results = [np.array([0.0, 0.0]), np.array([0.0, 0.0]), np.array([0.0, 0.0])]
 
     num_times = 1
     frame_ids = [frame[0] for frame in frames]
@@ -112,22 +125,19 @@ def F1_calc_clone(group_threshold, affinities, frames, groups, positions, sample
             bool_groups, agents_map = naive_group(predictions, n_people, frames[idx], samples=samples, new=True)
 
         groups_at_time = [group[1] for group in groups if group[0] == unique_frame][0]
-        TP_n, FN_n, FP_n, precision, recall = group_correctness(
-            group_names_clone(bool_groups, agents_map, n_people),
-            groups_at_time, T,
-            non_reusable=non_reusable)
-
-        avg_results += np.array([precision, recall])
+        groups_with_names = group_names_clone(bool_groups, agents_map, n_people)
+        if gmitre_calc:
+            group_thresholds.append(None)
+        for i, T in enumerate(group_thresholds):
+            if T is None:
+                precision, recall, _ = compute_groupMitre(groups_at_time, groups_with_names)
+            else:
+                _, _, _, precision, recall = group_correctness(
+                    groups_with_names, groups_at_time, T, non_reusable=non_reusable)
+            avg_results[i] += np.array([precision, recall])
         num_times += 1
 
-    avg_results /= num_times
-
-    if avg_results[0] * avg_results[1] == 0:
-        f1 = 0
-    else:
-        f1 = float(2) * avg_results[0] * avg_results[1] / (avg_results[0] + avg_results[1])
-
-    return f1, avg_results[0], avg_results[1]
+    return calculate_f1(avg_results, num_times)
 
 
 def group_correctness(guesses, truth, T, non_reusable=False):
