@@ -50,20 +50,20 @@ def predict(data, model, groups, dataset, samples=None, multi_frame=False, posit
         n_features = 4
 
         X, y, frames = data
-        preds = model.predict(X)
+        predictions = model.predict(X)
 
-        return F1_calc(2 / 3, preds, frames, groups, positions, n_people, n_features), \
-            F1_calc(1, preds, frames, groups, positions, n_people, n_features)
+        return F1_calc(2 / 3, predictions, frames, groups, positions, n_people, n_features), \
+            F1_calc(1, predictions, frames, groups, positions, n_people, n_features)
     elif dataset in ["eth", "hotel", "zara01", "zara02", "students03"]:
         pass
     else:
         raise Exception("unknown dataset")
 
     X, y, frames, groups = data
-    preds = model.predict(X)
+    predictions = model.predict(X)
 
-    return F1_calc_clone(2 / 3, preds, frames, groups, positions, samples, multi_frame), \
-        F1_calc_clone(1, preds, frames, groups, positions, samples, multi_frame)
+    return F1_calc_clone(2 / 3, predictions, frames, groups, positions, samples, multi_frame), \
+        F1_calc_clone(1, predictions, frames, groups, positions, samples, multi_frame)
 
 
 class ValLoss(Callback):
@@ -156,8 +156,8 @@ def build_model(reg_amt, drop_amt, max_people, d, global_filters,
         y = Dropout(drop_amt)(y)
         y = BatchNormalization()(y)
 
-    y_0 = Lambda(lambda input: tf.slice(input, [0, 0, 0, 0], [-1, -1, 1, -1]))(y)
-    y_1 = Lambda(lambda input: tf.slice(input, [0, 0, 1, 0], [-1, -1, 1, -1]))(y)
+    y_0 = Lambda(lambda inp: tf.slice(inp, [0, 0, 0, 0], [-1, -1, 1, -1]))(y)
+    y_1 = Lambda(lambda inp: tf.slice(inp, [0, 0, 1, 0], [-1, -1, 1, -1]))(y)
 
     if no_pointnet:
         concat = Concatenate(name='concat')([Flatten()(y_0), Flatten()(y_1)])
