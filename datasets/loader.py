@@ -42,11 +42,11 @@ def load_eth(path, **kwargs):
 
 
 def read_obsmat(directory):
-    '''
+    """
     Reads an obsmat.txt file from the given directory and converts it to a dataframe
     :param directory: name of the directory
     :return: dataframe
-    '''
+    """
     columns = ['frame_id', 'agent_id', 'pos_x', 'pos_z', 'pos_y', 'v_x', 'v_z', 'v_y']
     df = pd.read_csv(directory + '/obsmat.txt', sep='\s+', names=columns, header=None)
     df.drop(columns=['pos_z', 'v_z'], inplace=True)
@@ -68,11 +68,12 @@ def read_obsmat(directory):
 
 
 def merge_groups_with_common_agents(agents_in_multiple_groups, groups):
-    '''
+    """
     Merge groups with common agents.
+    :param agents_in_multiple_groups: list of agents that appear in multiple groups
     :param groups: list of lists representing the agent groups
     :return: list of lists without agents being in multiple groups
-    '''
+    """
     for agent in agents_in_multiple_groups:
         group_indices = []
         for i, group in enumerate(groups):
@@ -87,12 +88,12 @@ def merge_groups_with_common_agents(agents_in_multiple_groups, groups):
 
 
 def read_groups(directory):
-    '''
+    """
     Reads a groups.txt file from the given directory and
     converts it to pairs of pedestrians in the same group
     :param directory: name of the directory
     :return: pairs
-    '''
+    """
 
     with open(directory + '/groups.txt') as f:
         groups = [[int(x) for x in line.split()] for line in f if not line.isspace()]
