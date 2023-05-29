@@ -278,12 +278,13 @@ def scene_sample(dataframe, groups, pair_agents, context_agents, frames, data, l
     labels.append(label)
 
 
-def filter_scene_pairs(pairs, group_pairs):
+def get_pairs_sample_rates(pairs, group_pairs, min_pair_samples):
     """
-    Filter pairs in order to have balanced samples.
+    Set sample rate for pairs in same and different groups in order to have balanced samples.
     :param pairs: list of pairs in scene
     :param group_pairs: list of pairs in same group
-    :return: filtered list of pairs
+    :param min_pair_samples: minimum number of samples to get from a pair in a scene
+    :return: list of pairs sample rates
     """
     same = []
     different = []
@@ -293,10 +294,27 @@ def filter_scene_pairs(pairs, group_pairs):
         else:
             different.append(pair)
 
-    return same + random.sample(different, len(same))
+    same_pairs_num = len(same) if len(same) > 0 else 1
+    different_pairs_num = len(different) if len(different) > 0 else 1
+
+    if same_pairs_num > different_pairs_num:
+        same_pairs_sampling_rate = min_pair_samples
+        different_pairs_sampling_rate = int(min_pair_samples * same_pairs_num / different_pairs_num)
+    else:
+        different_pairs_sampling_rate = min_pair_samples
+        same_pairs_sampling_rate = int(min_pair_samples * different_pairs_num / same_pairs_num)
+
+    pairs_sample_rates = []
+    for pair in pairs:
+        if pair in same:
+            pairs_sample_rates.append(same_pairs_sampling_rate)
+        else:
+            pairs_sample_rates.append(different_pairs_sampling_rate)
+
+    return pairs_sample_rates
 
 
-def dataset_reformat(dataframe, groups, group_pairs, frame_comb_data, agents_minimum, scene_samples):
+def dataset_reformat(dataframe, groups, group_pairs, frame_comb_data, agents_minimum, min_pair_samples):
     """
     Gather data from all possible scenes based on given parameters.
     :param dataframe: dataframe to retrieve data
@@ -304,7 +322,7 @@ def dataset_reformat(dataframe, groups, group_pairs, frame_comb_data, agents_min
     :param group_pairs: pairs of agents in the same group
     :param frame_comb_data: valid continuous frame combinations
     :param agents_minimum: minimum agents (pair + context) in a scene
-    :param scene_samples: maximum samples to get from a scene for each pair
+    :param min_pair_samples: minimum samples to get from a scene for each pair
     :return: dataset
     """
     data = []
@@ -317,15 +335,17 @@ def dataset_reformat(dataframe, groups, group_pairs, frame_comb_data, agents_min
         comb_groups = frame_comb['groups']
 
         pairs = list(combinations(comb_agents, 2))
-        # TODO instead of filtering pairs change samples in order to achieve balanced data
-        pairs = filter_scene_pairs(pairs, group_pairs)
-        for pair_agents in pairs:
+        pairs_samples = get_pairs_sample_rates(pairs, group_pairs, min_pair_samples)
+        for pair_agents, pair_samples in zip(pairs, pairs_samples):
             scene_agents = comb_agents - set(pair_agents)
-            for i in range(scene_samples):
+            for i in range(pair_samples):
                 context_agents = random.sample(scene_agents, agents_minimum - 2)
                 scene_sample(dataframe, groups, pair_agents, context_agents, comb_frames, data, labels)
                 frames.append((comb_frames, pair_agents))
+        # TODO need to keep track of samples per scene
+        #  maybe add another array or include information in one of the old ones
         combs_groups.append((comb_frames, comb_groups))
+    # TODO check lengths of different arrays
     return np.asarray(data), np.asarray(labels), np.asarray(frames), np.asarray(combs_groups)
 
 
@@ -348,7 +368,7 @@ def get_args():
     parser.add_argument('-p', '--plot', action="store_true", default=False)
     parser.add_argument('-f', '--frames', type=int, default=10)
     parser.add_argument('-a', '--agents', type=int, default=10)
-    # parser.add_argument('-ss', '--scene_samples', type=int, default=5)
+    parser.add_argument('-ms', '--min_samples', type=int, default=10)
     parser.add_argument('-ts', '--target_size', type=int, default=100000)
     parser.add_argument('-d', '--dataset', type=str, default='eth')
     parser.add_argument('-sf', '--save_folder', type=str, default='./reformatted')
@@ -401,14 +421,10 @@ if __name__ == '__main__':
                                      consecutive_frames=args.frames, difference_between_frames=difference,
                                      groups=groups)
 
-        # estimate samples needed to reach dataset target size
-        agents_avg = sum(len(comb['common_agents']) for comb in combs) / len(combs)
-        samples = int((args.target_size / len(combs)) / agents_avg)
-
         # format dataset to be used by proposed approach
         data, labels, frames, filtered_groups = dataset_reformat(dataframe=df, groups=groups, group_pairs=group_pairs,
                                                                  frame_comb_data=combs, agents_minimum=args.agents,
-                                                                 scene_samples=samples)
+                                                                 min_pair_samples=args.min_samples)
 
         path = '{}/{}_{}_{}_'.format(args.save_folder, dataset, args.frames, args.agents)
         filename = path + 'data.npy'
@@ -422,7 +438,7 @@ if __name__ == '__main__':
 
         end = datetime.now()
         print('Dataset: {}, finished in: {}'.format(dataset, end - dataset_start))
-        print('samples: {}, data: {}'.format(samples, len(data)))
+        # print('samples: {}, data: {}'.format(samples, len(data)))
         dataset_start = end
 
     end = datetime.now()
