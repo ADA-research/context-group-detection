@@ -80,6 +80,23 @@ def F1_calc(group_thresholds, affinities, times, groups, positions, n_people, n_
     return calculate_f1(avg_results, num_times)
 
 
+def include_single_agent_groups(groups_at_time, agents):
+    """
+    Look for agent in groups and if agent is not found add him as a single agent group.
+    :param groups_at_time: groups of a scene
+    :param agents: agents that appear in the scene
+    :return:
+    """
+    for agent in agents:
+        found = False
+        for group in groups_at_time:
+            if agent in group:
+                found = True
+                break
+        if not found:
+            groups_at_time.append([agent])
+
+
 def F1_calc_clone(group_thresholds, affinities, frames, groups, positions, samples, multi_frame=False,
                   non_reusable=False, dominant_sets=True, gmitre_calc=False):
     """
@@ -126,7 +143,9 @@ def F1_calc_clone(group_thresholds, affinities, frames, groups, positions, sampl
             bool_groups, agents_map = naive_group(predictions, n_people, frames[idx], samples=samples, new=True)
 
         groups_at_time = [group[1] for group in groups if group[0] == unique_frame][0]
+        include_single_agent_groups(groups_at_time, agents_map.values())
         predicted_groups = group_names_clone(bool_groups, agents_map, n_people)
+        include_single_agent_groups(predicted_groups, agents_map.values())
         for i, T in enumerate(group_thresholds):
             if T is None:
                 precision, recall, _ = compute_groupMitre(groups_at_time, predicted_groups)

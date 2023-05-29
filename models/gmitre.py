@@ -56,6 +56,8 @@ def compute_groupMitre(target, predict):
       target,predict: list of groups; [[0,1],[2],[3,4]]
     return: recall, precision, F1
     """
+    # TODO fix precision and recall over 1
+    #  need to include single groups in the calculation
     # create fake counter agents
     target_p = create_counterPart(target)
     predict_p = create_counterPart(predict)
