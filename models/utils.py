@@ -464,6 +464,7 @@ def load_dataset(path, agents, features=None, multi_frame=False):
     frames = np.load(path + '_frames.npy', allow_pickle=True)
     groups = np.load(path + '_groups.npy', allow_pickle=True)
 
+    # TODO remove samples counting
     samples = 0
     for frame in frames:
         if frame[0] == frames[0][0] and frame[1] == frames[0][1]:
