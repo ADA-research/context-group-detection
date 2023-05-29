@@ -294,15 +294,16 @@ def get_pairs_sample_rates(pairs, group_pairs, min_pair_samples):
         else:
             different.append(pair)
 
-    same_pairs_num = len(same) if len(same) > 0 else 1
-    different_pairs_num = len(different) if len(different) > 0 else 1
+    same_pairs_num = len(same)
+    different_pairs_num = len(different)
 
     if same_pairs_num > different_pairs_num:
         same_pairs_sampling_rate = min_pair_samples
         different_pairs_sampling_rate = int(min_pair_samples * same_pairs_num / different_pairs_num)
     else:
         different_pairs_sampling_rate = min_pair_samples
-        same_pairs_sampling_rate = int(min_pair_samples * different_pairs_num / same_pairs_num)
+        same_pairs_sampling_rate = \
+            int(min_pair_samples * different_pairs_num / same_pairs_num) if same_pairs_num > 0 else 0
 
     pairs_sample_rates = []
     for pair in pairs:
@@ -384,11 +385,11 @@ if __name__ == '__main__':
 
     # create datasets report
     datasets_dict = {
-        'eth': dataset_data('./ETH/seq_eth'),
+        # 'eth': dataset_data('./ETH/seq_eth'),
         'hotel': dataset_data('./ETH/seq_hotel'),
-        'zara01': dataset_data('./UCY/zara01'),
-        'zara02': dataset_data('./UCY/zara02'),
-        'students03': dataset_data('./UCY/students03')
+        # 'zara01': dataset_data('./UCY/zara01'),
+        # 'zara02': dataset_data('./UCY/zara02'),
+        # 'students03': dataset_data('./UCY/students03')
     }
     if args.report:
         report('datasets.xlsx', datasets_dict)
