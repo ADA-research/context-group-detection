@@ -97,6 +97,7 @@ def include_single_agent_groups(groups_at_time, agents):
             groups_at_time.append([agent])
 
 
+# TODO change because of sample rate change
 def F1_calc_clone(group_thresholds, affinities, frames, groups, positions, samples, multi_frame=False,
                   non_reusable=False, dominant_sets=True, gmitre_calc=False):
     """
