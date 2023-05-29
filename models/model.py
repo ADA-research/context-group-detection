@@ -101,7 +101,7 @@ def get_args():
     parser.add_argument('-r', '--reg', type=float, default=0.0000001)
     parser.add_argument('-drop', '--dropout', type=float, default=0.35)
     parser.add_argument('-lr', '--learning_rate', type=float, default=0.0001)
-    parser.add_argument('-gm', '--gmitre_calc', action="store_true", default=False)
+    parser.add_argument('-gm', '--gmitre_calc', action="store_true", default=True)
 
     return parser.parse_args()
 
