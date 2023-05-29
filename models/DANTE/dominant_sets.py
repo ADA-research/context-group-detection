@@ -50,6 +50,7 @@ def learned_affinity_clone(truth_arr, n_people, frames, samples):
         A[i, j] += truth_arr[idx]
         A[j, i] += truth_arr[idx]
 
+    # TODO remove samples or calculate them here
     A = A / samples
 
     return A, {value: key for key, value in agents_map.items()}
