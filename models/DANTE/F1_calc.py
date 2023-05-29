@@ -81,8 +81,7 @@ def F1_calc(group_thresholds, affinities, times, groups, positions, n_people, n_
 
 
 def F1_calc_clone(group_thresholds, affinities, frames, groups, positions, samples, multi_frame=False,
-                  non_reusable=False,
-                  dominant_sets=True, gmitre_calc=False):
+                  non_reusable=False, dominant_sets=True, gmitre_calc=False):
     """
     Calculates average F1 for thresholds 2/3, 1 and group mitre.
     :param group_thresholds: threshold for group to be considered correctly detected
@@ -97,7 +96,9 @@ def F1_calc_clone(group_thresholds, affinities, frames, groups, positions, sampl
     :param gmitre_calc: True if group mitre should be calculated, otherwise False
     :return: list of F1, precision, recall for T=2/3, T=1 and group mitre
     """
-    avg_results = [np.array([0.0, 0.0]), np.array([0.0, 0.0]), np.array([0.0, 0.0])]
+    if gmitre_calc:
+        group_thresholds.append(None)
+    avg_results = [np.array([0.0, 0.0]) for i in range(len(group_thresholds))]
 
     num_times = 1
     frame_ids = [frame[0] for frame in frames]
@@ -125,15 +126,13 @@ def F1_calc_clone(group_thresholds, affinities, frames, groups, positions, sampl
             bool_groups, agents_map = naive_group(predictions, n_people, frames[idx], samples=samples, new=True)
 
         groups_at_time = [group[1] for group in groups if group[0] == unique_frame][0]
-        groups_with_names = group_names_clone(bool_groups, agents_map, n_people)
-        if gmitre_calc:
-            group_thresholds.append(None)
+        predicted_groups = group_names_clone(bool_groups, agents_map, n_people)
         for i, T in enumerate(group_thresholds):
             if T is None:
-                precision, recall, _ = compute_groupMitre(groups_at_time, groups_with_names)
+                precision, recall, _ = compute_groupMitre(groups_at_time, predicted_groups)
             else:
                 _, _, _, precision, recall = group_correctness(
-                    groups_with_names, groups_at_time, T, non_reusable=non_reusable)
+                    predicted_groups, groups_at_time, T, non_reusable=non_reusable)
             avg_results[i] += np.array([precision, recall])
         num_times += 1
 
