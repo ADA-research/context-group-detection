@@ -317,6 +317,7 @@ def dataset_reformat(dataframe, groups, group_pairs, frame_comb_data, agents_min
         comb_groups = frame_comb['groups']
 
         pairs = list(combinations(comb_agents, 2))
+        # TODO instead of filtering pairs change samples in order to achieve balanced data
         pairs = filter_scene_pairs(pairs, group_pairs)
         for pair_agents in pairs:
             scene_agents = comb_agents - set(pair_agents)
