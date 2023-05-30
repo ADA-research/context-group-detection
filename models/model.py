@@ -93,7 +93,7 @@ def get_args():
 
     parser.add_argument('--dataset', type=str, default="eth")
     parser.add_argument('--dataset_path', type=str, default="../datasets/ETH/seq_eth")
-    parser.add_argument('-e', '--epochs', type=int, default=1)
+    parser.add_argument('-e', '--epochs', type=int, default=10)
     parser.add_argument('-f', '--features', type=int, default=4)
     parser.add_argument('-a', '--agents', type=int, default=10)
     parser.add_argument('-cf', '--frames', type=int, default=10)
@@ -112,7 +112,7 @@ if __name__ == '__main__':
 
     args = get_args()
 
-    train, test, val, samples = load_dataset(
+    train, test, val = load_dataset(
         '../datasets/reformatted/{}_{}_{}'.format(args.dataset, args.frames, args.agents), args.agents,
         multi_frame=True)
 
@@ -120,9 +120,9 @@ if __name__ == '__main__':
 
     tensorboard = TensorBoard(log_dir='./logs')
     early_stop = EarlyStopping(monitor='val_loss', patience=5)
-    history = ValLoss(val, args.dataset, args.dataset_path, samples, True, args.gmitre_calc)
+    history = ValLoss(val, args.dataset, args.dataset_path, True, args.gmitre_calc)
 
     model.fit(train[0], train[1], epochs=args.epochs, batch_size=args.batch_size,
               validation_data=(val[0], val[1]), callbacks=[tensorboard, early_stop, history])
 
-    save_model_data(args.dataset, args.reg, args.dropout, history, test, samples, True, gmitre_calc=args.gmitre_calc)
+    save_model_data(args.dataset, args.reg, args.dropout, history, test, True, gmitre_calc=args.gmitre_calc)

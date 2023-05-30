@@ -40,11 +40,11 @@ if __name__ == "__main__":
                              reg=args.reg, dropout=args.dropout, no_pointnet=args.no_pointnet,
                              symmetric=args.symmetric, gmitre_calc=args.gmitre_calc)
     else:
-        train, test, val, samples = load_dataset(
+        train, test, val = load_dataset(
             '../datasets/reformatted/{}_1_{}'.format(args.dataset, args.agents),
             args.agents, args.features)
 
         train_and_save_model(global_filters, individual_filters, combined_filters,
-                             train, test, val, args.epochs, args.dataset, args.dataset_path, samples,
+                             train, test, val, args.epochs, args.dataset, args.dataset_path,
                              reg=args.reg, dropout=args.dropout, no_pointnet=args.no_pointnet,
-                             symmetric=args.symmetric, new=True, gmitre_calc=args.gmitre_calc)
+                             symmetric=args.symmetric, gmitre_calc=args.gmitre_calc)

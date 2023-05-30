@@ -1,3 +1,5 @@
+from collections import Counter
+
 import numpy as np
 
 
@@ -29,13 +31,12 @@ def learned_affinity(truth_arr, n_people, frame, n_features):
     return A
 
 
-def learned_affinity_clone(truth_arr, n_people, frames, samples):
+def learned_affinity_clone(truth_arr, n_people, frames):
     """
     Fills an n_people x n_people matrix with affinity values.
     :param truth_arr: predicted affinities
     :param n_people: number of agents
     :param frames: frames included in examined scene
-    :param samples: number of samples per scene pair in dataset
     :return:
     """
     A = np.zeros((n_people, n_people))
@@ -50,8 +51,11 @@ def learned_affinity_clone(truth_arr, n_people, frames, samples):
         A[i, j] += truth_arr[idx]
         A[j, i] += truth_arr[idx]
 
-    # TODO remove samples or calculate them here
-    A = A / samples
+    for pair, count in Counter(frame_pairs).items():
+        i = agents_map[pair[0]]
+        j = agents_map[pair[1]]
+        A[i, j] = A[i, j] / count
+        A[j, i] = A[j, i] / count
 
     return A, {value: key for key, value in agents_map.items()}
 
@@ -110,14 +114,13 @@ def vector_climb(A, allowed, n_people, original_A, thres=1e-5):
     return groups
 
 
-def iterate_climb_learned(predictions, n_people, frames, n_features=None, samples=None, new=False):
+def iterate_climb_learned(predictions, n_people, frames, n_features=None, new=False):
     """
     Finds vectors x of people which maximize f. Then removes those people and repeats.
     :param predictions: model predicted affinities
     :param n_people: number of agents
     :param frames: frames included in examined scene
     :param n_features: number of features
-    :param samples: number of samples per scene pair in dataset
     :param new: True if new functionality is being used, otherwise False
     :return: groups (+ agent mapping for new functionality)
     """
@@ -125,7 +128,7 @@ def iterate_climb_learned(predictions, n_people, frames, n_features=None, sample
     groups = []
 
     if new:
-        A, agents_map = learned_affinity_clone(predictions, n_people, frames, samples)
+        A, agents_map = learned_affinity_clone(predictions, n_people, frames)
     else:
         A = learned_affinity(predictions, n_people, frames, n_features)
     original_A = A.copy()
@@ -148,11 +151,11 @@ def iterate_climb_learned(predictions, n_people, frames, n_features=None, sample
 
 # Groups according to the algorithm in "Recognizing F-Formations in the Open World"
 # https://ieeexplore.ieee.org/abstract/document/8673233
-def naive_group(predictions, n_people, frames, n_features=None, samples=None, new=False):
+def naive_group(predictions, n_people, frames, n_features=None, new=False):
     groups = []
 
     if new:
-        A, agents_map = learned_affinity_clone(predictions, n_people, frames, samples)
+        A, agents_map = learned_affinity_clone(predictions, n_people, frames)
     else:
         A = learned_affinity(n_people, predictions, frames, n_features)
     A = A > .5

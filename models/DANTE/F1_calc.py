@@ -97,8 +97,7 @@ def include_single_agent_groups(groups_at_time, agents):
             groups_at_time.append([agent])
 
 
-# TODO change because of sample rate change
-def F1_calc_clone(group_thresholds, affinities, frames, groups, positions, samples, multi_frame=False,
+def F1_calc_clone(group_thresholds, affinities, frames, groups, positions, multi_frame=False,
                   non_reusable=False, dominant_sets=True, gmitre_calc=False):
     """
     Calculates average F1 for thresholds 2/3, 1 and group mitre.
@@ -107,7 +106,6 @@ def F1_calc_clone(group_thresholds, affinities, frames, groups, positions, sampl
     :param frames: list of frames
     :param groups: list of groups per scene
     :param positions: data in raw format
-    :param samples: number of samples per scene pair in dataset
     :param multi_frame: True if scenes include multiple frames, otherwise False
     :param non_reusable: if predicted groups can be reused
     :param dominant_sets: True if dominant sets algorithm will be used, otherwise False
@@ -138,10 +136,9 @@ def F1_calc_clone(group_thresholds, affinities, frames, groups, positions, sampl
             n_people = len(positions[positions.frame_id == unique_frame])
 
         if dominant_sets:
-            bool_groups, agents_map = \
-                iterate_climb_learned(predictions, n_people, frames[idx], samples=samples, new=True)
+            bool_groups, agents_map = iterate_climb_learned(predictions, n_people, frames[idx], new=True)
         else:
-            bool_groups, agents_map = naive_group(predictions, n_people, frames[idx], samples=samples, new=True)
+            bool_groups, agents_map = naive_group(predictions, n_people, frames[idx], new=True)
 
         groups_at_time = [group[1] for group in groups if group[0] == unique_frame][0]
         include_single_agent_groups(groups_at_time, agents_map.values())
