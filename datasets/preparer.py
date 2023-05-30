@@ -320,6 +320,25 @@ def get_pairs_sample_rates(pairs, group_pairs, min_pair_samples, max_pair_sample
     return pairs_sample_rates
 
 
+def dataset_size_calculator(group_pairs, frame_comb_data, min_pair_samples, max_pair_samples):
+    """
+    Gather data from all possible scenes based on given parameters.
+    :param group_pairs: pairs of agents in the same group
+    :param frame_comb_data: valid continuous frame combinations
+    :param min_pair_samples: minimum samples to get from a scene for each pair
+    :param max_pair_samples: maximum samples to get from a scene for each pair
+    :return: dataset
+    """
+    samples = 0
+    for frame_comb in frame_comb_data:
+        comb_agents = frame_comb['common_agents']
+
+        pairs = list(combinations(comb_agents, 2))
+        pairs_samples = get_pairs_sample_rates(pairs, group_pairs, min_pair_samples, max_pair_samples)
+        samples += sum(pairs_samples)
+    return samples
+
+
 def dataset_reformat(dataframe, groups, group_pairs, frame_comb_data, agents_minimum, min_pair_samples,
                      max_pair_samples):
     """
