@@ -307,8 +307,6 @@ def get_pairs_sample_rates(pairs, group_pairs, min_pair_samples, max_pair_sample
         different_pairs_sampling_rate = min_pair_samples
         same_pairs_sampling_rate = min(
             int(min_pair_samples * different_pairs_num / same_pairs_num) if same_pairs_num > 0 else 0, max_pair_samples)
-        if same_pairs_sampling_rate == max_pair_samples:
-            print('!')
 
     pairs_sample_rates = []
     for pair in pairs:
