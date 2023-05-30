@@ -3,23 +3,28 @@ import argparse
 import numpy as np
 import tensorflow as tf
 from keras.callbacks import EarlyStopping, TensorBoard
-from keras.layers import Dense, Conv1D, LSTM, concatenate, Input, Flatten
+from keras.layers import Dense, Conv1D, LSTM, concatenate, Input, Flatten, Dropout, BatchNormalization
 from keras.models import Model
 from keras.optimizers import Adam
+from keras.regularizers import l2
 
 from models.utils import ValLoss, load_dataset, save_model_data
 
 
-def build_model(context_size, consecutive_frames, features, units, reg_amount, drop_amount, learning_rate):
+def build_model(context_size, consecutive_frames, features, reg_amount, drop_amount, learning_rate, lstm_units=64,
+                pair_filters=[32], context_filters=[32], combination_filters=[64]):
     """
     Builds model based on given parameters.
     :param context_size: size of context
     :param consecutive_frames: number of frames per scene
     :param features: features
-    :param units: units to be used in filters
     :param reg_amount: regularization factor
     :param drop_amount: dropout rate
     :param learning_rate: learning rate
+    :param lstm_units: units to be used in lstm layers
+    :param pair_filters: filters to be used in conv1d layers for pair
+    :param context_filters: filters to be used in conv1d layers for context
+    :param combination_filters: units to be used in dense layer
     :return: model
     """
     inputs = []
@@ -34,16 +39,20 @@ def build_model(context_size, consecutive_frames, features, units, reg_amount, d
 
     pair_layers = []
     for pair_input in pair_inputs:
-        lstm = LSTM(64, return_sequences=True)(pair_input)
+        lstm = LSTM(lstm_units, return_sequences=True)(pair_input)
         pair_layers.append(lstm)
 
-    # reg = l2(reg_amount)
+    reg = l2(reg_amount)
 
     pair_concatenated = concatenate(pair_layers)
-    # pair_reshaped = Reshape((pair_concatenated.shape[1], 1))(pair_concatenated)
-    pair_conv = Conv1D(filters=32, kernel_size=3, activation='relu', name='pair_conv')(pair_concatenated)
-    # drop = Dropout(drop_amount)(pair_conv)
-    # batch_norm = BatchNormalization()(drop)
+
+    pair_x = pair_concatenated
+    for filters in pair_filters:
+        pair_x = Conv1D(filters=filters, kernel_size=3, kernel_regularizer=reg, activation='relu',
+                        name='pair_conv_{}'.format(filters))(pair_x)
+        pair_x = Dropout(drop_amount)(pair_x)
+        pair_x = BatchNormalization()(pair_x)
+    pair_conv = pair_x
     # max_pool = MaxPooling1D()(batch_norm)
     # drop = Dropout(drop_amount)(max_pool)
     # batch_norm = BatchNormalization()(drop)
@@ -58,14 +67,18 @@ def build_model(context_size, consecutive_frames, features, units, reg_amount, d
 
     context_layers = []
     for context_input in context_inputs:
-        lstm = LSTM(64, return_sequences=True)(context_input)
+        lstm = LSTM(lstm_units, return_sequences=True)(context_input)
         context_layers.append(lstm)
 
     context_concatenated = concatenate(context_layers)
-    # context_reshaped = Reshape((context_concatenated.shape[1], 1))(context_concatenated)
-    context_conv = Conv1D(filters=32, kernel_size=3, activation='relu', name='context_conv')(context_concatenated)
-    # drop = Dropout(drop_amount)(context_conv)
-    # batch_norm = BatchNormalization()(drop)
+
+    context_x = context_concatenated
+    for filters in context_filters:
+        context_x = Conv1D(filters=filters, kernel_size=3, kernel_regularizer=reg, activation='relu',
+                           name='context_conv_{}'.format(filters))(context_x)
+        context_x = Dropout(drop_amount)(context_x)
+        context_x = BatchNormalization()(context_x)
+    context_conv = context_x
     # max_pool = MaxPooling1D()(batch_norm)
     # drop = Dropout(drop_amount)(max_pool)
     # batch_norm = BatchNormalization()(drop)
@@ -74,9 +87,16 @@ def build_model(context_size, consecutive_frames, features, units, reg_amount, d
     # Concatenate the outputs of the two branches
     combined = concatenate([pair_layer, context_layer], axis=1)
     flatten = Flatten()(combined)
-    combined_dense = Dense(64)(flatten)
+
+    combination_x = flatten
+    for filters in combination_filters:
+        combination_x = Dense(units=filters, use_bias='True', kernel_regularizer=reg, activation='relu',
+                              kernel_initializer="he_normal")(combination_x)
+        combination_x = Dropout(drop_amount)(combination_x)
+        combination_x = BatchNormalization()(combination_x)
+
     # Output layer
-    output = Dense(1, activation='sigmoid')(combined_dense)
+    output = Dense(1, activation='sigmoid')(combination_x)
 
     # Create the model with two inputs and one output
     model = Model(inputs=[inputs], outputs=output)
@@ -116,7 +136,7 @@ if __name__ == '__main__':
         '../datasets/reformatted/{}_{}_{}'.format(args.dataset, args.frames, args.agents), args.agents,
         multi_frame=True)
 
-    model = build_model(args.agents - 2, args.frames, args.features, 64, args.reg, args.dropout, args.learning_rate)
+    model = build_model(args.agents - 2, args.frames, args.features, args.reg, args.dropout, args.learning_rate)
 
     tensorboard = TensorBoard(log_dir='./logs')
     early_stop = EarlyStopping(monitor='val_loss', patience=5)
