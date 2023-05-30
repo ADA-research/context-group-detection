@@ -237,7 +237,14 @@ def write_history(file_name, history, test, samples=None, multi_frame=False, gmi
     file.write(' '.join(['\nprecisions:', ' '.join([str(result[1]) for result in results])]))
     file.write(' '.join(['\nrecalls:', ' '.join([str(result[2]) for result in results])]))
 
-    # TODO add results for best gmitre model + modify final format
+    if gmitre_calc:
+        file.write("\nbest_val_f1_gmitre: " + str(history.val_f1_gmitre_obj['best_f1']))
+        file.write("\nepoch: " + str(history.val_f1_gmitre_obj['epoch']))
+        results = predict(test, history.val_f1_gmitre_obj['model'], history.groups, history.dataset, samples,
+                          multi_frame, history.positions, gmitre_calc)
+        file.write(' '.join(['\ntest_f1s:', ' '.join([str(result[0]) for result in results])]))
+        file.write(' '.join(['\nprecisions:', ' '.join([str(result[1]) for result in results])]))
+        file.write(' '.join(['\nrecalls:', ' '.join([str(result[2]) for result in results])]))
 
     file.write("\ntrain loss:")
     for loss in history.train_losses:
