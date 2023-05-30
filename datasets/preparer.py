@@ -182,7 +182,7 @@ def filter_difference_between_frame_combinations(combinations, diff_between_fram
     return filtered_combinations
 
 
-def get_frame_combs_data(dataframe, agents_minimum, consecutive_frames, difference_between_frames, groups):
+def get_frame_combs_data(dataframe, agents_minimum, consecutive_frames, difference_between_frames, groups, step):
     """
     Get frame combinations based on given parameters.
     :param dataframe: dataframe to be filtered
@@ -190,6 +190,7 @@ def get_frame_combs_data(dataframe, agents_minimum, consecutive_frames, differen
     :param consecutive_frames: minimum number of frames for agent not to be removed
     :param difference_between_frames: difference between frames to be continuous
     :param groups: groups to check which groups exist in every combination
+    :param step: difference between start of each time window
     :return: frame combinations after filtering
     """
     # get agents by frame
@@ -197,8 +198,8 @@ def get_frame_combs_data(dataframe, agents_minimum, consecutive_frames, differen
 
     # get frame combinations
     frame_ids = agents_by_frame.frame_id.values
-    frame_id_combinations = [list(frame_ids[i:i + consecutive_frames]) for i, frame_id in
-                             enumerate(frame_ids[:-consecutive_frames])]
+    frame_id_combinations = [list(frame_ids[i:i + consecutive_frames]) for i in
+                             range(0, len(frame_ids[:-consecutive_frames]), step)]
     frame_id_combinations = filter_difference_between_frame_combinations(frame_id_combinations,
                                                                          difference_between_frames)
 
@@ -278,12 +279,13 @@ def scene_sample(dataframe, groups, pair_agents, context_agents, frames, data, l
     labels.append(label)
 
 
-def get_pairs_sample_rates(pairs, group_pairs, min_pair_samples):
+def get_pairs_sample_rates(pairs, group_pairs, min_pair_samples, max_pair_samples):
     """
     Set sample rate for pairs in same and different groups in order to have balanced samples.
     :param pairs: list of pairs in scene
     :param group_pairs: list of pairs in same group
     :param min_pair_samples: minimum number of samples to get from a pair in a scene
+    :param max_pair_samples: maximum number of samples to get from a pair in a scene
     :return: list of pairs sample rates
     """
     same = []
@@ -299,11 +301,14 @@ def get_pairs_sample_rates(pairs, group_pairs, min_pair_samples):
 
     if same_pairs_num > different_pairs_num:
         same_pairs_sampling_rate = min_pair_samples
-        different_pairs_sampling_rate = int(min_pair_samples * same_pairs_num / different_pairs_num)
+        different_pairs_sampling_rate = min(
+            int(min_pair_samples * same_pairs_num / different_pairs_num), max_pair_samples)
     else:
         different_pairs_sampling_rate = min_pair_samples
-        same_pairs_sampling_rate = \
-            int(min_pair_samples * different_pairs_num / same_pairs_num) if same_pairs_num > 0 else 0
+        same_pairs_sampling_rate = min(
+            int(min_pair_samples * different_pairs_num / same_pairs_num) if same_pairs_num > 0 else 0, max_pair_samples)
+        if same_pairs_sampling_rate == max_pair_samples:
+            print('!')
 
     pairs_sample_rates = []
     for pair in pairs:
@@ -315,7 +320,8 @@ def get_pairs_sample_rates(pairs, group_pairs, min_pair_samples):
     return pairs_sample_rates
 
 
-def dataset_reformat(dataframe, groups, group_pairs, frame_comb_data, agents_minimum, min_pair_samples):
+def dataset_reformat(dataframe, groups, group_pairs, frame_comb_data, agents_minimum, min_pair_samples,
+                     max_pair_samples):
     """
     Gather data from all possible scenes based on given parameters.
     :param dataframe: dataframe to retrieve data
@@ -324,6 +330,7 @@ def dataset_reformat(dataframe, groups, group_pairs, frame_comb_data, agents_min
     :param frame_comb_data: valid continuous frame combinations
     :param agents_minimum: minimum agents (pair + context) in a scene
     :param min_pair_samples: minimum samples to get from a scene for each pair
+    :param max_pair_samples: maximum samples to get from a scene for each pair
     :return: dataset
     """
     data = []
@@ -336,7 +343,7 @@ def dataset_reformat(dataframe, groups, group_pairs, frame_comb_data, agents_min
         comb_groups = frame_comb['groups']
 
         pairs = list(combinations(comb_agents, 2))
-        pairs_samples = get_pairs_sample_rates(pairs, group_pairs, min_pair_samples)
+        pairs_samples = get_pairs_sample_rates(pairs, group_pairs, min_pair_samples, max_pair_samples)
         for pair_agents, pair_samples in zip(pairs, pairs_samples):
             scene_agents = comb_agents - set(pair_agents)
             for i in range(pair_samples):
@@ -344,8 +351,8 @@ def dataset_reformat(dataframe, groups, group_pairs, frame_comb_data, agents_min
                 scene_sample(dataframe, groups, pair_agents, context_agents, comb_frames, data, labels)
                 frames.append((comb_frames, pair_agents))
         combs_groups.append((comb_frames, comb_groups))
-    # TODO check lengths of different arrays
-    return np.asarray(data), np.asarray(labels), np.asarray(frames, dtype=object), np.asarray(combs_groups, dtype=object)
+    return np.asarray(data), np.asarray(labels), np.asarray(frames, dtype=object), np.asarray(combs_groups,
+                                                                                              dtype=object)
 
 
 def get_group_pairs(groups):
@@ -367,7 +374,6 @@ def get_args():
     parser.add_argument('-p', '--plot', action="store_true", default=False)
     parser.add_argument('-f', '--frames', type=int, default=10)
     parser.add_argument('-a', '--agents', type=int, default=10)
-    parser.add_argument('-ms', '--min_samples', type=int, default=10)
     parser.add_argument('-ts', '--target_size', type=int, default=100000)
     parser.add_argument('-d', '--dataset', type=str, default='eth')
     parser.add_argument('-sf', '--save_folder', type=str, default='./reformatted')
@@ -403,6 +409,27 @@ if __name__ == '__main__':
     if args.plot:
         groups_size_hist(groups_dict, './group_size_plot.png')
 
+    steps = {
+        'eth': 1,
+        'hotel': 1,
+        'zara01': 1,
+        'zara02': 2,
+        'students03': 5
+    }
+    min_samples = {
+        'eth': 10,
+        'hotel': 10,
+        'zara01': 10,
+        'zara02': 10,
+        'students03': 2
+    }
+    max_samples = {
+        'eth': 1000,
+        'hotel': 1000,
+        'zara01': 1000,
+        'zara02': 1000,
+        'students03': 10
+    }
     for dataset in datasets_dict.keys():
         dataset_start = datetime.now()
 
@@ -418,12 +445,13 @@ if __name__ == '__main__':
         # get frame combinations data
         combs = get_frame_combs_data(dataframe=df, agents_minimum=args.agents,
                                      consecutive_frames=args.frames, difference_between_frames=difference,
-                                     groups=groups)
+                                     groups=groups, step=steps[dataset])
 
         # format dataset to be used by proposed approach
         data, labels, frames, filtered_groups = dataset_reformat(dataframe=df, groups=groups, group_pairs=group_pairs,
                                                                  frame_comb_data=combs, agents_minimum=args.agents,
-                                                                 min_pair_samples=args.min_samples)
+                                                                 min_pair_samples=min_samples[dataset],
+                                                                 max_pair_samples=max_samples[dataset])
 
         path = '{}/{}_{}_{}_'.format(args.save_folder, dataset, args.frames, args.agents)
         filename = path + 'data.npy'
@@ -437,7 +465,7 @@ if __name__ == '__main__':
 
         end = datetime.now()
         print('Dataset: {}, finished in: {}'.format(dataset, end - dataset_start))
-        # print('samples: {}, data: {}'.format(samples, len(data)))
+        print('\tdata size: {}'.format(len(data)))
         dataset_start = end
 
     end = datetime.now()
