@@ -203,6 +203,15 @@ def build_model(reg_amt, drop_amt, max_people, d, global_filters,
     return model
 
 
+def write_object_history(file, history_object, history, test, multi_frame=False, gmitre_calc=False):
+    file.write("\n\tepoch: " + str(history_object['epoch']))
+    results = predict(test, history_object['model'], history.groups, history.dataset, multi_frame, history.positions,
+                      gmitre_calc)
+    file.write(' '.join(['\n\ttest_f1s:', ' '.join([str(result[0]) for result in results])]))
+    file.write(' '.join(['\n\tprecisions:', ' '.join([str(result[1]) for result in results])]))
+    file.write(' '.join(['\n\trecalls:', ' '.join([str(result[2]) for result in results])]))
+
+
 def write_history(file_name, history, test, multi_frame=False, gmitre_calc=False):
     """
     Writes evaluation metrics in file.
@@ -219,52 +228,37 @@ def write_history(file_name, history, test, multi_frame=False, gmitre_calc=False
     file.write("\nepoch: " + str(history.best_epoch))
 
     file.write("\nbest_val_f1_1: " + str(history.val_f1_one_obj['best_f1']))
-    file.write("\nepoch: " + str(history.val_f1_one_obj['epoch']))
-    results = predict(test, history.val_f1_one_obj['model'], history.groups, history.dataset, multi_frame,
-                      history.positions, gmitre_calc)
-    file.write(' '.join(['\ntest_f1s:', ' '.join([str(result[0]) for result in results])]))
-    file.write(' '.join(['\nprecisions:', ' '.join([str(result[1]) for result in results])]))
-    file.write(' '.join(['\nrecalls:', ' '.join([str(result[2]) for result in results])]))
+    write_object_history(file, history.val_f1_one_obj, history, test, multi_frame, gmitre_calc)
 
     file.write("\nbest_val_f1_2/3: " + str(history.val_f1_two_thirds_obj['best_f1']))
-    file.write("\nepoch: " + str(history.val_f1_two_thirds_obj['epoch']))
-    results = predict(test, history.val_f1_two_thirds_obj['model'], history.groups, history.dataset,
-                      multi_frame, history.positions, gmitre_calc)
-    file.write(' '.join(['\ntest_f1s:', ' '.join([str(result[0]) for result in results])]))
-    file.write(' '.join(['\nprecisions:', ' '.join([str(result[1]) for result in results])]))
-    file.write(' '.join(['\nrecalls:', ' '.join([str(result[2]) for result in results])]))
+    write_object_history(file, history.val_f1_two_thirds_obj, history, test, multi_frame, gmitre_calc)
 
     if gmitre_calc:
         file.write("\nbest_val_f1_gmitre: " + str(history.val_f1_gmitre_obj['best_f1']))
-        file.write("\nepoch: " + str(history.val_f1_gmitre_obj['epoch']))
-        results = predict(test, history.val_f1_gmitre_obj['model'], history.groups, history.dataset,
-                          multi_frame, history.positions, gmitre_calc)
-        file.write(' '.join(['\ntest_f1s:', ' '.join([str(result[0]) for result in results])]))
-        file.write(' '.join(['\nprecisions:', ' '.join([str(result[1]) for result in results])]))
-        file.write(' '.join(['\nrecalls:', ' '.join([str(result[2]) for result in results])]))
+        write_object_history(file, history.val_f1_gmitre_obj, history, test, multi_frame, gmitre_calc)
 
     file.write("\ntrain loss:")
     for loss in history.train_losses:
-        file.write('\n' + str(loss))
+        file.write('\n\t' + str(loss))
     file.write("\nval loss:")
     for loss in history.val_losses:
-        file.write('\n' + str(loss))
+        file.write('\n\t' + str(loss))
     file.write("\ntrain mse:")
     for loss in history.train_mses:
-        file.write('\n' + str(loss))
+        file.write('\n\t' + str(loss))
     file.write("\nval mse:")
     for loss in history.val_mses:
-        file.write('\n' + str(loss))
+        file.write('\n\t' + str(loss))
     file.write("\nval 1 f1:")
     for f1 in history.val_f1_one_obj['f1s']:
-        file.write('\n' + str(f1))
+        file.write('\n\t' + str(f1))
     file.write("\nval 2/3 f1:")
     for f1 in history.val_f1_two_thirds_obj['f1s']:
-        file.write('\n' + str(f1))
+        file.write('\n\t' + str(f1))
     if gmitre_calc:
         file.write("\nval gmitre f1:")
         for f1 in history.val_f1_gmitre_obj['f1s']:
-            file.write('\n' + str(f1))
+            file.write('\n\t' + str(f1))
     file.close()
 
 
