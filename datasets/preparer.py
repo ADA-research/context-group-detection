@@ -343,11 +343,9 @@ def dataset_reformat(dataframe, groups, group_pairs, frame_comb_data, agents_min
                 context_agents = random.sample(scene_agents, agents_minimum - 2)
                 scene_sample(dataframe, groups, pair_agents, context_agents, comb_frames, data, labels)
                 frames.append((comb_frames, pair_agents))
-        # TODO need to keep track of samples per scene
-        #  maybe add another array or include information in one of the old ones
         combs_groups.append((comb_frames, comb_groups))
     # TODO check lengths of different arrays
-    return np.asarray(data), np.asarray(labels), np.asarray(frames), np.asarray(combs_groups, dtype=object)
+    return np.asarray(data), np.asarray(labels), np.asarray(frames, dtype=object), np.asarray(combs_groups, dtype=object)
 
 
 def get_group_pairs(groups):
@@ -385,11 +383,11 @@ if __name__ == '__main__':
 
     # create datasets report
     datasets_dict = {
-        # 'eth': dataset_data('./ETH/seq_eth'),
+        'eth': dataset_data('./ETH/seq_eth'),
         'hotel': dataset_data('./ETH/seq_hotel'),
-        # 'zara01': dataset_data('./UCY/zara01'),
-        # 'zara02': dataset_data('./UCY/zara02'),
-        # 'students03': dataset_data('./UCY/students03')
+        'zara01': dataset_data('./UCY/zara01'),
+        'zara02': dataset_data('./UCY/zara02'),
+        'students03': dataset_data('./UCY/students03')
     }
     if args.report:
         report('datasets.xlsx', datasets_dict)
