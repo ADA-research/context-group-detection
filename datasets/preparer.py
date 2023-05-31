@@ -430,13 +430,13 @@ if __name__ == '__main__':
         'eth': 1,
         'hotel': 1,
         'zara01': 1,
-        'zara02': 2,
+        'zara02': 3,
         'students03': 5
     }
     min_samples = {
         'eth': 10,
-        'hotel': 10,
-        'zara01': 10,
+        'hotel': 40,
+        'zara01': 20,
         'zara02': 10,
         'students03': 2
     }
