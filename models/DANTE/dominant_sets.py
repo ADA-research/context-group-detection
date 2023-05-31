@@ -132,6 +132,7 @@ def iterate_climb_learned(predictions, n_people, frames, n_features=None, new=Fa
     else:
         A = learned_affinity(predictions, n_people, frames, n_features)
     original_A = A.copy()
+    # TODO force this to end if it runs for too long
     while np.sum(allowed) > 1:
         A[allowed == False] = 0
         A[:, allowed == False] = 0
