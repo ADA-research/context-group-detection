@@ -94,12 +94,14 @@ def weight(S, i, A):
         return sum_weights
 
 
+# TODO check why it runs for long and how to make it finish earlier
+#  probably different threshold
 # iteratively finds vector x which maximizes f
-def vector_climb(A, allowed, n_people, original_A, thres=1e-5):
+def vector_climb(A, allowed, n_people, original_A, thres=1e-5, eps_threshold=1e-15):
     x = np.random.uniform(0, 1, n_people)
     x = np.multiply(x, allowed)
     eps = 10
-    while eps > 1e-15:
+    while eps > eps_threshold:
         p = f(x, A)
         x = np.multiply(x, np.dot(A, x)) / np.dot(x, np.dot(A, x))
         n = f(x, A)
