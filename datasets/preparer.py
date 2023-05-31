@@ -389,7 +389,7 @@ def get_args():
 
     parser.add_argument('-r', '--report', action="store_true", default=False)
     parser.add_argument('-p', '--plot', action="store_true", default=False)
-    parser.add_argument('-f', '--frames', type=int, default=10)
+    parser.add_argument('-f', '--frames', type=int, default=1)
     parser.add_argument('-a', '--agents', type=int, default=10)
     parser.add_argument('-ts', '--target_size', type=int, default=100000)
     parser.add_argument('-d', '--dataset', type=str, default='eth')
@@ -426,27 +426,50 @@ if __name__ == '__main__':
     if args.plot:
         groups_size_hist(groups_dict, './group_size_plot.png')
 
-    steps = {
-        'eth': 1,
-        'hotel': 1,
-        'zara01': 1,
-        'zara02': 3,
-        'students03': 5
-    }
-    min_samples = {
-        'eth': 10,
-        'hotel': 40,
-        'zara01': 20,
-        'zara02': 10,
-        'students03': 2
-    }
-    max_samples = {
-        'eth': 1000,
-        'hotel': 1000,
-        'zara01': 1000,
-        'zara02': 1000,
-        'students03': 10
-    }
+    if args.frames == 1:
+        steps = {
+            'eth': 2,
+            'hotel': 1,
+            'zara01': 1,
+            'zara02': 3,
+            'students03': 5
+        }
+        min_samples = {
+            'eth': 8,
+            'hotel': 10,
+            'zara01': 10,
+            'zara02': 5,
+            'students03': 2
+        }
+        max_samples = {
+            'eth': 100,
+            'hotel': 100,
+            'zara01': 100,
+            'zara02': 100,
+            'students03': 5
+        }
+    else:
+        steps = {
+            'eth': 1,
+            'hotel': 1,
+            'zara01': 1,
+            'zara02': 3,
+            'students03': 5
+        }
+        min_samples = {
+            'eth': 10,
+            'hotel': 40,
+            'zara01': 20,
+            'zara02': 10,
+            'students03': 2
+        }
+        max_samples = {
+            'eth': 1000,
+            'hotel': 1000,
+            'zara01': 1000,
+            'zara02': 1000,
+            'students03': 10
+        }
     for dataset in datasets_dict.keys():
         dataset_start = datetime.now()
 
