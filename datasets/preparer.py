@@ -408,7 +408,7 @@ if __name__ == '__main__':
         data, labels, frames, filtered_groups = dataset_reformat(dataframe=df, groups=groups, group_pairs=group_pairs,
                                                                  frame_comb_data=combs, agents_minimum=args.agents,
                                                                  scene_samples=samples)
-
+        # todo split dataset in folds
         path = '{}/{}_{}_{}_'.format(args.save_folder, dataset, args.frames, args.agents)
         filename = path + 'data.npy'
         np.save(filename, data)
