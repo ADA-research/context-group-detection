@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=test_python_mp
+#SBATCH --job-name=test_job
 #SBATCH --output=%x_%j.out
 #SBATCH --mail-user="thomasmaliappis@gmail.com"
 #SBATCH --mail-type="ALL"
@@ -17,7 +17,7 @@ module load TensorFlow/2.11.0-foss-2022a-CUDA-11.7.0
 export PYTHONPATH="${PYTHONPATH}:${HOME}/context-group-detection/"
 
 # Source the Python virtual environment
-source "${HOME}/context-group-detection/python_test_venv/bin/activate"
+#source "${HOME}/context-group-detection/python_test_venv/bin/activate"
 
 echo "[${SHELL}] #### Starting Python test"
 echo "[${SHELL}] ## This is ${SLURM_JOB_USER} on ${HOSTNAME} and this job has the ID ${SLURM_JOB_ID}"
@@ -27,9 +27,8 @@ echo "[${SHELL}] ## current working directory: ${CWD}"
 
 # Run the file
 echo "[${SHELL}] ## Run script"
-#cd models || exit
-#python model.py
-echo "executed"
+cd "${HOME}/context-group-detection/models" || exit
+python model.py
 echo "[${SHELL}] ## Script finished"
 
 echo "[${SHELL}] #### Finished Python test. Have a nice day"
