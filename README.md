@@ -1,28 +1,31 @@
 # context-group-detection
-todo add introduction
+[//]: # (todo add introduction)
 
 ## datasets
 
 ### pedestrian datasets
-todo add where i found datasets
+
+[//]: # (todo add where i found datasets)
 ETH, UCY
-todo add simulation data description
+
+[//]: # (todo add simulation data description)
 
 ### dataset preprocessing
-todo add how to run files
+
+[//]: # (todo add how to run files)
 
 ## baselines
 
+[//]: # (todo add paper links, small descriptions)
 1. Dante baseline
-todo add paper
 2. WavenetNRI
 
 
 ## model
-todo add my approach
+[//]: # (todo add my approach)
 
 ## results
-todo add results
+[//]: # (todo add results)
 
 ## references
-todo add references
+[//]: # (todo add references)
