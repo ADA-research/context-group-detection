@@ -111,6 +111,7 @@ def build_model(context_size, consecutive_frames, features, reg_amount, drop_amo
 def get_args():
     parser = argparse.ArgumentParser()
 
+    parser.add_argument('--fold', type=str, default="0")
     parser.add_argument('--dataset', type=str, default="eth")
     parser.add_argument('--dataset_path', type=str, default="../datasets/ETH/seq_eth")
     parser.add_argument('-e', '--epochs', type=int, default=10)
@@ -133,7 +134,7 @@ if __name__ == '__main__':
     args = get_args()
 
     train, test, val = load_data(
-        '../datasets/reformatted/{}_{}_{}/fold_'.format(args.dataset, args.frames, args.agents, args.fold))
+        '../datasets/reformatted/{}_{}_{}/fold_{}'.format(args.dataset, args.frames, args.agents, args.fold))
 
     model = build_model(args.agents - 2, args.frames, args.features, args.reg, args.dropout, args.learning_rate)
 
