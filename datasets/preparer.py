@@ -493,6 +493,7 @@ if __name__ == '__main__':
                                                                  min_pair_samples=min_samples[dataset],
                                                                  max_pair_samples=max_samples[dataset])
 
+        # todo split dataset in folds
         path = '{}/{}_{}_{}_'.format(args.save_folder, dataset, args.frames, args.agents)
         filename = path + 'data.npy'
         np.save(filename, data)

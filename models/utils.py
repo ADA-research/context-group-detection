@@ -438,6 +438,7 @@ def train_test_split_groups(groups, frames_train, frames_test, frames_val, multi
     return groups_train, groups_test, groups_val
 
 
+# todo read specific fold 
 def load_dataset(path, agents, features=None, multi_frame=False):
     """
     Load dataset and reformat it to match model input.
