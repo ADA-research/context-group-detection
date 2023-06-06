@@ -1,4 +1,5 @@
 import argparse
+import os
 
 import numpy as np
 import tensorflow as tf
@@ -9,6 +10,8 @@ from keras.optimizers import Adam
 from keras.regularizers import l2
 
 from models.utils import ValLoss, load_data, save_model_data
+
+os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 
 
 def build_model(context_size, consecutive_frames, features, reg_amount, drop_amount, learning_rate, lstm_units=64,
