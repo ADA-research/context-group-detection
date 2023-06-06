@@ -68,13 +68,14 @@ class ValLoss(Callback):
     Records train and val losses and mse.
     """
 
-    def __init__(self, val_data, dataset, dataset_path, multi_frame=False, gmitre_calc=False):
+    def __init__(self, val_data, dataset, dataset_path, train_epochs=0, multi_frame=False, gmitre_calc=False):
         super(ValLoss, self).__init__()
         self.val_data = val_data
         self.dataset = dataset
         self.dataset_path = dataset_path
         self.multi_frame = multi_frame
         self.gmitre_calc = gmitre_calc
+        self.train_epochs = train_epochs
 
         # each dataset has different params and possibly different F1 calc code
         if dataset in ["cocktail_party"]:
@@ -101,6 +102,9 @@ class ValLoss(Callback):
         self.train_mses = []
 
     def on_epoch_end(self, epoch, logs={}):
+        if epoch < self.train_epochs:
+            return
+
         if logs['val_mse'] < self.best_val_mse:
             self.best_model = self.model
             self.best_val_mse = logs['val_mse']
