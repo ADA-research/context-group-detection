@@ -1,6 +1,6 @@
 import argparse
 
-from models.utils import load_data, load_dataset, train_and_save_model
+from models.utils import load_data, train_and_save_model
 
 
 def get_args():
@@ -33,16 +33,15 @@ if __name__ == "__main__":
 
     # get data
     if args.dataset == 'cocktail_party':
-        test, train, val = load_data("../datasets/cocktail_party/fold_" + args.fold)
+        train, test, val = load_data('../datasets/{}/fold_{}'.format(args.dataset, args.fold))
 
         train_and_save_model(global_filters, individual_filters, combined_filters,
                              train, test, val, args.epochs, args.dataset, args.dataset_path,
                              reg=args.reg, dropout=args.dropout, no_pointnet=args.no_pointnet,
                              symmetric=args.symmetric, gmitre_calc=args.gmitre_calc)
     else:
-        train, test, val = load_dataset(
-            '../datasets/reformatted/{}_1_{}'.format(args.dataset, args.agents),
-            args.agents, args.features)
+        train, test, val = load_data(
+            '../datasets/reformatted/{}_1_{}/fold_{}'.format(args.dataset, args.agents, args.fold))
 
         train_and_save_model(global_filters, individual_filters, combined_filters,
                              train, test, val, args.epochs, args.dataset, args.dataset_path,

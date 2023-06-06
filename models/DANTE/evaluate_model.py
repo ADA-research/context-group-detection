@@ -85,7 +85,7 @@ def dump(path, data):
 if __name__ == "__main__":
     args = get_args()
 
-    test, train, val = load_data("../datasets/" + args.dataset + "/fold_" + str(args.k_fold))
+    train, test, val = load_data("../datasets/" + args.dataset + "/fold_" + str(args.k_fold))
     X, y, timestamps = test
     num_test, _, max_people, d = X[0].shape
 

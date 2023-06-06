@@ -8,7 +8,7 @@ from keras.models import Model
 from keras.optimizers import Adam
 from keras.regularizers import l2
 
-from models.utils import ValLoss, load_dataset, save_model_data
+from models.utils import ValLoss, load_data, save_model_data
 
 
 def build_model(context_size, consecutive_frames, features, reg_amount, drop_amount, learning_rate, lstm_units=64,
@@ -132,9 +132,8 @@ if __name__ == '__main__':
 
     args = get_args()
 
-    train, test, val = load_dataset(
-        '../datasets/reformatted/{}_{}_{}'.format(args.dataset, args.frames, args.agents), args.agents,
-        multi_frame=True)
+    train, test, val = load_data(
+        '../datasets/reformatted/{}_{}_{}/fold_'.format(args.dataset, args.frames, args.agents, args.fold))
 
     model = build_model(args.agents - 2, args.frames, args.features, args.reg, args.dropout, args.learning_rate)
 

@@ -1,4 +1,6 @@
 import argparse
+import os
+import pickle
 import random
 from collections import Counter
 from datetime import datetime
@@ -9,6 +11,7 @@ import pandas as pd
 import seaborn as sns
 import xlsxwriter
 from matplotlib import pyplot as plt
+from sklearn.model_selection import KFold, train_test_split
 
 from datasets.loader import read_obsmat, read_groups
 
@@ -354,7 +357,7 @@ def dataset_reformat(dataframe, groups, group_pairs, frame_comb_data, agents_min
     labels = []
     frames = []
     combs_groups = []
-    for frame_comb in frame_comb_data:
+    for frame_comb in frame_comb_data[:10]:
         comb_frames = frame_comb['frames']
         comb_agents = frame_comb['common_agents']
         comb_groups = frame_comb['groups']
@@ -389,13 +392,106 @@ def get_args():
 
     parser.add_argument('-r', '--report', action="store_true", default=False)
     parser.add_argument('-p', '--plot', action="store_true", default=False)
-    parser.add_argument('-f', '--frames', type=int, default=1)
-    parser.add_argument('-a', '--agents', type=int, default=10)
+    parser.add_argument('-f', '--frames_num', type=int, default=1)
+    parser.add_argument('-a', '--agents_num', type=int, default=10)
     parser.add_argument('-ts', '--target_size', type=int, default=100000)
     parser.add_argument('-d', '--dataset', type=str, default='eth')
     parser.add_argument('-sf', '--save_folder', type=str, default='./reformatted')
 
     return parser.parse_args()
+
+
+def train_test_split_frames(frames, multi_frame=False):
+    """
+    Split train, test and val indices.
+    :param frames: list of frames
+    :param multi_frame: True if scenes include multiple frames, otherwise False
+    :return: train, test and val indices
+    """
+    frame_ids = [frame[0] for frame in frames]
+    if multi_frame:
+        frame_values = [list(x) for x in set(tuple(frame_id) for frame_id in frame_ids)]
+        train, test = train_test_split(frame_values, test_size=0.3, random_state=0)
+        idx_train = [i for i, frame in enumerate(frame_ids) if frame in train]
+        frame_ids_train = [frame[0] for frame in frames[idx_train]]
+        frame_values_train = [list(x) for x in set(tuple(frame_id) for frame_id in frame_ids_train)]
+    else:
+        frame_values = np.unique(frame_ids)
+        train, test = train_test_split(frame_values, test_size=0.3, random_state=0)
+        idx_train = [i for i, frame in enumerate(frame_ids) if frame in train]
+        frame_ids_train = [frame[0] for frame in frames[idx_train]]
+        frame_values_train = np.unique(frame_ids_train)
+    train, val = train_test_split(frame_values_train, test_size=0.2, random_state=0)
+    idx_train = [i for i, frame in enumerate(frame_ids) if frame in train]
+    idx_test = [i for i, frame in enumerate(frame_ids) if frame in test]
+    idx_val = [i for i, frame in enumerate(frame_ids) if frame in val]
+    return idx_train, idx_test, idx_val
+
+
+def train_test_split_groups(groups, frames_train, frames_test, frames_val, multi_frame=False):
+    """
+    Split groups in train, test and val groups.
+    :param groups: list of groups per frame
+    :param frames_train: list of train frames
+    :param frames_test: list of test frames
+    :param frames_val: list of val frames
+    :param multi_frame: True if scenes include multiple frames, otherwise False
+    :return: groups split in train, test and val sets
+    """
+    if multi_frame:
+        frame_ids_train = [frame[0] for frame in frames_train]
+        frame_ids_train = [list(x) for x in set(tuple(frame_id) for frame_id in frame_ids_train)]
+        frame_ids_test = [frame[0] for frame in frames_test]
+        frame_ids_test = [list(x) for x in set(tuple(frame_id) for frame_id in frame_ids_test)]
+        frame_ids_val = [frame[0] for frame in frames_val]
+        frame_ids_val = [list(x) for x in set(tuple(frame_id) for frame_id in frame_ids_val)]
+    else:
+
+        frame_ids_train = np.unique([frame[0] for frame in frames_train])
+        frame_ids_test = np.unique([frame[0] for frame in frames_test])
+        frame_ids_val = np.unique([frame[0] for frame in frames_val])
+    groups_train = [group for group in groups if group[0] in frame_ids_train]
+    groups_test = [group for group in groups if group[0] in frame_ids_test]
+    groups_val = [group for group in groups if group[0] in frame_ids_val]
+    return groups_train, groups_test, groups_val
+
+
+def dump(path, data):
+    with open(path, 'wb') as f:
+        pickle.dump(data, f)
+
+
+# todo split dataset in folds
+def save_folds(save_folder, dataset, frames_num, agents_num, data, labels, frames, groups, multi_frame, folds=5,
+               features=4):
+    kf = KFold(n_splits=folds, shuffle=True, random_state=14)
+
+    if not multi_frame:
+        data = data.reshape((len(data), 1, agents_num, features))
+
+    # todo fix use of train_index and test_index
+    for i, (train_index, test_index) in enumerate(kf.split(data)):
+
+        idx_train, idx_test, idx_val = train_test_split_frames(frames, multi_frame)
+        groups_train, groups_test, groups_val = \
+            train_test_split_groups(groups, frames[idx_train], frames[idx_test], frames[idx_val], multi_frame)
+
+        if multi_frame:
+            train = (
+                [data[idx_train, :, i] for i in range(agents_num)], labels[idx_train], frames[idx_train], groups_train)
+            test = ([data[idx_test, :, i] for i in range(agents_num)], labels[idx_test], frames[idx_test], groups_test)
+            val = ([data[idx_val, :, i] for i in range(agents_num)], labels[idx_val], frames[idx_val], groups_val)
+        else:
+            train = (
+                [data[idx_train, :, 2:], data[idx_train, :, :2]], labels[idx_train], frames[idx_train], groups_train)
+            test = ([data[idx_test, :, 2:], data[idx_test, :, :2]], labels[idx_test], frames[idx_test], groups_test)
+            val = ([data[idx_val, :, 2:], data[idx_val, :, :2]], labels[idx_val], frames[idx_val], groups_val)
+
+        path = '{}/{}_{}_{}/fold_{}'.format(save_folder, dataset, frames_num, agents_num, i)
+        os.makedirs(path, exist_ok=True)
+        dump('{}/train.p'.format(path), train)
+        dump('{}/test.p'.format(path), test)
+        dump('{}/val.p'.format(path), val)
 
 
 if __name__ == '__main__':
@@ -407,10 +503,10 @@ if __name__ == '__main__':
     # create datasets report
     datasets_dict = {
         'eth': dataset_data('./ETH/seq_eth'),
-        'hotel': dataset_data('./ETH/seq_hotel'),
-        'zara01': dataset_data('./UCY/zara01'),
-        'zara02': dataset_data('./UCY/zara02'),
-        'students03': dataset_data('./UCY/students03')
+        # 'hotel': dataset_data('./ETH/seq_hotel'),
+        # 'zara01': dataset_data('./UCY/zara01'),
+        # 'zara02': dataset_data('./UCY/zara02'),
+        # 'students03': dataset_data('./UCY/students03')
     }
     if args.report:
         report('datasets.xlsx', datasets_dict)
@@ -426,7 +522,8 @@ if __name__ == '__main__':
     if args.plot:
         groups_size_hist(groups_dict, './group_size_plot.png')
 
-    if args.frames == 1:
+    if args.frames_num == 1:
+        multi_frame = False
         steps = {
             'eth': 2,
             'hotel': 1,
@@ -449,6 +546,7 @@ if __name__ == '__main__':
             'students03': 5
         }
     else:
+        multi_frame = True
         steps = {
             'eth': 1,
             'hotel': 1,
@@ -479,30 +577,22 @@ if __name__ == '__main__':
         difference = datasets_dict[dataset]['difference']
 
         # remove agents with low number of frames or agents
-        df = remove_agents_and_frames_with_insufficient_data(dataframe=df, frames_threshold=args.frames,
-                                                             agents_threshold=args.agents)
+        df = remove_agents_and_frames_with_insufficient_data(dataframe=df, frames_threshold=args.frames_num,
+                                                             agents_threshold=args.agents_num)
 
         # get frame combinations data
-        combs = get_frame_combs_data(dataframe=df, agents_minimum=args.agents,
-                                     consecutive_frames=args.frames, difference_between_frames=difference,
+        combs = get_frame_combs_data(dataframe=df, agents_minimum=args.agents_num,
+                                     consecutive_frames=args.frames_num, difference_between_frames=difference,
                                      groups=groups, step=steps[dataset])
 
         # format dataset to be used by proposed approach
         data, labels, frames, filtered_groups = dataset_reformat(dataframe=df, groups=groups, group_pairs=group_pairs,
-                                                                 frame_comb_data=combs, agents_minimum=args.agents,
+                                                                 frame_comb_data=combs, agents_minimum=args.agents_num,
                                                                  min_pair_samples=min_samples[dataset],
                                                                  max_pair_samples=max_samples[dataset])
 
-        # todo split dataset in folds
-        path = '{}/{}_{}_{}_'.format(args.save_folder, dataset, args.frames, args.agents)
-        filename = path + 'data.npy'
-        np.save(filename, data)
-        filename = path + 'labels.npy'
-        np.save(filename, labels)
-        filename = path + 'frames.npy'
-        np.save(filename, frames)
-        filename = path + 'groups.npy'
-        np.save(filename, filtered_groups)
+        save_folds(args.save_folder, dataset, args.frames_num, args.agents_num, data, labels, frames, filtered_groups,
+                   multi_frame)
 
         end = datetime.now()
         print('Dataset: {}, finished in: {}'.format(dataset, end - dataset_start))

@@ -8,29 +8,27 @@ from keras.layers import Dense, Dropout, Conv2D, MaxPooling2D, Concatenate, Lamb
 from keras.models import Model
 from keras.optimizers import Adam
 from keras.regularizers import l2
-from sklearn.model_selection import train_test_split
 
 from datasets.preparer import read_obsmat
 from models.DANTE.F1_calc import F1_calc, F1_calc_clone
 from models.DANTE.reformat_data import add_time, import_data
 
 
-def load_matrix(file):
+def load_pickle_file(file):
     with open(file, 'rb') as f:
         return pickle.load(f)
 
 
-# must have run build_dataset.py first
 def load_data(path):
     """
     Loads train, test and val sets
     :param path: string location of the files to be loaded
-    :return:
+    :return: train, test and val sets
     """
-    train = load_matrix(path + '/train.p')
-    test = load_matrix(path + '/test.p')
-    val = load_matrix(path + '/val.p')
-    return test, train, val
+    train = load_pickle_file(path + '/train.p')
+    test = load_pickle_file(path + '/test.p')
+    val = load_pickle_file(path + '/val.p')
+    return train, test, val
 
 
 def predict(data, model, groups, dataset, multi_frame=False, positions=None, gmitre_calc=False):
@@ -381,91 +379,3 @@ def train_and_save_model(global_filters, individual_filters, combined_filters,
               validation_data=(val[0], val[1]), callbacks=[tensorboard, history, early_stop])
 
     save_model_data(dataset, reg, dropout, history, test, gmitre_calc=gmitre_calc)
-
-
-def train_test_split_frames(frames, multi_frame=False):
-    """
-    Split train, test and val indices.
-    :param frames: list of frames
-    :param multi_frame: True if scenes include multiple frames, otherwise False
-    :return: train, test and val indices
-    """
-    frame_ids = [frame[0] for frame in frames]
-    if multi_frame:
-        frame_values = [list(x) for x in set(tuple(frame_id) for frame_id in frame_ids)]
-        train, test = train_test_split(frame_values, test_size=0.3, random_state=0)
-        idx_train = [i for i, frame in enumerate(frame_ids) if frame in train]
-        frame_ids_train = [frame[0] for frame in frames[idx_train]]
-        frame_values_train = [list(x) for x in set(tuple(frame_id) for frame_id in frame_ids_train)]
-    else:
-        frame_values = np.unique(frame_ids)
-        train, test = train_test_split(frame_values, test_size=0.3, random_state=0)
-        idx_train = [i for i, frame in enumerate(frame_ids) if frame in train]
-        frame_ids_train = [frame[0] for frame in frames[idx_train]]
-        frame_values_train = np.unique(frame_ids_train)
-    train, val = train_test_split(frame_values_train, test_size=0.2, random_state=0)
-    idx_train = [i for i, frame in enumerate(frame_ids) if frame in train]
-    idx_test = [i for i, frame in enumerate(frame_ids) if frame in test]
-    idx_val = [i for i, frame in enumerate(frame_ids) if frame in val]
-    return idx_train, idx_test, idx_val
-
-
-def train_test_split_groups(groups, frames_train, frames_test, frames_val, multi_frame=False):
-    """
-    Split groups in train, test and val groups.
-    :param groups: list of groups per frame
-    :param frames_train: list of train frames
-    :param frames_test: list of test frames
-    :param frames_val: list of val frames
-    :param multi_frame: True if scenes include multiple frames, otherwise False
-    :return: groups split in train, test and val sets
-    """
-    if multi_frame:
-        frame_ids_train = [frame[0] for frame in frames_train]
-        frame_ids_train = [list(x) for x in set(tuple(frame_id) for frame_id in frame_ids_train)]
-        frame_ids_test = [frame[0] for frame in frames_test]
-        frame_ids_test = [list(x) for x in set(tuple(frame_id) for frame_id in frame_ids_test)]
-        frame_ids_val = [frame[0] for frame in frames_val]
-        frame_ids_val = [list(x) for x in set(tuple(frame_id) for frame_id in frame_ids_val)]
-    else:
-
-        frame_ids_train = np.unique([frame[0] for frame in frames_train])
-        frame_ids_test = np.unique([frame[0] for frame in frames_test])
-        frame_ids_val = np.unique([frame[0] for frame in frames_val])
-    groups_train = [group for group in groups if group[0] in frame_ids_train]
-    groups_test = [group for group in groups if group[0] in frame_ids_test]
-    groups_val = [group for group in groups if group[0] in frame_ids_val]
-    return groups_train, groups_test, groups_val
-
-
-# todo read specific fold 
-def load_dataset(path, agents, features=None, multi_frame=False):
-    """
-    Load dataset and reformat it to match model input.
-    :param path: string of path to data
-    :param agents: number of agents
-    :param features: number of features, only needed when multi_frame is frame
-    :param multi_frame: True if scenes include multiple frames, otherwise False
-    :return: train, test and val data
-    """
-    X = np.load(path + '_data.npy')
-    if not multi_frame:
-        X = X.reshape((len(X), 1, agents, features))
-
-    y = np.load(path + '_labels.npy')
-    frames = np.load(path + '_frames.npy', allow_pickle=True)
-    groups = np.load(path + '_groups.npy', allow_pickle=True)
-
-    idx_train, idx_test, idx_val = train_test_split_frames(frames, multi_frame)
-    groups_train, groups_test, groups_val = \
-        train_test_split_groups(groups, frames[idx_train], frames[idx_test], frames[idx_val], multi_frame)
-
-    if multi_frame:
-        train = ([X[idx_train, :, i] for i in range(agents)], y[idx_train], frames[idx_train], groups_train)
-        test = ([X[idx_test, :, i] for i in range(agents)], y[idx_test], frames[idx_test], groups_test)
-        val = ([X[idx_val, :, i] for i in range(agents)], y[idx_val], frames[idx_val], groups_val)
-    else:
-        train = ([X[idx_train, :, 2:], X[idx_train, :, :2]], y[idx_train], frames[idx_train], groups_train)
-        test = ([X[idx_test, :, 2:], X[idx_test, :, :2]], y[idx_test], frames[idx_test], groups_test)
-        val = ([X[idx_val, :, 2:], X[idx_val, :, :2]], y[idx_val], frames[idx_val], groups_val)
-    return train, test, val

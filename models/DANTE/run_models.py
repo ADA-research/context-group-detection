@@ -37,7 +37,7 @@ if __name__ == "__main__":
             fold = folds[i]
 
             # get data
-            test, train, val = load_data("../../datasets/" + args.dataset + "/fold_" + str(fold))
+            train, test, val = load_data("../../datasets/" + args.dataset + "/fold_" + str(fold))
             for j in range(1):
                 # set model architecture
                 # Context tranform in the paper
