@@ -10,26 +10,14 @@
 #SBATCH --mem=1000M
 #SBATCH --gres=gpu:1
 
-# load modules (assuming you start from the default environment)
-# we explicitly call the modules to improve reproducibility
-# in case the default settings change
 module load TensorFlow/2.11.0-foss-2022a-CUDA-11.7.0
 
 export PYTHONPATH="${PYTHONPATH}:${HOME}/context-group-detection/"
 
-# Source the Python virtual environment
-#source "${HOME}/context-group-detection/python_test_venv/bin/activate"
+echo "User: ${SLURM_JOB_USER}, hostname: ${HOSTNAME}, job_id: ${SLURM_JOB_ID}"
+echo "Current working directory: $(pwd)"
 
-echo "[${SHELL}] #### Starting Python test"
-echo "[${SHELL}] ## This is ${SLURM_JOB_USER} on ${HOSTNAME} and this job has the ID ${SLURM_JOB_ID}"
-# get the current working directory
-export CWD=$(pwd)
-echo "[${SHELL}] ## current working directory: ${CWD}"
-
-# Run the file
-echo "[${SHELL}] ## Run script"
+echo "Script starting"
 cd "${HOME}/context-group-detection/models" || exit
 python model.py -e 50
-echo "[${SHELL}] ## Script finished"
-
-echo "[${SHELL}] #### Finished Python test. Have a nice day"
+echo "Script finished"
