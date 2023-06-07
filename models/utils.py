@@ -101,7 +101,9 @@ class ValLoss(Callback):
         self.val_mses = []
         self.train_mses = []
 
-    def on_epoch_end(self, epoch, logs={}):
+    def on_epoch_end(self, epoch, logs=None):
+        if logs is None:
+            logs = {}
         if epoch < self.train_epochs:
             return
 
@@ -143,8 +145,8 @@ def build_model(reg_amt, drop_amt, max_people, d, global_filters,
     :param global_filters: filters for context branch
     :param individual_filters: filters for pair branch
     :param combined_filters: filters after concatenation
-    :param no_pointnet: TODO findout
-    :param symmetric: TODO findout
+    :param no_pointnet: TODO find out
+    :param symmetric: TODO find out
     :return: model
     """
     group_inputs = Input(shape=(1, max_people, d))
@@ -261,7 +263,7 @@ def get_path(dir_name, no_pointnet=False):
     """
     # creates a new directory to save the model into.
     :param dir_name: name of folder to save data
-    :param no_pointnet: TODO findout
+    :param no_pointnet: TODO find out
     :return: path
     """
 
@@ -293,7 +295,7 @@ def save_model_data(dir_name, reg, dropout, history, test, multi_frame=False, no
     :param history: ValLoss to retrieve model and other parameters
     :param test: test dataset to be evaluated on
     :param multi_frame: True if scenes include multiple frames, otherwise False
-    :param no_pointnet: TODO findout
+    :param no_pointnet: TODO find out
     :param gmitre_calc: True if group mitre should be calculated, otherwise False
     :return: nothing
     """
@@ -345,11 +347,12 @@ def train_and_save_model(global_filters, individual_filters, combined_filters,
     :param dataset_path: path to raw dataset
     :param reg: regularization factor
     :param dropout: dropout rate
-    :param no_pointnet: TODO findout
-    :param symmetric: TODO findout
+    :param no_pointnet: TODO find out
+    :param symmetric: TODO find out
     :param batch_size: batch size used in training of model
     :param patience: number of epochs to be used in EarlyStopping callback
     :param gmitre_calc: True if group mitre should be calculated, otherwise False
+    :param dir_name: location to save results
     :return: nothing
     """
     # ensures repeatability
