@@ -34,4 +34,6 @@ echo "Current working directory: $(pwd)"
 echo "Script starting"
 cd "${HOME}/context-group-detection/models" || exit
 python dante.py -e ${epochs} -k ${fold}
+
+echo "Epochs: ${epochs}, fold: ${fold}"
 echo "Script finished"

@@ -32,4 +32,6 @@ echo "Current working directory: $(pwd)"
 echo "Script starting"
 cd "${HOME}/context-group-detection/models" || exit
 python model.py -e ${epochs} --fold ${fold}
+
+echo "Epochs: ${epochs}, fold: ${fold}"
 echo "Script finished"
