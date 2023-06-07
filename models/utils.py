@@ -368,7 +368,7 @@ def train_and_save_model(global_filters, individual_filters, combined_filters,
     # train model
     tensorboard = TensorBoard(log_dir='./logs')
     early_stop = EarlyStopping(monitor='val_loss', patience=patience)
-    history = ValLoss(val, dataset, dataset_path)
+    history = ValLoss(val, dataset, dataset_path, gmitre_calc=gmitre_calc)
 
     model.fit(train[0], train[1], epochs=epochs, batch_size=batch_size,
               validation_data=(val[0], val[1]), callbacks=[tensorboard, history, early_stop])
