@@ -264,43 +264,37 @@ def write_history(file_name, history, test, multi_frame=False, gmitre_calc=False
     file.close()
 
 
-def get_path(dataset, no_pointnet=False):
+def get_path(dir_name, no_pointnet=False):
     """
     # creates a new directory to save the model into.
-    :param dataset: name of dataset
+    :param dir_name: name of folder to save data
     :param no_pointnet: TODO findout
     :return: path
     """
-    path = 'models/' + dataset
+
+    path = 'results/{}'.format(dir_name)
     if not os.path.isdir(path):
         os.makedirs(path)
+        i = 0
+    else:
+        i = len(os.listdir(path))
+
+    path = '{}/result_{}'.format(path, str(i))
+    os.mkdir(path)
 
     if no_pointnet:
         path += '/no_pointnet'
         if not os.path.isdir(path):
             os.makedirs(path)
 
-    path = path + '/pair_predictions_'
-    i = 1
-    while True:
-        if not os.path.isdir(path + str(i)):
-            path = path + str(i)
-            os.makedirs(path)
-            print('saving model to ' + path)
-            break
-        else:
-            i += 1
-
-        if i == 10000:
-            raise Exception("ERROR: could not find models directory")
     return path
 
 
-def save_model_data(dataset, reg, dropout, history, test, multi_frame=False, no_pointnet=False,
+def save_model_data(dir_name, reg, dropout, history, test, multi_frame=False, no_pointnet=False,
                     gmitre_calc=False):
     """
     Save model and metrics to files.
-    :param dataset: name of dataset
+    :param dir_name: name of folder to save data
     :param reg: regularization factor
     :param dropout: dropout rate
     :param history: ValLoss to retrieve model and other parameters
@@ -318,7 +312,7 @@ def save_model_data(dataset, reg, dropout, history, test, multi_frame=False, no_
     best_val_f1s_one.append(history.val_f1_one_obj['best_f1'])
     best_val_f1s_gmitre.append(history.val_f1_gmitre_obj['best_f1'])
     best_val_f1s_two_thirds.append(history.val_f1_two_thirds_obj['best_f1'])
-    path = get_path(dataset, no_pointnet)
+    path = get_path(dir_name, no_pointnet)
     file = open(path + '/architecture.txt', 'w+')
     file.write("\nreg= " + str(reg) + "\ndropout= " + str(dropout))
     name = path
@@ -343,7 +337,8 @@ def save_model_data(dataset, reg, dropout, history, test, multi_frame=False, no_
 
 def train_and_save_model(global_filters, individual_filters, combined_filters,
                          train, test, val, epochs, dataset, dataset_path, reg=0.0000001, dropout=.35,
-                         no_pointnet=False, symmetric=False, batch_size=64, patience=50, gmitre_calc=False):
+                         no_pointnet=False, symmetric=False, batch_size=64, patience=50, gmitre_calc=False,
+                         dir_name=''):
     """
     Train and save model based on given parameters.
     :param global_filters: filters for context branch
@@ -382,4 +377,4 @@ def train_and_save_model(global_filters, individual_filters, combined_filters,
     model.fit(train[0], train[1], epochs=epochs, batch_size=batch_size,
               validation_data=(val[0], val[1]), callbacks=[tensorboard, history, early_stop])
 
-    save_model_data(dataset, reg, dropout, history, test, gmitre_calc=gmitre_calc)
+    save_model_data(dir_name, reg, dropout, history, test, gmitre_calc=gmitre_calc)
