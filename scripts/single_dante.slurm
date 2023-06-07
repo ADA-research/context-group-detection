@@ -33,7 +33,7 @@ echo "Current working directory: $(pwd)"
 
 echo "Script starting"
 cd "${HOME}/context-group-detection/models" || exit
-python dante.py -e ${epochs} -k ${fold}
+python dante.py -e ${epochs} -k ${fold} -j ${SLURM_JOB_ID}
 
 echo "Epochs: ${epochs}, fold: ${fold}"
 echo "Script finished"

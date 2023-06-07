@@ -31,11 +31,7 @@ echo "Current working directory: $(pwd)"
 
 echo "Script starting"
 cd "${HOME}/context-group-detection/models" || exit
-python model.py -e ${epochs} --fold 0
-python model.py -e ${epochs} --fold 1
-python model.py -e ${epochs} --fold 2
-python model.py -e ${epochs} --fold 3
-python model.py -e ${epochs} --fold 4
+python model.py -e ${epochs} --fold ${fold} -j ${SLURM_JOB_ID}
 
 echo "Epochs: ${epochs}, fold: ${fold}"
 echo "Script finished"

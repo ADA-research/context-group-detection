@@ -3,7 +3,7 @@
 #SBATCH --output=%x_%j.out
 #SBATCH --mail-user="thomasmaliappis@gmail.com"
 #SBATCH --mail-type="ALL"
-#SBATCH --time=00:30:00
+#SBATCH --time=04:00:00
 #SBATCH --partition=gpu-short
 #SBATCH --gres=gpu:1
 #SBATCH --mem-per-gpu=5G
@@ -33,7 +33,11 @@ echo "Current working directory: $(pwd)"
 
 echo "Script starting"
 cd "${HOME}/context-group-detection/models" || exit
-python dante.py -e ${epochs} -k ${fold}
+python dante.py -e ${epochs} -k 0 -j ${SLURM_JOB_ID}
+python dante.py -e ${epochs} -k 1 -j ${SLURM_JOB_ID}
+python dante.py -e ${epochs} -k 2 -j ${SLURM_JOB_ID}
+python dante.py -e ${epochs} -k 3 -j ${SLURM_JOB_ID}
+python dante.py -e ${epochs} -k 4 -j ${SLURM_JOB_ID}
 
 echo "Epochs: ${epochs}, fold: ${fold}"
 echo "Script finished"
