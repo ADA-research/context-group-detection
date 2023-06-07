@@ -119,9 +119,10 @@ def get_args():
     parser.add_argument('--dataset_path', type=str, default="../datasets/ETH/seq_eth")
     parser.add_argument('--train_epochs', type=int, default=5)
     parser.add_argument('-e', '--epochs', type=int, default=1)
-    parser.add_argument('-f', '--features', type=int, default=4)
     parser.add_argument('-a', '--agents', type=int, default=10)
     parser.add_argument('-cf', '--frames', type=int, default=10)
+    parser.add_argument('-f', '--features', type=int, default=4)
+    parser.add_argument('-p', '--patience', type=int, default=50)
     parser.add_argument('-bs', '--batch_size', type=int, default=1024)
     parser.add_argument('-r', '--reg', type=float, default=0.0000001)
     parser.add_argument('-drop', '--dropout', type=float, default=0.35)
@@ -145,7 +146,7 @@ if __name__ == '__main__':
     )
 
     tensorboard = TensorBoard(log_dir='./logs')
-    early_stop = EarlyStopping(monitor='val_loss', patience=20)
+    early_stop = EarlyStopping(monitor='val_loss', patience=args.patience)
     history = ValLoss(val, args.dataset, args.dataset_path, args.train_epochs, True, args.gmitre_calc)
 
     model.fit(train[0], train[1], epochs=args.epochs, batch_size=args.batch_size,
