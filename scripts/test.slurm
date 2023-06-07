@@ -8,6 +8,24 @@
 #SBATCH --gres=gpu:1
 #SBATCH --mem-per-gpu=5G
 
+# Default values
+epochs="50"
+fold="0"
+
+# Read flags and their corresponding values
+while getopts "e:f:" flag; do
+  case ${flag} in
+    e) epochs="${OPTARG}" ;;
+    f) fold="${OPTARG}" ;;
+    *) echo "Invalid flag: ${flag}" >&2
+       exit 1 ;;
+  esac
+done
+
+# Display the values of flags
+echo "Epochs: ${epochs}"
+echo "Fold: ${fold}"
+
 module load TensorFlow/2.11.0-foss-2022a-CUDA-11.7.0
 
 export PYTHONPATH="${PYTHONPATH}:${HOME}/context-group-detection/"
@@ -17,5 +35,5 @@ echo "Current working directory: $(pwd)"
 
 echo "Script starting"
 cd "${HOME}/context-group-detection/models" || exit
-python model.py -e 50
+python "model.py -e ${epochs} -f ${fold}"
 echo "Script finished"
