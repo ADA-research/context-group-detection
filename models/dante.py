@@ -23,7 +23,7 @@ def get_args():
     parser.add_argument('--dataset_path', type=str, default="../datasets/ETH/seq_eth")
     parser.add_argument('-np', '--no_pointnet', action="store_true", default=False)
     parser.add_argument('-s', '--symmetric', action="store_true", default=False)
-    parser.add_argument('-gm', '--gmitre_calc', action="store_true", default=False)
+    parser.add_argument('-gm', '--gmitre_calc', action="store_true", default=True)
 
     return parser.parse_args()
 
