@@ -1,6 +1,9 @@
 import argparse
+import os
 
 from models.utils import load_data, train_and_save_model
+
+os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 
 
 def get_args():
