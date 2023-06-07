@@ -4,7 +4,7 @@
 #SBATCH --mail-user="thomasmaliappis@gmail.com"
 #SBATCH --mail-type="ALL"
 #SBATCH --time=01:00:00
-#SBATCH --partition=testing
+#SBATCH --partition=gpu-short
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=1000M
