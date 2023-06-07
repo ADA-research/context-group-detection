@@ -38,7 +38,8 @@ if __name__ == "__main__":
         train_and_save_model(global_filters, individual_filters, combined_filters,
                              train, test, val, args.epochs, args.dataset, args.dataset_path,
                              reg=args.reg, dropout=args.dropout, no_pointnet=args.no_pointnet,
-                             symmetric=args.symmetric, gmitre_calc=args.gmitre_calc)
+                             symmetric=args.symmetric, gmitre_calc=args.gmitre_calc,
+                             dir_name='{}/fold_{}'.format(args.dataset, args.fold))
     else:
         train, test, val = load_data(
             '../datasets/reformatted/{}_1_{}/fold_{}'.format(args.dataset, args.agents, args.fold))
@@ -46,4 +47,5 @@ if __name__ == "__main__":
         train_and_save_model(global_filters, individual_filters, combined_filters,
                              train, test, val, args.epochs, args.dataset, args.dataset_path,
                              reg=args.reg, dropout=args.dropout, no_pointnet=args.no_pointnet,
-                             symmetric=args.symmetric, gmitre_calc=args.gmitre_calc)
+                             symmetric=args.symmetric, gmitre_calc=args.gmitre_calc,
+                             dir_name='{}_1_{}/fold_{}'.format(args.dataset, args.agents, args.fold))

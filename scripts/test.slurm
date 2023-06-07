@@ -5,7 +5,6 @@
 #SBATCH --mail-type="ALL"
 #SBATCH --time=02:00:00
 #SBATCH --partition=gpu-short
-#SBATCH --ntasks=1
 #SBATCH --gres=gpu:1
 #SBATCH --mem-per-gpu=5G
 
