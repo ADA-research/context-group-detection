@@ -3,7 +3,7 @@
 #SBATCH --output=%x_%j.out
 #SBATCH --mail-user="thomasmaliappis@gmail.com"
 #SBATCH --mail-type="ALL"
-#SBATCH --time=00:30:00
+#SBATCH --time=02:30:00
 #SBATCH --partition=gpu-short
 #SBATCH --gres=gpu:1
 #SBATCH --mem-per-gpu=5G
