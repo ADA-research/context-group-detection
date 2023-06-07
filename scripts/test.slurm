@@ -3,11 +3,11 @@
 #SBATCH --output=%x_%j.out
 #SBATCH --mail-user="thomasmaliappis@gmail.com"
 #SBATCH --mail-type="ALL"
-#SBATCH --time=01:00:00
+#SBATCH --time=02:00:00
 #SBATCH --partition=testing
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1
-#SBATCH --mem=100M
+#SBATCH --mem=1000M
 #SBATCH --gres=gpu:1
 
 # load modules (assuming you start from the default environment)
