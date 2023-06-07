@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=test_job
+#SBATCH --job-name=model_job
 #SBATCH --output=%x_%j.out
 #SBATCH --mail-user="thomasmaliappis@gmail.com"
 #SBATCH --mail-type="ALL"
@@ -21,10 +21,6 @@ while getopts "e:f:" flag; do
        exit 1 ;;
   esac
 done
-
-# Display the values of flags
-echo "Epochs: ${epochs}"
-echo "Fold: ${fold}"
 
 module load TensorFlow/2.11.0-foss-2022a-CUDA-11.7.0
 
