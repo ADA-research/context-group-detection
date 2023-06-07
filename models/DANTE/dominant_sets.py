@@ -100,7 +100,7 @@ def vector_climb(A, allowed, n_people, original_A, thres=1e-5, eps_threshold=1e-
     x = np.multiply(x, allowed)
     eps = 10
     counter = 0
-    while eps > eps_threshold and counter <= 1000:
+    while eps > eps_threshold and counter <= 100000:
         p = f(x, A)
         x = np.multiply(x, np.dot(A, x)) / np.dot(x, np.dot(A, x))
         n = f(x, A)
