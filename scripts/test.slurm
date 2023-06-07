@@ -7,7 +7,7 @@
 #SBATCH --partition=gpu-short
 #SBATCH --ntasks=1
 #SBATCH --gres=gpu:1
-#SBATCH --mem-per-gpu=1G
+#SBATCH --mem-per-gpu=5G
 
 module load TensorFlow/2.11.0-foss-2022a-CUDA-11.7.0
 
