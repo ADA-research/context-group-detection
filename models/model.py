@@ -143,7 +143,7 @@ if __name__ == '__main__':
     model = build_model(args.agents - 2, args.frames, args.features, args.reg, args.dropout, args.learning_rate)
 
     tensorboard = TensorBoard(log_dir='./logs')
-    early_stop = EarlyStopping(monitor='val_loss', patience=5)
+    early_stop = EarlyStopping(monitor='val_loss', patience=20)
     history = ValLoss(val, args.dataset, args.dataset_path, args.train_epochs, True, args.gmitre_calc)
 
     model.fit(train[0], train[1], epochs=args.epochs, batch_size=args.batch_size,
