@@ -1,5 +1,6 @@
 numpy
 tensorflow
+keras
 pandas
 seaborn
 xlsxwriter
