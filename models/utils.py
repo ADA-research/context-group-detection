@@ -206,12 +206,12 @@ def build_model(reg_amt, drop_amt, max_people, d, global_filters,
 
 
 def write_object_history(file, history_object, history, test, multi_frame=False, gmitre_calc=False):
-    file.write("\n\tepoch: " + str(history_object['epoch']))
+    file.write("\tepoch: {}\n".format(str(history_object['epoch'])))
     results = predict(test, history_object['model'], history.groups, history.dataset, multi_frame, history.positions,
                       gmitre_calc)
-    file.write(' '.join(['\n\ttest_f1s:', ' '.join([str(result[0]) for result in results])]))
-    file.write(' '.join(['\n\tprecisions:', ' '.join([str(result[1]) for result in results])]))
-    file.write(' '.join(['\n\trecalls:', ' '.join([str(result[2]) for result in results])]))
+    file.write(' '.join(['\ttest_f1s:', ' '.join([str(result[0]) for result in results])]) + '\n')
+    file.write(' '.join(['\tprecisions:', ' '.join([str(result[1]) for result in results])]) + '\n')
+    file.write(' '.join(['\trecalls:', ' '.join([str(result[2]) for result in results])]) + '\n')
 
 
 def write_history(file_name, history, test, multi_frame=False, gmitre_calc=False):
@@ -226,41 +226,34 @@ def write_history(file_name, history, test, multi_frame=False, gmitre_calc=False
     """
     file = open(file_name, 'w+')
 
-    file.write("best_val: " + str(history.best_val_mse))
-    file.write("\nepoch: " + str(history.best_epoch))
+    file.write("best_val: {}\n".format(str(history.best_val_mse)))
+    file.write("epoch: {}\n".format(str(history.best_epoch)))
 
-    file.write("\nbest_val_f1_1: " + str(history.val_f1_one_obj['best_f1']))
+    file.write("best_val_f1_1: {}\n".format(str(history.val_f1_one_obj['best_f1'])))
     write_object_history(file, history.val_f1_one_obj, history, test, multi_frame, gmitre_calc)
 
-    file.write("\nbest_val_f1_2/3: " + str(history.val_f1_two_thirds_obj['best_f1']))
+    file.write("best_val_f1_2/3: {}\n".format(str(history.val_f1_two_thirds_obj['best_f1'])))
     write_object_history(file, history.val_f1_two_thirds_obj, history, test, multi_frame, gmitre_calc)
 
     if gmitre_calc:
-        file.write("\nbest_val_f1_gmitre: " + str(history.val_f1_gmitre_obj['best_f1']))
+        file.write("best_val_f1_gmitre: {}\n".format(str(history.val_f1_gmitre_obj['best_f1'])))
         write_object_history(file, history.val_f1_gmitre_obj, history, test, multi_frame, gmitre_calc)
 
-    file.write("\ntrain loss:")
-    for loss in history.train_losses:
-        file.write('\n\t' + str(loss))
-    file.write("\nval loss:")
-    for loss in history.val_losses:
-        file.write('\n\t' + str(loss))
-    file.write("\ntrain mse:")
-    for loss in history.train_mses:
-        file.write('\n\t' + str(loss))
-    file.write("\nval mse:")
-    for loss in history.val_mses:
-        file.write('\n\t' + str(loss))
-    file.write("\nval 1 f1:")
-    for f1 in history.val_f1_one_obj['f1s']:
-        file.write('\n\t' + str(f1))
-    file.write("\nval 2/3 f1:")
-    for f1 in history.val_f1_two_thirds_obj['f1s']:
-        file.write('\n\t' + str(f1))
     if gmitre_calc:
-        file.write("\nval gmitre f1:")
-        for f1 in history.val_f1_gmitre_obj['f1s']:
-            file.write('\n\t' + str(f1))
+        file.write('{:<10s} {:<10s} {:<10s} {:<10s} {:<10s} {:<10s} {:<10s}\n'.format(
+            'train loss', 'val loss', 'train mse', 'val mse', 'val 1 f1', 'val 2/3 f1', 'val gmitre f1'))
+        for i in range(len(history.train_losses)):
+            file.write('{:<10.7f} {:<10.7f} {:<10.7f} {:<10.7f} {:<10.7f} {:<10.7f} {:<10.7f}\n'.format(
+                history.train_losses[i], history.val_losses[i], history.train_mses[i], history.val_mses[i],
+                history.val_f1_one_obj['f1s'][i], history.val_f1_two_thirds_obj['f1s'][i],
+                history.val_f1_gmitre_obj['f1s'][i]))
+    else:
+        file.write('{:<10s} {:<10s} {:<10s} {:<10s} {:<10s} {:<10s}\n'.format(
+            'train loss', 'val loss', 'train mse', 'val mse', 'val 1 f1', 'val 2/3 f1'))
+        for i in range(len(history.train_losses)):
+            file.write('{:<10.7f} {:<10.7f} {:<10.7f} {:<10.7f} {:<10.7f} {:<10.7f}\n'.format(
+                history.train_losses[i], history.val_losses[i], history.train_mses[i], history.val_mses[i],
+                history.val_f1_one_obj['f1s'][i], history.val_f1_two_thirds_obj['f1s'][i]))
     file.close()
 
 
@@ -279,7 +272,7 @@ def get_path(dir_name, no_pointnet=False):
     else:
         i = len(os.listdir(path))
 
-    path = '{}/result_{}'.format(path, str(i))
+    path = '{}/{}'.format(path, str(i))
     os.mkdir(path)
 
     if no_pointnet:
@@ -314,7 +307,7 @@ def save_model_data(dir_name, reg, dropout, history, test, multi_frame=False, no
     best_val_f1s_two_thirds.append(history.val_f1_two_thirds_obj['best_f1'])
     path = get_path(dir_name, no_pointnet)
     file = open(path + '/architecture.txt', 'w+')
-    file.write("\nreg= " + str(reg) + "\ndropout= " + str(dropout))
+    file.write("reg= {}\ndropout= {}".format(str(reg), str(dropout)))
     name = path
     if not os.path.isdir(name):
         os.makedirs(name)
@@ -323,15 +316,15 @@ def save_model_data(dir_name, reg, dropout, history, test, multi_frame=False, no
     #  right now the one with the best F1 T=1 is saved
     history.val_f1_one_obj['model'].save(name + '/best_val_model.h5')
     print("saved best val model as " + '/best_val_model.h5')
-    file.write("\n\nbest overall val loss: " + str(min(best_val_mses)))
-    file.write("\nbest val losses per fold: " + str(best_val_mses))
-    file.write("\n\nbest overall f1 1: " + str(max(best_val_f1s_one)))
-    file.write("\nbest f1 1s per fold: " + str(best_val_f1s_one))
-    file.write("\n\nbest overall f1 2/3: " + str(max(best_val_f1s_two_thirds)))
-    file.write("\nbest f1 2/3s per fold: " + str(best_val_f1s_two_thirds))
+    file.write("best overall val loss: {}\n".format(str(min(best_val_mses))))
+    file.write("best val losses per fold: {}\n\n".format(str(best_val_mses)))
+    file.write("best overall f1 1: {}\n".format(str(max(best_val_f1s_one))))
+    file.write("best f1 1s per fold: {}\n\n".format(str(best_val_f1s_one)))
+    file.write("best overall f1 2/3: {}\n".format(str(max(best_val_f1s_two_thirds))))
+    file.write("best f1 2/3s per fold: {}\n\n".format(str(best_val_f1s_two_thirds)))
     if gmitre_calc:
-        file.write("\n\nbest overall f1 gmitre: " + str(max(best_val_f1s_gmitre)))
-        file.write("\nbest f1 gmitres per fold: " + str(best_val_f1s_gmitre))
+        file.write("best overall f1 gmitre: {}\n".format(str(max(best_val_f1s_gmitre))))
+        file.write("best f1 gmitres per fold: {}\n".format(str(best_val_f1s_gmitre)))
     file.close()
 
 
