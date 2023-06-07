@@ -140,7 +140,9 @@ if __name__ == '__main__':
     train, test, val = load_data(
         '../datasets/reformatted/{}_{}_{}/fold_{}'.format(args.dataset, args.frames, args.agents, args.fold))
 
-    model = build_model(args.agents - 2, args.frames, args.features, args.reg, args.dropout, args.learning_rate)
+    model = build_model(args.agents - 2, args.frames, args.features, args.reg, args.dropout, args.learning_rate,
+                        pair_filters=[32, 128, 256], context_filters=[64, 128, 256], combination_filters=[256, 64]
+    )
 
     tensorboard = TensorBoard(log_dir='./logs')
     early_stop = EarlyStopping(monitor='val_loss', patience=20)
