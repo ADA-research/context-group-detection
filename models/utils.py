@@ -270,12 +270,6 @@ def get_path(dir_name, no_pointnet=False):
     path = 'results/{}'.format(dir_name)
     if not os.path.isdir(path):
         os.makedirs(path)
-        i = 0
-    else:
-        i = len(os.listdir(path))
-
-    path = '{}/{}'.format(path, str(i))
-    os.mkdir(path)
 
     if no_pointnet:
         path += '/no_pointnet'

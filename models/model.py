@@ -116,6 +116,7 @@ def get_args():
 
     parser.add_argument('--fold', type=str, default="0")
     parser.add_argument('--dataset', type=str, default="eth")
+    parser.add_argument('-j', '--job_id', type=str, default="job_id")
     parser.add_argument('--dataset_path', type=str, default="../datasets/ETH/seq_eth")
     parser.add_argument('--train_epochs', type=int, default=5)
     parser.add_argument('-e', '--epochs', type=int, default=1)
@@ -152,5 +153,5 @@ if __name__ == '__main__':
     model.fit(train[0], train[1], epochs=args.epochs, batch_size=args.batch_size,
               validation_data=(val[0], val[1]), callbacks=[tensorboard, early_stop, history])
 
-    dir_name = '{}_{}_{}/fold_{}'.format(args.dataset, args.frames, args.agents, args.fold)
+    dir_name = '{}_{}_{}/fold_{}/{}'.format(args.dataset, args.frames, args.agents, args.fold, args.job_id)
     save_model_data(dir_name, args.reg, args.dropout, history, test, True, gmitre_calc=args.gmitre_calc)

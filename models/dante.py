@@ -10,6 +10,7 @@ def get_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument('-k', '--fold', type=str, default='0')
+    parser.add_argument('-j', '--job_id', type=str, default="job_id")
     parser.add_argument('-e', '--epochs', type=int, default=1)
     parser.add_argument('-a', '--agents', type=int, default=10)
     parser.add_argument('-f', '--features', type=int, default=4)
@@ -52,4 +53,4 @@ if __name__ == "__main__":
                              train, test, val, args.epochs, args.dataset, args.dataset_path,
                              reg=args.reg, dropout=args.dropout, no_pointnet=args.no_pointnet,
                              symmetric=args.symmetric, gmitre_calc=args.gmitre_calc, patience=args.patience,
-                             dir_name='{}_1_{}/fold_{}'.format(args.dataset, args.agents, args.fold))
+                             dir_name='{}_1_{}/fold_{}/{}'.format(args.dataset, args.agents, args.fold, args.job_id))
