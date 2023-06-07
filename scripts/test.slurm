@@ -6,8 +6,6 @@
 #SBATCH --time=02:00:00
 #SBATCH --partition=gpu-short
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=1
-#SBATCH --mem-per-cpu=1G
 #SBATCH --gres=gpu:1
 #SBATCH --mem-per-gpu=1G
 
