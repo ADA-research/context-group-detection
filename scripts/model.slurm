@@ -37,5 +37,5 @@ echo "Script starting"
 cd "${HOME}/context-group-detection/models" || exit
 python model.py -e ${epochs} --fold ${fold} -p ${patience} -j ${SLURM_JOB_ID}
 
-echo "Epochs: ${epochs}, fold: ${fold}"
+echo "Epochs: ${epochs}, fold: ${fold}, patience: ${patience}"
 echo "Script finished"
