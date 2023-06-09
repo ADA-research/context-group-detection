@@ -12,13 +12,15 @@
 fold="0"
 epochs="50"
 patience="50"
+message=""
 
 # Read flags and their corresponding values
-while getopts "e:f:p:" flag; do
+while getopts "e:f:p:m:" flag; do
   case ${flag} in
   f) fold="${OPTARG}" ;;
   e) epochs="${OPTARG}" ;;
   p) patience="${OPTARG}" ;;
+  m) message="${OPTARG}" ;;
   *)
     echo "Invalid flag: ${flag}" >&2
     exit 1
@@ -38,4 +40,7 @@ cd "${HOME}/context-group-detection/models" || exit
 python model.py -e ${epochs} --fold ${fold} -p ${patience} -j ${SLURM_JOB_ID}
 
 echo "Epochs: ${epochs}, fold: ${fold}, patience: ${patience}"
+if [ ${message} != "" ]; then
+    echo ${message}
+fi
 echo "Script finished"
