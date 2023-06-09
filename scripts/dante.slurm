@@ -1,24 +1,28 @@
 #!/bin/bash
-#SBATCH --job-name=model_job
+#SBATCH --job-name=dante_job
 #SBATCH --output=%x_%j.out
 #SBATCH --mail-user="thomasmaliappis@gmail.com"
 #SBATCH --mail-type="ALL"
-#SBATCH --time=02:30:00
+#SBATCH --time=02:00:00
 #SBATCH --partition=gpu-short
 #SBATCH --gres=gpu:1
 #SBATCH --mem-per-gpu=5G
 
 # Default values
-epochs="50"
 fold="0"
+epochs="50"
+patience="50"
 
 # Read flags and their corresponding values
-while getopts "e:f:" flag; do
+while getopts "e:f:p:" flag; do
   case ${flag} in
-    e) epochs="${OPTARG}" ;;
-    f) fold="${OPTARG}" ;;
-    *) echo "Invalid flag: ${flag}" >&2
-       exit 1 ;;
+  f) fold="${OPTARG}" ;;
+  e) epochs="${OPTARG}" ;;
+  p) patience="${OPTARG}" ;;
+  *)
+    echo "Invalid flag: ${flag}" >&2
+    exit 1
+    ;;
   esac
 done
 
@@ -31,11 +35,7 @@ echo "Current working directory: $(pwd)"
 
 echo "Script starting"
 cd "${HOME}/context-group-detection/models" || exit
-python model.py -e ${epochs} --fold 0 -j ${SLURM_JOB_ID}
-python model.py -e ${epochs} --fold 1 -j ${SLURM_JOB_ID}
-python model.py -e ${epochs} --fold 2 -j ${SLURM_JOB_ID}
-python model.py -e ${epochs} --fold 3 -j ${SLURM_JOB_ID}
-python model.py -e ${epochs} --fold 4 -j ${SLURM_JOB_ID}
+python dante.py -e ${epochs} -k ${fold} -p ${patience} -j ${SLURM_JOB_ID}
 
-echo "Epochs: ${epochs}, fold: ${fold}"
+echo "Epochs: ${epochs}, fold: ${fold}, patience: ${patience}"
 echo "Script finished"

@@ -9,16 +9,20 @@
 #SBATCH --mem-per-gpu=5G
 
 # Default values
-epochs="50"
 fold="0"
+epochs="50"
+patience="50"
 
 # Read flags and their corresponding values
-while getopts "e:f:" flag; do
+while getopts "e:f:p:" flag; do
   case ${flag} in
-    e) epochs="${OPTARG}" ;;
-    f) fold="${OPTARG}" ;;
-    *) echo "Invalid flag: ${flag}" >&2
-       exit 1 ;;
+  f) fold="${OPTARG}" ;;
+  e) epochs="${OPTARG}" ;;
+  p) patience="${OPTARG}" ;;
+  *)
+    echo "Invalid flag: ${flag}" >&2
+    exit 1
+    ;;
   esac
 done
 
@@ -31,7 +35,7 @@ echo "Current working directory: $(pwd)"
 
 echo "Script starting"
 cd "${HOME}/context-group-detection/models" || exit
-python model.py -e ${epochs} --fold ${fold} -j ${SLURM_JOB_ID}
+python model.py -e ${epochs} --fold ${fold} -p ${patience} -j ${SLURM_JOB_ID}
 
 echo "Epochs: ${epochs}, fold: ${fold}"
 echo "Script finished"
