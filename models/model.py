@@ -127,7 +127,7 @@ def get_args():
     parser.add_argument('-bs', '--batch_size', type=int, default=1024)
     parser.add_argument('-r', '--reg', type=float, default=0.0000001)
     parser.add_argument('-drop', '--dropout', type=float, default=0.35)
-    parser.add_argument('-et', '--eps_thres', type=float, default=1e-15)
+    parser.add_argument('-et', '--eps_thres', type=float, default=1e-13)
     parser.add_argument('-lr', '--learning_rate', type=float, default=0.0001)
     parser.add_argument('-gm', '--gmitre_calc', action="store_true", default=True)
 

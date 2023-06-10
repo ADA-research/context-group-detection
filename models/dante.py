@@ -17,7 +17,7 @@ def get_args():
     parser.add_argument('-p', '--patience', type=int, default=50)
     parser.add_argument('-d', '--dropout', type=float, default=0.35)
     parser.add_argument('-r', '--reg', type=float, default=0.0000001)
-    parser.add_argument('-et', '--eps_thres', type=float, default=1e-15)
+    parser.add_argument('-et', '--eps_thres', type=float, default=1e-13)
     # parser.add_argument('--dataset', type=str, default="cocktail_party")
     # parser.add_argument('--dataset_path', type=str, default="../datasets/cocktail_party")
     parser.add_argument('--dataset', type=str, default="eth")
