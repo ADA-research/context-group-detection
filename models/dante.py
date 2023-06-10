@@ -17,6 +17,7 @@ def get_args():
     parser.add_argument('-p', '--patience', type=int, default=50)
     parser.add_argument('-d', '--dropout', type=float, default=0.35)
     parser.add_argument('-r', '--reg', type=float, default=0.0000001)
+    parser.add_argument('-et', '--eps_thres', type=float, default=1e-15)
     # parser.add_argument('--dataset', type=str, default="cocktail_party")
     # parser.add_argument('--dataset_path', type=str, default="../datasets/cocktail_party")
     parser.add_argument('--dataset', type=str, default="eth")
@@ -44,7 +45,7 @@ if __name__ == "__main__":
                              train, test, val, args.epochs, args.dataset, args.dataset_path,
                              reg=args.reg, dropout=args.dropout, no_pointnet=args.no_pointnet,
                              symmetric=args.symmetric, gmitre_calc=args.gmitre_calc, patience=args.patience,
-                             dir_name='{}/fold_{}'.format(args.dataset, args.fold))
+                             dir_name='{}/fold_{}'.format(args.dataset, args.fold), eps_thres=args.eps_thres)
     else:
         train, test, val = load_data(
             '../datasets/reformatted/{}_1_{}/fold_{}'.format(args.dataset, args.agents, args.fold))
@@ -53,4 +54,5 @@ if __name__ == "__main__":
                              train, test, val, args.epochs, args.dataset, args.dataset_path,
                              reg=args.reg, dropout=args.dropout, no_pointnet=args.no_pointnet,
                              symmetric=args.symmetric, gmitre_calc=args.gmitre_calc, patience=args.patience,
-                             dir_name='{}_1_{}/fold_{}/{}'.format(args.dataset, args.agents, args.fold, args.job_id))
+                             dir_name='{}_1_{}/fold_{}/{}'.format(args.dataset, args.agents, args.fold, args.job_id),
+                             eps_thres=args.eps_thres)

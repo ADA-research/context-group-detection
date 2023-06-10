@@ -21,7 +21,7 @@ def calculate_f1(avg_results, num_times):
 
 
 def F1_calc(group_thresholds, affinities, times, groups, positions, n_people, n_features, non_reusable=False,
-            dominant_sets=True):
+            dominant_sets=True, eps_thres=1e-15):
     """
     Calculates average F1 for given threshold T.
     :param group_thresholds: threshold for group to be considered correctly detected
@@ -33,6 +33,7 @@ def F1_calc(group_thresholds, affinities, times, groups, positions, n_people, n_
     :param n_features: number of features
     :param non_reusable: if predicted groups can be reused
     :param dominant_sets: True if dominant sets algorithm will be used, otherwise False a naive grouping algorithm is used
+    :param eps_thres: threshold to be used in vector climb of dominant sets
     :return: F1, precision, recall
     """
     avg_results = [np.array([0.0, 0.0]), np.array([0.0, 0.0])]
@@ -66,7 +67,8 @@ def F1_calc(group_thresholds, affinities, times, groups, positions, n_people, n_
         frame = positions[frame_idx]
 
         if dominant_sets:
-            bool_groups = iterate_climb_learned(predictions, n_people, frame, n_features=n_features)
+            bool_groups = iterate_climb_learned(predictions, n_people, frame, n_features=n_features,
+                                                eps_thres=eps_thres)
         else:
             bool_groups = naive_group(predictions, n_people, frame, n_features=n_features)
 
@@ -98,7 +100,7 @@ def include_single_agent_groups(groups_at_time, agents):
 
 
 def F1_calc_clone(group_thresholds, affinities, frames, groups, positions, multi_frame=False,
-                  non_reusable=False, dominant_sets=True, gmitre_calc=False):
+                  non_reusable=False, dominant_sets=True, gmitre_calc=False, eps_thres=1e-15):
     """
     Calculates average F1 for thresholds 2/3, 1 and group mitre.
     :param group_thresholds: threshold for group to be considered correctly detected
@@ -110,6 +112,7 @@ def F1_calc_clone(group_thresholds, affinities, frames, groups, positions, multi
     :param non_reusable: if predicted groups can be reused
     :param dominant_sets: True if dominant sets algorithm will be used, otherwise False
     :param gmitre_calc: True if group mitre should be calculated, otherwise False
+    :param eps_thres: threshold to be used in vector climb of dominant sets
     :return: list of F1, precision, recall for T=2/3, T=1 and group mitre
     """
     if gmitre_calc:
@@ -136,7 +139,8 @@ def F1_calc_clone(group_thresholds, affinities, frames, groups, positions, multi
             n_people = len(positions[positions.frame_id == unique_frame])
 
         if dominant_sets:
-            bool_groups, agents_map = iterate_climb_learned(predictions, n_people, frames[idx], new=True)
+            bool_groups, agents_map = iterate_climb_learned(predictions, n_people, frames[idx], new=True,
+                                                            eps_thres=eps_thres)
         else:
             bool_groups, agents_map = naive_group(predictions, n_people, frames[idx], new=True)
 

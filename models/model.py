@@ -118,7 +118,7 @@ def get_args():
     parser.add_argument('--dataset', type=str, default="eth")
     parser.add_argument('-j', '--job_id', type=str, default="job_id")
     parser.add_argument('--dataset_path', type=str, default="../datasets/ETH/seq_eth")
-    parser.add_argument('--train_epochs', type=int, default=5)
+    parser.add_argument('--train_epochs', type=int, default=0)
     parser.add_argument('-e', '--epochs', type=int, default=1)
     parser.add_argument('-a', '--agents', type=int, default=10)
     parser.add_argument('-cf', '--frames', type=int, default=10)
@@ -127,6 +127,7 @@ def get_args():
     parser.add_argument('-bs', '--batch_size', type=int, default=1024)
     parser.add_argument('-r', '--reg', type=float, default=0.0000001)
     parser.add_argument('-drop', '--dropout', type=float, default=0.35)
+    parser.add_argument('-et', '--eps_thres', type=float, default=1e-15)
     parser.add_argument('-lr', '--learning_rate', type=float, default=0.0001)
     parser.add_argument('-gm', '--gmitre_calc', action="store_true", default=True)
 
@@ -144,14 +145,15 @@ if __name__ == '__main__':
 
     model = build_model(args.agents - 2, args.frames, args.features, args.reg, args.dropout, args.learning_rate,
                         pair_filters=[32, 128, 256], context_filters=[64, 128, 256], combination_filters=[256, 64]
-    )
+                        )
 
     tensorboard = TensorBoard(log_dir='./logs')
     early_stop = EarlyStopping(monitor='val_loss', patience=args.patience)
-    history = ValLoss(val, args.dataset, args.dataset_path, args.train_epochs, True, args.gmitre_calc)
+    history = ValLoss(val, args.dataset, args.dataset_path, args.train_epochs, True, args.gmitre_calc, args.eps_thres)
 
     model.fit(train[0], train[1], epochs=args.epochs, batch_size=args.batch_size,
               validation_data=(val[0], val[1]), callbacks=[tensorboard, early_stop, history])
 
     dir_name = '{}_{}_{}/fold_{}/{}'.format(args.dataset, args.frames, args.agents, args.fold, args.job_id)
-    save_model_data(dir_name, args.reg, args.dropout, history, test, True, gmitre_calc=args.gmitre_calc)
+    save_model_data(dir_name, args.reg, args.dropout, history, test, True, gmitre_calc=args.gmitre_calc,
+                    eps_thres=args.eps_thres)

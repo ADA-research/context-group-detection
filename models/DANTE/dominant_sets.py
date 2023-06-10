@@ -95,12 +95,12 @@ def weight(S, i, A):
 
 
 # iteratively finds vector x which maximizes f
-def vector_climb(A, allowed, n_people, original_A, thres=1e-5, eps_threshold=1e-15):
+def vector_climb(A, allowed, n_people, original_A, thres=1e-5, eps_thres=1e-15):
     x = np.random.uniform(0, 1, n_people)
     x = np.multiply(x, allowed)
     eps = 10
     counter = 0
-    while eps > eps_threshold and counter <= 1000:
+    while eps > eps_thres and counter <= 1000:
         p = f(x, A)
         x = np.multiply(x, np.dot(A, x)) / np.dot(x, np.dot(A, x))
         n = f(x, A)
@@ -116,7 +116,7 @@ def vector_climb(A, allowed, n_people, original_A, thres=1e-5, eps_threshold=1e-
     return groups
 
 
-def iterate_climb_learned(predictions, n_people, frames, n_features=None, new=False):
+def iterate_climb_learned(predictions, n_people, frames, n_features=None, new=False, eps_thres=1e-15):
     """
     Finds vectors x of people which maximize f. Then removes those people and repeats.
     :param predictions: model predicted affinities
@@ -124,6 +124,7 @@ def iterate_climb_learned(predictions, n_people, frames, n_features=None, new=Fa
     :param frames: frames included in examined scene
     :param n_features: number of features
     :param new: True if new functionality is being used, otherwise False
+    :param eps_thres: threshold to be used in vector climb of dominant sets
     :return: groups (+ agent mapping for new functionality)
     """
     allowed = np.ones(n_people)
@@ -139,7 +140,7 @@ def iterate_climb_learned(predictions, n_people, frames, n_features=None, new=Fa
         A[:, allowed == False] = 0
         if np.sum(np.dot(allowed, A)) == 0:
             break
-        x = vector_climb(A, allowed, n_people, original_A, thres=1e-5)
+        x = vector_climb(A, allowed, n_people, original_A, thres=1e-5, eps_thres=eps_thres)
         if len(x) == 0:
             break
         groups.append(x)
