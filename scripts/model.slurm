@@ -41,7 +41,7 @@ echo "Script starting"
 cd "${HOME}/context-group-detection/models" || exit
 job_id=${SLURM_JOB_ID}
 if [ ${folder} != "" ]; then
-  job_id="${SLURM_JOB_ID} ${folder}"
+  job_id="${SLURM_JOB_ID}_${folder}"
 fi
 python model.py -e ${epochs} --fold ${fold} -p ${patience} -j ${job_id} -et ${eps_thres}
 
