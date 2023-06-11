@@ -106,7 +106,7 @@ def vector_climb(A, allowed, n_people, original_A, thres=1e-5, eps_thres=1e-15):
         n = f(x, A)
         eps = abs(n - p)
         counter += 1
-        print('vc counter: {}'.format(counter))
+    print('vc counter: {}'.format(counter))
 
     groups = x > thres
 
@@ -149,7 +149,7 @@ def iterate_climb_learned(predictions, n_people, frames, n_features=None, new=Fa
         groups.append(x)
         allowed = np.multiply(x == False, allowed)
         counter += 1
-        print('ic counter: {}'.format(counter))
+    print('ic counter: {}'.format(counter))
 
     if new:
         return groups, agents_map
