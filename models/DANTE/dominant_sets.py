@@ -101,13 +101,12 @@ def vector_climb(A, allowed, n_people, original_A, thres=1e-5, eps_thres=1e-15):
     x = np.multiply(x, allowed)
     eps = 10
     counter = 0
-    while eps > eps_thres and counter <= 1000:
+    while eps > eps_thres and counter <= 10000:
         p = f(x, A)
         x = np.multiply(x, np.dot(A, x)) / np.dot(x, np.dot(A, x))
         n = f(x, A)
         eps = abs(n - p)
         counter += 1
-    print('vc counter: {}'.format(counter))
 
     groups = x > thres
 
@@ -138,7 +137,6 @@ def iterate_climb_learned(predictions, n_people, frames, n_features=None, new=Fa
         A = learned_affinity(predictions, n_people, frames, n_features)
     original_A = A.copy()
 
-    counter = 0
     while np.sum(allowed) > 1:
         A[allowed == False] = 0
         A[:, allowed == False] = 0
@@ -149,8 +147,6 @@ def iterate_climb_learned(predictions, n_people, frames, n_features=None, new=Fa
             break
         groups.append(x)
         allowed = np.multiply(x == False, allowed)
-        counter += 1
-    print('ic counter: {}'.format(counter))
 
     if new:
         return groups, agents_map
