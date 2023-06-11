@@ -19,15 +19,20 @@ def load_pickle_file(file):
         return pickle.load(f)
 
 
-def load_data(path):
+def load_data(path, no_context=False):
     """
     Loads train, test and val sets
     :param path: string location of the files to be loaded
+    :param no_context: True, if no context is used, otherwise False
     :return: train, test and val sets
     """
     train = load_pickle_file(path + '/train.p')
     test = load_pickle_file(path + '/test.p')
     val = load_pickle_file(path + '/val.p')
+    if no_context:
+        train = (train[0][:2], train[1], train[2], train[3])
+        test = (test[0][:2], test[1], test[2], test[3])
+        val = (val[0][:2], val[1], val[2], val[3])
     return train, test, val
 
 

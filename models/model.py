@@ -15,7 +15,7 @@ os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 
 
 def build_model(context_size, consecutive_frames, features, reg_amount, drop_amount, learning_rate, lstm_units=64,
-                pair_filters=[32], context_filters=[32], combination_filters=[64]):
+                pair_filters=[32], context_filters=[32], combination_filters=[64], no_context=False):
     """
     Builds model based on given parameters.
     :param context_size: size of context
@@ -28,6 +28,7 @@ def build_model(context_size, consecutive_frames, features, reg_amount, drop_amo
     :param pair_filters: filters to be used in conv1d layers for pair
     :param context_filters: filters to be used in conv1d layers for context
     :param combination_filters: units to be used in dense layer
+    :param no_context: True, if no context is used, otherwise False
     :return: model
     """
     inputs = []
@@ -61,35 +62,38 @@ def build_model(context_size, consecutive_frames, features, reg_amount, drop_amo
     # batch_norm = BatchNormalization()(drop)
     pair_layer = pair_conv
 
-    # context branch
-    context_inputs = []
-    for i in range(context_size):
-        context_input = Input(shape=(consecutive_frames, features), name='context_{}'.format(i))
-        context_inputs.append(context_input)
-        inputs.append(context_input)
+    if no_context:
+        flatten = Flatten()(pair_layer)
+    else:
+        # context branch
+        context_inputs = []
+        for i in range(context_size):
+            context_input = Input(shape=(consecutive_frames, features), name='context_{}'.format(i))
+            context_inputs.append(context_input)
+            inputs.append(context_input)
 
-    context_layers = []
-    for context_input in context_inputs:
-        lstm = LSTM(lstm_units, return_sequences=True)(context_input)
-        context_layers.append(lstm)
+        context_layers = []
+        for context_input in context_inputs:
+            lstm = LSTM(lstm_units, return_sequences=True)(context_input)
+            context_layers.append(lstm)
 
-    context_concatenated = concatenate(context_layers)
+        context_concatenated = concatenate(context_layers)
 
-    context_x = context_concatenated
-    for filters in context_filters:
-        context_x = Conv1D(filters=filters, kernel_size=3, kernel_regularizer=reg, activation='relu',
-                           name='context_conv_{}'.format(filters))(context_x)
-        context_x = Dropout(drop_amount)(context_x)
-        context_x = BatchNormalization()(context_x)
-    context_conv = context_x
-    # max_pool = MaxPooling1D()(batch_norm)
-    # drop = Dropout(drop_amount)(max_pool)
-    # batch_norm = BatchNormalization()(drop)
-    context_layer = context_conv
+        context_x = context_concatenated
+        for filters in context_filters:
+            context_x = Conv1D(filters=filters, kernel_size=3, kernel_regularizer=reg, activation='relu',
+                               name='context_conv_{}'.format(filters))(context_x)
+            context_x = Dropout(drop_amount)(context_x)
+            context_x = BatchNormalization()(context_x)
+        context_conv = context_x
+        # max_pool = MaxPooling1D()(batch_norm)
+        # drop = Dropout(drop_amount)(max_pool)
+        # batch_norm = BatchNormalization()(drop)
+        context_layer = context_conv
 
-    # Concatenate the outputs of the two branches
-    combined = concatenate([pair_layer, context_layer], axis=1)
-    flatten = Flatten()(combined)
+        # Concatenate the outputs of the two branches
+        combined = concatenate([pair_layer, context_layer], axis=1)
+        flatten = Flatten()(combined)
 
     combination_x = flatten
     for filters in combination_filters:
@@ -130,6 +134,7 @@ def get_args():
     parser.add_argument('-et', '--eps_thres', type=float, default=1e-13)
     parser.add_argument('-lr', '--learning_rate', type=float, default=0.0001)
     parser.add_argument('-gm', '--gmitre_calc', action="store_true", default=True)
+    parser.add_argument('-nc', '--no_context', action="store_true", default=False)
 
     return parser.parse_args()
 
@@ -141,11 +146,12 @@ if __name__ == '__main__':
     args = get_args()
 
     train, test, val = load_data(
-        '../datasets/reformatted/{}_{}_{}/fold_{}'.format(args.dataset, args.frames, args.agents, args.fold))
+        '../datasets/reformatted/{}_{}_{}/fold_{}'.format(args.dataset, args.frames, args.agents, args.fold),
+        args.no_context)
 
     model = build_model(args.agents - 2, args.frames, args.features, args.reg, args.dropout, args.learning_rate,
-                        pair_filters=[32, 128, 256], context_filters=[64, 128, 256], combination_filters=[256, 64]
-                        )
+                        pair_filters=[32, 128, 256], context_filters=[64, 128, 256], combination_filters=[256, 64],
+                        no_context=args.no_context)
 
     tensorboard = TensorBoard(log_dir='./logs')
     early_stop = EarlyStopping(monitor='val_loss', patience=args.patience)
