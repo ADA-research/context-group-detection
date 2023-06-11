@@ -82,7 +82,7 @@ def phi(S, i, j, A):
 
 # d-sets function weight
 def weight(S, i, A, depth):
-    if np.sum(S) == 1 or depth > 5:
+    if np.sum(S) == 1 or depth > 2:
         return 1
     else:
         R = S.copy()
