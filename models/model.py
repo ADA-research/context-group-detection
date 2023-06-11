@@ -118,7 +118,7 @@ def get_args():
     parser.add_argument('--dataset', type=str, default="eth")
     parser.add_argument('-j', '--job_id', type=str, default="job_id")
     parser.add_argument('--dataset_path', type=str, default="../datasets/ETH/seq_eth")
-    parser.add_argument('--train_epochs', type=int, default=0)
+    parser.add_argument('--train_epochs', type=int, default=5)
     parser.add_argument('-e', '--epochs', type=int, default=1)
     parser.add_argument('-a', '--agents', type=int, default=10)
     parser.add_argument('-cf', '--frames', type=int, default=10)
