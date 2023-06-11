@@ -14,10 +14,12 @@ epochs="50"
 patience="50"
 folder=""
 eps_thres="1e-15"
+context=true
 
 # Read flags and their corresponding values
-while getopts "e:f:p:m:t:" flag; do
+while getopts "ce:f:p:m:t:" flag; do
   case ${flag} in
+  c) context=false ;;
   f) fold="${OPTARG}" ;;
   e) epochs="${OPTARG}" ;;
   p) patience="${OPTARG}" ;;
@@ -41,11 +43,16 @@ job_id=${SLURM_JOB_ID}
 if [ ${folder} != "" ]; then
   job_id="${SLURM_JOB_ID}_${folder}"
 fi
-echo ${job_id}
-echo "Epochs: ${epochs}, fold: ${fold}, patience: ${patience}, job_id: ${job_id}, eps_thres: ${eps_thres}"
+
+if [ ${context} == false ]; then
+  context_flag="-nc" else
+  context_flag=""
+fi
+
+echo "Epochs: ${epochs}, fold: ${fold}, patience: ${patience}, job_id: ${job_id}, eps_thres: ${eps_thres}, context: ${context_flag}"
 
 echo "Script starting"
 cd "${HOME}/context-group-detection/models" || exit
-python model.py -e ${epochs} --fold ${fold} -p ${patience} -j ${job_id} -et ${eps_thres}
+python model.py -e ${epochs} --fold ${fold} -p ${patience} -j ${job_id} -et ${eps_thres} ${context_flag}
 
 echo "Script finished"
