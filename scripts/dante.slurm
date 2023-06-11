@@ -42,10 +42,10 @@ if [ ${folder} != "" ]; then
   job_id="${SLURM_JOB_ID}_${folder}"
 fi
 echo ${job_id}
+echo "Epochs: ${epochs}, fold: ${fold}, patience: ${patience}, job_id: ${job_id}, eps_thres: ${eps_thres}"
 
 echo "Script starting"
 cd "${HOME}/context-group-detection/models" || exit
 python dante.py -e ${epochs} -k ${fold} -p ${patience} -j ${job_id} -et ${eps_thres}
 
-echo "Epochs: ${epochs}, fold: ${fold}, patience: ${patience}"
 echo "Script finished"
