@@ -44,9 +44,11 @@ if [ ${folder} != "" ]; then
   job_id="${SLURM_JOB_ID}_${folder}"
 fi
 
-if [ ${context} == false ]; then
-  context_flag="-nc" else
-  context_flag=""
+if [ ${context} == false ];
+  then
+    context_flag="-nc"
+  else
+    context_flag=""
 fi
 
 echo "Epochs: ${epochs}, fold: ${fold}, patience: ${patience}, job_id: ${job_id}, eps_thres: ${eps_thres}, context: ${context_flag}"
