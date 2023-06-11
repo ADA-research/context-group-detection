@@ -40,8 +40,9 @@ echo "User: ${SLURM_JOB_USER}, hostname: ${HOSTNAME}, job_id: ${SLURM_JOB_ID}"
 echo "Current working directory: $(pwd)"
 
 job_id=${SLURM_JOB_ID}
-if [ ${folder} != "" ]; then
-  job_id="${SLURM_JOB_ID}_${folder}"
+if [ ${folder} != "" ];
+  then
+    job_id="${SLURM_JOB_ID}_${folder}"
 fi
 
 if [ ${context} == false ];
