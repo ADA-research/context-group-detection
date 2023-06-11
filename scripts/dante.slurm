@@ -2,7 +2,7 @@
 #SBATCH --job-name=dante_job
 #SBATCH --output=%x_%j.out
 #SBATCH --mail-user="thomasmaliappis@gmail.com"
-#SBATCH --mail-type="ALL"
+#SBATCH --mail-type="END"
 #SBATCH --time=02:00:00
 #SBATCH --partition=gpu-short
 #SBATCH --gres=gpu:1
