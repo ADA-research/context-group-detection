@@ -81,8 +81,8 @@ def phi(S, i, j, A):
 
 
 # d-sets function weight
-def weight(S, i, A):
-    if np.sum(S) == 1:
+def weight(S, i, A, depth):
+    if np.sum(S) == 1 or depth > 5:
         return 1
     else:
         R = S.copy()
@@ -90,7 +90,8 @@ def weight(S, i, A):
         sum_weights = 0
         for j in range(len(R)):
             if R[j]:
-                sum_weights += phi(R, j, i, A) * weight(R, j, A)
+                sum_weights += phi(R, j, i, A) * weight(R, j, A, depth + 1)
+                # print('depth: {}'.format(depth))
         return sum_weights
 
 
@@ -112,7 +113,7 @@ def vector_climb(A, allowed, n_people, original_A, thres=1e-5, eps_thres=1e-15):
 
     for i in range(n_people):
         if not allowed[i]:
-            if weight(groups, i, original_A) > 0.0:
+            if weight(groups, i, original_A, 0) > 0.0:
                 return []
     return groups
 
