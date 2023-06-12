@@ -312,7 +312,7 @@ def save_model_data(dir_name, reg, dropout, history, test, multi_frame=False, no
     best_val_f1s_two_thirds.append(history.val_f1_two_thirds_obj['best_f1'])
     path = get_path(dir_name, no_pointnet)
     file = open(path + '/architecture.txt', 'w+')
-    file.write("reg= {}\ndropout= {}".format(str(reg), str(dropout)))
+    file.write("reg= {}\ndropout= {}\n".format(str(reg), str(dropout)))
     name = path
     if not os.path.isdir(name):
         os.makedirs(name)
