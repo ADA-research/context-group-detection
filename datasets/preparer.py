@@ -420,7 +420,7 @@ def folds_split(frames, folds_num, multi_frame=False):
     return folds_idx
 
 
-def train_val_split_frames(frames, multi_frame=False):
+def train_val_split_frames(frames, idx, multi_frame=False):
     """
     Split train, test and val indices.
     :param frames: list of frames
@@ -428,10 +428,11 @@ def train_val_split_frames(frames, multi_frame=False):
     :return: train, test and val indices
     """
     frame_ids = [frame[0] for frame in frames]
+    train_val_frame_ids = [frame[0] for frame in frames[idx]]
     if multi_frame:
-        frame_values = [list(x) for x in set(tuple(frame_id) for frame_id in frame_ids)]
+        frame_values = [list(x) for x in set(tuple(frame_id) for frame_id in train_val_frame_ids)]
     else:
-        frame_values = np.unique(frame_ids)
+        frame_values = np.unique(train_val_frame_ids)
     train, val = train_test_split(frame_values, test_size=0.3, random_state=0)
     idx_train = [i for i, frame in enumerate(frame_ids) if frame in train]
     idx_val = [i for i, frame in enumerate(frame_ids) if frame in val]
@@ -477,15 +478,15 @@ def save_folds(save_folder, dataset, frames_num, agents_num, data, labels, frame
         data = data.reshape((len(data), 1, agents_num, features))
 
     for i, (idx_train_val, idx_test) in enumerate(folds_split(frames, folds_num, multi_frame)):
-        idx_train, idx_val = train_val_split_frames(frames[idx_train_val], multi_frame)
+        idx_train, idx_val = train_val_split_frames(frames, idx_train_val, multi_frame)
         groups_train, groups_test, groups_val = \
             train_test_split_groups(groups, frames[idx_train], frames[idx_test], frames[idx_val], multi_frame)
 
         if multi_frame:
             train = (
-                [data[idx_train, :, i] for i in range(agents_num)], labels[idx_train], frames[idx_train], groups_train)
-            test = ([data[idx_test, :, i] for i in range(agents_num)], labels[idx_test], frames[idx_test], groups_test)
-            val = ([data[idx_val, :, i] for i in range(agents_num)], labels[idx_val], frames[idx_val], groups_val)
+                [data[idx_train, :, j] for j in range(agents_num)], labels[idx_train], frames[idx_train], groups_train)
+            test = ([data[idx_test, :, j] for j in range(agents_num)], labels[idx_test], frames[idx_test], groups_test)
+            val = ([data[idx_val, :, j] for j in range(agents_num)], labels[idx_val], frames[idx_val], groups_val)
         else:
             train = (
                 [data[idx_train, :, 2:], data[idx_train, :, :2]], labels[idx_train], frames[idx_train], groups_train)
