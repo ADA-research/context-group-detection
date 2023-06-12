@@ -36,7 +36,8 @@ def load_data(path, no_context=False):
     return train, test, val
 
 
-def predict(data, model, groups, dataset, multi_frame=False, positions=None, gmitre_calc=False, eps_thres=1e-15):
+def predict(data, model, groups, dataset, multi_frame=False, positions=None, gmitre_calc=False, eps_thres=1e-15,
+            dominant_sets=True):
     """
     Gives T=1 and T=2/3 F1 scores.
     :param data: data to be used during prediction
@@ -47,6 +48,7 @@ def predict(data, model, groups, dataset, multi_frame=False, positions=None, gmi
     :param positions: data in raw format
     :param gmitre_calc: True if group mitre should be calculated, otherwise False
     :param eps_thres: threshold to be used in vector climb of dominant sets
+    :param dominant_sets: True if dominant sets algorithm will be used, otherwise False
     :return: T=1 and T=2/3 F1 scores
     """
     if "cocktail_party" in dataset:
@@ -66,7 +68,7 @@ def predict(data, model, groups, dataset, multi_frame=False, positions=None, gmi
     predictions = model.predict(X)
 
     return F1_calc_clone([2 / 3, 1], predictions, frames, groups, positions, multi_frame=multi_frame,
-                         gmitre_calc=gmitre_calc, eps_thres=eps_thres)
+                         gmitre_calc=gmitre_calc, eps_thres=eps_thres, dominant_sets=dominant_sets)
 
 
 class ValLoss(Callback):
@@ -75,7 +77,7 @@ class ValLoss(Callback):
     """
 
     def __init__(self, val_data, dataset, dataset_path, train_epochs=0, multi_frame=False, gmitre_calc=False,
-                 eps_thres=1e-15):
+                 eps_thres=1e-15, dominant_sets=True):
         super(ValLoss, self).__init__()
         self.val_data = val_data
         self.dataset = dataset
@@ -84,6 +86,7 @@ class ValLoss(Callback):
         self.gmitre_calc = gmitre_calc
         self.train_epochs = train_epochs
         self.eps_thres = eps_thres
+        self.dominant_sets = dominant_sets
 
         # each dataset has different params and possibly different F1 calc code
         if dataset in ["cocktail_party"]:
@@ -121,7 +124,7 @@ class ValLoss(Callback):
             self.best_epoch = epoch
 
         results = predict(self.val_data, self.model, self.groups, self.dataset, self.multi_frame,
-                          self.positions, self.gmitre_calc, self.eps_thres)
+                          self.positions, self.gmitre_calc, self.eps_thres, self.dominant_sets)
 
         objs = [self.val_f1_two_thirds_obj, self.val_f1_one_obj, self.val_f1_gmitre_obj]
         for result, obj in zip(results, objs):
@@ -215,16 +218,17 @@ def build_model(reg_amt, drop_amt, max_people, d, global_filters,
     return model
 
 
-def write_object_history(file, history_object, history, test, multi_frame=False, gmitre_calc=False, eps_thres=1e-15):
+def write_object_history(file, history_object, history, test, multi_frame=False, gmitre_calc=False, eps_thres=1e-15,
+                         dominant_sets=True):
     file.write("\tepoch: {}\n".format(str(history_object['epoch'])))
     results = predict(test, history_object['model'], history.groups, history.dataset, multi_frame, history.positions,
-                      gmitre_calc, eps_thres)
+                      gmitre_calc, eps_thres, dominant_sets)
     file.write(' '.join(['\ttest_f1s:', ' '.join([str(result[0]) for result in results])]) + '\n')
     file.write(' '.join(['\tprecisions:', ' '.join([str(result[1]) for result in results])]) + '\n')
     file.write(' '.join(['\trecalls:', ' '.join([str(result[2]) for result in results])]) + '\n')
 
 
-def write_history(file_name, history, test, multi_frame=False, gmitre_calc=False, eps_thres=1e-15):
+def write_history(file_name, history, test, multi_frame=False, gmitre_calc=False, eps_thres=1e-15, dominant_sets=True):
     """
     Writes evaluation metrics in file.
     :param file_name:
@@ -232,6 +236,8 @@ def write_history(file_name, history, test, multi_frame=False, gmitre_calc=False
     :param test: test dataset to be evaluated on
     :param multi_frame: True if scenes include multiple frames, otherwise False
     :param gmitre_calc: True if group mitre should be calculated, otherwise False
+    :param eps_thres: threshold to be used in vector climb of dominant sets
+    :param dominant_sets: True if dominant sets algorithm will be used, otherwise False
     :return: nothing
     """
     file = open(file_name, 'w+')
@@ -240,14 +246,17 @@ def write_history(file_name, history, test, multi_frame=False, gmitre_calc=False
     file.write("epoch: {}\n".format(str(history.best_epoch)))
 
     file.write("best_val_f1_1: {}\n".format(str(history.val_f1_one_obj['best_f1'])))
-    write_object_history(file, history.val_f1_one_obj, history, test, multi_frame, gmitre_calc, eps_thres)
+    write_object_history(
+        file, history.val_f1_one_obj, history, test, multi_frame, gmitre_calc, eps_thres, dominant_sets)
 
     file.write("best_val_f1_2/3: {}\n".format(str(history.val_f1_two_thirds_obj['best_f1'])))
-    write_object_history(file, history.val_f1_two_thirds_obj, history, test, multi_frame, gmitre_calc, eps_thres)
+    write_object_history(
+        file, history.val_f1_two_thirds_obj, history, test, multi_frame, gmitre_calc, eps_thres, dominant_sets)
 
     if gmitre_calc:
         file.write("best_val_f1_gmitre: {}\n".format(str(history.val_f1_gmitre_obj['best_f1'])))
-        write_object_history(file, history.val_f1_gmitre_obj, history, test, multi_frame, gmitre_calc, eps_thres)
+        write_object_history(
+            file, history.val_f1_gmitre_obj, history, test, multi_frame, gmitre_calc, eps_thres, dominant_sets)
 
     if gmitre_calc:
         file.write('{:<10s} {:<10s} {:<10s} {:<10s} {:<10s} {:<10s} {:<10s}\n'.format(
@@ -288,7 +297,7 @@ def get_path(dir_name, no_pointnet=False):
 
 
 def save_model_data(dir_name, reg, dropout, history, test, multi_frame=False, no_pointnet=False,
-                    gmitre_calc=False, eps_thres=1e-15):
+                    gmitre_calc=False, eps_thres=1e-15, dominant_sets=True):
     """
     Save model and metrics to files.
     :param dir_name: name of folder to save data
@@ -300,6 +309,7 @@ def save_model_data(dir_name, reg, dropout, history, test, multi_frame=False, no
     :param no_pointnet: TODO find out
     :param gmitre_calc: True if group mitre should be calculated, otherwise False
     :param eps_thres: threshold to be used in vector climb of dominant sets
+    :param dominant_sets: True if dominant sets algorithm will be used, otherwise False
     :return: nothing
     """
     best_val_mses = []
@@ -316,7 +326,7 @@ def save_model_data(dir_name, reg, dropout, history, test, multi_frame=False, no
     name = path
     if not os.path.isdir(name):
         os.makedirs(name)
-    write_history(name + '/results.txt', history, test, multi_frame, gmitre_calc, eps_thres)
+    write_history(name + '/results.txt', history, test, multi_frame, gmitre_calc, eps_thres, dominant_sets)
     # TODO check which model should be saved
     #  right now the one with the best F1 T=1 is saved
     history.val_f1_one_obj['model'].save(name + '/best_val_model.h5')

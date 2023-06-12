@@ -1,3 +1,5 @@
+from sklearn.cluster import DBSCAN
+
 from models.DANTE.dominant_sets import *
 from models.gmitre import compute_groupMitre
 
@@ -32,7 +34,7 @@ def F1_calc(group_thresholds, affinities, times, groups, positions, n_people, n_
     :param n_people: number of agents
     :param n_features: number of features
     :param non_reusable: if predicted groups can be reused
-    :param dominant_sets: True if dominant sets algorithm will be used, otherwise False a naive grouping algorithm is used
+    :param dominant_sets: True if dominant sets algorithm will be used, otherwise False
     :param eps_thres: threshold to be used in vector climb of dominant sets
     :return: F1, precision, recall
     """
@@ -99,6 +101,27 @@ def include_single_agent_groups(groups_at_time, agents):
             groups_at_time.append([agent])
 
 
+def labels_to_groups(labels):
+    group_labels = np.unique(labels)
+    groups = []
+
+    for group_label in group_labels:
+        groups.append([True if label == group_label else False for label in labels])
+
+    return groups
+
+
+def dbscan_algo(predictions, n_people, frames):
+    A, agents_map = learned_affinity_clone(predictions, n_people, frames)
+
+    dbscan = DBSCAN(eps=1, min_samples=2)
+    labels = dbscan.fit_predict(A)
+
+    groups = labels_to_groups(labels)
+
+    return groups, agents_map
+
+
 def F1_calc_clone(group_thresholds, affinities, frames, groups, positions, multi_frame=False,
                   non_reusable=False, dominant_sets=True, gmitre_calc=False, eps_thres=1e-15):
     """
@@ -113,11 +136,12 @@ def F1_calc_clone(group_thresholds, affinities, frames, groups, positions, multi
     :param dominant_sets: True if dominant sets algorithm will be used, otherwise False
     :param gmitre_calc: True if group mitre should be calculated, otherwise False
     :param eps_thres: threshold to be used in vector climb of dominant sets
+    :param dominant_sets: True if dominant sets algorithm will be used, otherwise False
     :return: list of F1, precision, recall for T=2/3, T=1 and group mitre
     """
     if gmitre_calc:
         group_thresholds.append(None)
-    avg_results = [np.array([0.0, 0.0]) for i in range(len(group_thresholds))]
+    avg_results = [np.array([0.0, 0.0]) for _ in range(len(group_thresholds))]
 
     num_times = 1
     frame_ids = [frame[0] for frame in frames]
@@ -142,9 +166,12 @@ def F1_calc_clone(group_thresholds, affinities, frames, groups, positions, multi
             bool_groups, agents_map = iterate_climb_learned(predictions, n_people, frames[idx], new=True,
                                                             eps_thres=eps_thres)
         else:
-            bool_groups, agents_map = naive_group(predictions, n_people, frames[idx], new=True)
+            bool_groups, agents_map = dbscan_algo(predictions, n_people, frames[idx])
+            # bool_groups, agents_map = naive_group(predictions, n_people, frames[idx], new=True)
 
         groups_at_time = [group[1] for group in groups if group[0] == unique_frame][0]
+        if len(agents_map.values()) < 10:
+            print('Wrong number of agents in map')
         include_single_agent_groups(groups_at_time, agents_map.values())
         predicted_groups = group_names_clone(bool_groups, agents_map, n_people)
         include_single_agent_groups(predicted_groups, agents_map.values())

@@ -134,6 +134,7 @@ def get_args():
     parser.add_argument('-et', '--eps_thres', type=float, default=1e-13)
     parser.add_argument('-lr', '--learning_rate', type=float, default=0.0001)
     parser.add_argument('-gm', '--gmitre_calc', action="store_true", default=True)
+    parser.add_argument('-ds', '--dominant_sets', action="store_true", default=False)
     parser.add_argument('-nc', '--no_context', action="store_true", default=False)
 
     return parser.parse_args()
@@ -155,11 +156,12 @@ if __name__ == '__main__':
 
     tensorboard = TensorBoard(log_dir='./logs')
     early_stop = EarlyStopping(monitor='val_loss', patience=args.patience)
-    history = ValLoss(val, args.dataset, args.dataset_path, args.train_epochs, True, args.gmitre_calc, args.eps_thres)
+    history = ValLoss(val, args.dataset, args.dataset_path, args.train_epochs, True, args.gmitre_calc, args.eps_thres,
+                      args.dominant_sets)
 
     model.fit(train[0], train[1], epochs=args.epochs, batch_size=args.batch_size,
               validation_data=(val[0], val[1]), callbacks=[tensorboard, early_stop, history])
 
     dir_name = '{}_{}_{}/fold_{}/{}'.format(args.dataset, args.frames, args.agents, args.fold, args.dir_name)
     save_model_data(dir_name, args.reg, args.dropout, history, test, True, gmitre_calc=args.gmitre_calc,
-                    eps_thres=args.eps_thres)
+                    eps_thres=args.eps_thres, dominant_sets=args.dominant_sets)
