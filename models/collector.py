@@ -65,8 +65,8 @@ def collect_results(results_path, dir_name):
     return get_averages(results)
 
 
-def write_results(results, file_path):
-    file_path = file_path + '/results.txt'
+def write_results(results, file_path, dir_name):
+    file_path = file_path + '/{}_results.txt'.format(dir_name)
     with open(file_path, "w") as file:
         file.write('{:<10s} {:<10s} {:<10s} {:<10s}\n'.format('mse', '1 f1', '2/3 f1', 'gmitre f1'))
         file.write('{:<10.7f} {:<10.7f} {:<10.7f} {:<10.7f}\n'.format(
@@ -90,4 +90,4 @@ if __name__ == '__main__':
     results_path = './results/{}_{}_{}'.format(args.dataset, args.frames, args.agents)
 
     results = collect_results(results_path, args.dir_name)
-    write_results(results, results_path)
+    write_results(results, results_path, args.dir_name)
