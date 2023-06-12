@@ -15,11 +15,13 @@ patience="50"
 folder=""
 eps_thres="1e-15"
 context=true
+dominant=false
 
 # Read flags and their corresponding values
-while getopts "ce:f:p:m:t:" flag; do
+while getopts "cde:f:p:m:t:" flag; do
   case ${flag} in
   c) context=false ;;
+  d) dominant=true ;;
   f) fold="${OPTARG}" ;;
   e) epochs="${OPTARG}" ;;
   p) patience="${OPTARG}" ;;
@@ -51,10 +53,16 @@ else
   context_flag=""
 fi
 
-echo "Epochs: ${epochs}, fold: ${fold}, patience: ${patience}, dir_name: ${dir_name}, eps_thres: ${eps_thres}, context: ${context_flag}"
+if [ ${dominant} == true ]; then
+  dominant_flag="-ds"
+else
+  dominant_flag=""
+fi
+
+echo "Epochs: ${epochs}, fold: ${fold}, patience: ${patience}, dir_name: ${dir_name}, eps_thres: ${eps_thres}, context: ${context_flag}, dominant: ${dominant_flag}"
 
 echo "Script starting"
 cd "${HOME}/context-group-detection/models" || exit
-python model.py -e ${epochs} --fold ${fold} -p ${patience} --dir_name ${dir_name} -et ${eps_thres} ${context_flag}
+python model.py -e ${epochs} --fold ${fold} -p ${patience} --dir_name ${dir_name} -et ${eps_thres} ${context_flag} ${dominant_flag}
 
 echo "Script finished"

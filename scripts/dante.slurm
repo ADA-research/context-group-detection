@@ -14,10 +14,12 @@ epochs="50"
 patience="50"
 folder=""
 eps_thres="1e-15"
+dominant=false
 
 # Read flags and their corresponding values
-while getopts "e:f:p:m:t:" flag; do
+while getopts "de:f:p:m:t:" flag; do
   case ${flag} in
+  d) dominant=true ;;
   f) fold="${OPTARG}" ;;
   e) epochs="${OPTARG}" ;;
   p) patience="${OPTARG}" ;;
@@ -43,10 +45,16 @@ else
   dir_name=${SLURM_JOB_ID}
 fi
 
-echo "Epochs: ${epochs}, fold: ${fold}, patience: ${patience}, dir_name: ${dir_name}, eps_thres: ${eps_thres}"
+if [ ${dominant} == true ]; then
+  dominant_flag="-ds"
+else
+  dominant_flag=""
+fi
+
+echo "Epochs: ${epochs}, fold: ${fold}, patience: ${patience}, dir_name: ${dir_name}, eps_thres: ${eps_thres}, dominant: ${dominant_flag}"
 
 echo "Script starting"
 cd "${HOME}/context-group-detection/models" || exit
-python dante.py -e ${epochs} -k ${fold} -p ${patience} --dir_name ${dir_name} -et ${eps_thres}
+python dante.py -e ${epochs} -k ${fold} -p ${patience} --dir_name ${dir_name} -et ${eps_thres} ${dominant_flag}
 
 echo "Script finished"
