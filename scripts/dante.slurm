@@ -37,15 +37,16 @@ export PYTHONPATH="${PYTHONPATH}:${HOME}/context-group-detection/"
 echo "User: ${SLURM_JOB_USER}, hostname: ${HOSTNAME}, job_id: ${SLURM_JOB_ID}"
 echo "Current working directory: $(pwd)"
 
-job_id=${SLURM_JOB_ID}
 if [ ${folder} != "" ]; then
-  job_id="${SLURM_JOB_ID}_${folder}"
+  dir_name="${folder}"
+else
+  dir_name=${SLURM_JOB_ID}
 fi
-echo ${job_id}
-echo "Epochs: ${epochs}, fold: ${fold}, patience: ${patience}, job_id: ${job_id}, eps_thres: ${eps_thres}"
+
+echo "Epochs: ${epochs}, fold: ${fold}, patience: ${patience}, dir_name: ${dir_name}, eps_thres: ${eps_thres}"
 
 echo "Script starting"
 cd "${HOME}/context-group-detection/models" || exit
-python dante.py -e ${epochs} -k ${fold} -p ${patience} -j ${job_id} -et ${eps_thres}
+python dante.py -e ${epochs} -k ${fold} -p ${patience} --dir_name ${dir_name} -et ${eps_thres}
 
 echo "Script finished"

@@ -39,23 +39,22 @@ export PYTHONPATH="${PYTHONPATH}:${HOME}/context-group-detection/"
 echo "User: ${SLURM_JOB_USER}, hostname: ${HOSTNAME}, job_id: ${SLURM_JOB_ID}"
 echo "Current working directory: $(pwd)"
 
-job_id=${SLURM_JOB_ID}
-if [ ${folder} != "" ];
-  then
-    job_id="${SLURM_JOB_ID}_${folder}"
+if [ ${folder} != "" ]; then
+  dir_name="${folder}"
+else
+  dir_name=${SLURM_JOB_ID}
 fi
 
-if [ ${context} == false ];
-  then
-    context_flag="-nc"
-  else
-    context_flag=""
+if [ ${context} == false ]; then
+  context_flag="-nc"
+else
+  context_flag=""
 fi
 
-echo "Epochs: ${epochs}, fold: ${fold}, patience: ${patience}, job_id: ${job_id}, eps_thres: ${eps_thres}, context: ${context_flag}"
+echo "Epochs: ${epochs}, fold: ${fold}, patience: ${patience}, dir_name: ${dir_name}, eps_thres: ${eps_thres}, context: ${context_flag}"
 
 echo "Script starting"
 cd "${HOME}/context-group-detection/models" || exit
-python model.py -e ${epochs} --fold ${fold} -p ${patience} -j ${job_id} -et ${eps_thres} ${context_flag}
+python model.py -e ${epochs} --fold ${fold} -p ${patience} --dir_name ${dir_name} -et ${eps_thres} ${context_flag}
 
 echo "Script finished"
