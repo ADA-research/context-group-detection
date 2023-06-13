@@ -106,7 +106,8 @@ def labels_to_groups(labels):
     groups = []
 
     for group_label in group_labels:
-        groups.append([True if label == group_label else False for label in labels])
+        if group_label != -1:
+            groups.append([True if label == group_label else False for label in labels])
 
     return groups
 
