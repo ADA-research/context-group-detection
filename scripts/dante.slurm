@@ -15,6 +15,8 @@ patience="50"
 folder=""
 eps_thres="1e-15"
 dominant=false
+dataset="eth"
+dataset_path="../datasets/ETH/seq_eth"
 
 # Read flags and their corresponding values
 while getopts "de:f:p:m:t:" flag; do
@@ -25,6 +27,8 @@ while getopts "de:f:p:m:t:" flag; do
   p) patience="${OPTARG}" ;;
   m) folder="${OPTARG}" ;;
   t) eps_thres="${OPTARG}" ;;
+  r) dataset_path="${OPTARG}" ;;
+  s) dataset="${OPTARG}" ;;
   *)
     echo "Invalid flag: ${flag}" >&2
     exit 1
@@ -51,10 +55,10 @@ else
   dominant_flag=""
 fi
 
-echo "Epochs: ${epochs}, fold: ${fold}, patience: ${patience}, dir_name: ${dir_name}, eps_thres: ${eps_thres}, dominant: ${dominant_flag}"
+echo "Dataset: ${dataset}, dataset_path: ${dataset_path}, epochs: ${epochs}, fold: ${fold}, patience: ${patience}, dir_name: ${dir_name}, eps_thres: ${eps_thres}, dominant: ${dominant_flag}"
 
 echo "Script starting"
 cd "${HOME}/context-group-detection/models" || exit
-python dante.py -e ${epochs} -k ${fold} -p ${patience} --dir_name ${dir_name} -et ${eps_thres} ${dominant_flag}
+python dante.py --dataset ${dataset} --dataset_path ${dataset_path} -e ${epochs} -k ${fold} -p ${patience} --dir_name ${dir_name} -et ${eps_thres} ${dominant_flag}
 
 echo "Script finished"

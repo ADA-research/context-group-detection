@@ -16,9 +16,11 @@ folder=""
 eps_thres="1e-15"
 context=true
 dominant=false
+dataset="eth"
+dataset_path="../datasets/ETH/seq_eth"
 
 # Read flags and their corresponding values
-while getopts "cde:f:p:m:t:" flag; do
+while getopts "cde:f:p:m:t:s:r:" flag; do
   case ${flag} in
   c) context=false ;;
   d) dominant=true ;;
@@ -27,6 +29,8 @@ while getopts "cde:f:p:m:t:" flag; do
   p) patience="${OPTARG}" ;;
   m) folder="${OPTARG}" ;;
   t) eps_thres="${OPTARG}" ;;
+  r) dataset_path="${OPTARG}" ;;
+  s) dataset="${OPTARG}" ;;
   *)
     echo "Invalid flag: ${flag}" >&2
     exit 1
@@ -63,9 +67,6 @@ echo "Epochs: ${epochs}, fold: ${fold}, patience: ${patience}, dir_name: ${dir_n
 
 echo "Script starting"
 cd "${HOME}/context-group-detection/models" || exit
-python model.py -e ${epochs} --fold ${fold} -p ${patience} --dir_name ${dir_name} -et ${eps_thres} ${context_flag} ${dominant_flag}
+python model.py --dataset ${dataset} --dataset_path ${dataset_path} -e ${epochs} --fold ${fold} -p ${patience} --dir_name ${dir_name} -et ${eps_thres} ${context_flag} ${dominant_flag}
 
 echo "Script finished"
-
-# TODO add dataset and dataset path to script
-#model.py --dataset eth --dataset_path "../datasets/ETH/seq_eth" -e 100 --fold 4 -p 100 --dir_name "e100_d" -et 1e-15 -nc -ds
