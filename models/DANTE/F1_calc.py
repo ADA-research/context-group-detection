@@ -257,8 +257,8 @@ def group_correctness(guesses, truth, T, non_reusable=False):
 
         FP = n_guess_groups - TP
         FN = n_true_groups - TP
-        precision = float(TP) / (TP + FP)
-        recall = float(TP) / (TP + FN)
+        precision = float(TP) / (TP + FP) if TP + FP != 0 else 0
+        recall = float(TP) / (TP + FN) if TP + FN != 0 else 0
         return TP, FN, FP, precision, recall
 
 
