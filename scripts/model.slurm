@@ -66,3 +66,6 @@ cd "${HOME}/context-group-detection/models" || exit
 python model.py -e ${epochs} --fold ${fold} -p ${patience} --dir_name ${dir_name} -et ${eps_thres} ${context_flag} ${dominant_flag}
 
 echo "Script finished"
+
+# TODO add dataset and dataset path to script
+#model.py --dataset eth --dataset_path "../datasets/ETH/seq_eth" -e 100 --fold 4 -p 100 --dir_name "e100_d" -et 1e-15 -nc -ds
