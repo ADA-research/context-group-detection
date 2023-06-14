@@ -11,7 +11,7 @@
 # Default values
 fold="0"
 epochs="50"
-patience="50"
+patience="100"
 folder=""
 eps_thres="1e-15"
 context=true
