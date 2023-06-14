@@ -1,4 +1,5 @@
 import argparse
+import json
 import os
 
 import numpy as np
@@ -122,6 +123,8 @@ def get_args():
     parser.add_argument('--dataset', type=str, default="eth")
     parser.add_argument('--dir_name', type=str, default="dir_name")
     parser.add_argument('--dataset_path', type=str, default="../datasets/ETH/seq_eth")
+    parser.add_argument('-l', '--layers', type=str,
+                        default="{\"pair_filters\": [32, 128, 256], \"context_filters\": [64, 128, 256], \"combination_filters\": [256, 64]}")
     parser.add_argument('--train_epochs', type=int, default=0)
     parser.add_argument('-e', '--epochs', type=int, default=1)
     parser.add_argument('-a', '--agents', type=int, default=10)
@@ -150,9 +153,11 @@ if __name__ == '__main__':
         '../datasets/reformatted/{}_{}_{}/fold_{}'.format(args.dataset, args.frames, args.agents, args.fold),
         args.no_context)
 
+    layers = json.loads(args.layers)
+
     model = build_model(args.agents - 2, args.frames, args.features, args.reg, args.dropout, args.learning_rate,
-                        pair_filters=[32, 128, 256], context_filters=[64, 128, 256], combination_filters=[256, 64],
-                        no_context=args.no_context)
+                        pair_filters=layers['pair_filters'], context_filters=layers['context_filters'],
+                        combination_filters=layers['combination_filters'], no_context=args.no_context)
 
     tensorboard = TensorBoard(log_dir='./logs')
     early_stop = EarlyStopping(monitor='val_loss', patience=args.patience)
@@ -164,4 +169,4 @@ if __name__ == '__main__':
 
     dir_name = '{}_{}_{}/fold_{}/{}'.format(args.dataset, args.frames, args.agents, args.fold, args.dir_name)
     save_model_data(dir_name, args.reg, args.dropout, history, test, True, gmitre_calc=args.gmitre_calc,
-                    eps_thres=args.eps_thres, dominant_sets=args.dominant_sets)
+                    eps_thres=args.eps_thres, dominant_sets=args.dominant_sets, layers=layers)

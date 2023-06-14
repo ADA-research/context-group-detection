@@ -18,9 +18,10 @@ context=true
 dominant=false
 dataset="eth"
 dataset_path="../datasets/ETH/seq_eth"
+layers="{\"pair_filters\": [32, 128, 256], \"context_filters\": [64, 128, 256], \"combination_filters\": [256, 64]}"
 
 # Read flags and their corresponding values
-while getopts "cde:f:p:m:t:s:r:" flag; do
+while getopts "cde:f:p:m:t:s:r:l:" flag; do
   case ${flag} in
   c) context=false ;;
   d) dominant=true ;;
@@ -31,6 +32,7 @@ while getopts "cde:f:p:m:t:s:r:" flag; do
   t) eps_thres="${OPTARG}" ;;
   r) dataset_path="${OPTARG}" ;;
   s) dataset="${OPTARG}" ;;
+  l) layers="${OPTARG}" ;;
   *)
     echo "Invalid flag: ${flag}" >&2
     exit 1
@@ -64,9 +66,10 @@ else
 fi
 
 echo "Epochs: ${epochs}, fold: ${fold}, patience: ${patience}, dir_name: ${dir_name}, eps_thres: ${eps_thres}, context: ${context_flag}, dominant: ${dominant_flag}"
+echo "Layers: ${layers}"
 
 echo "Script starting"
 cd "${HOME}/context-group-detection/models" || exit
-python model.py --dataset ${dataset} --dataset_path ${dataset_path} -e ${epochs} --fold ${fold} -p ${patience} --dir_name ${dir_name} -et ${eps_thres} ${context_flag} ${dominant_flag}
+python model.py --dataset ${dataset} --dataset_path ${dataset_path} -e ${epochs} --fold ${fold} -p ${patience} --dir_name ${dir_name} -et ${eps_thres} ${context_flag} ${dominant_flag} -l ${layers}
 
 echo "Script finished"

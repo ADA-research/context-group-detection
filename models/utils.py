@@ -238,13 +238,14 @@ def get_path(dir_name, no_pointnet=False):
     return path
 
 
-def write_architecture(path, reg, dropout, history, gmitre_calc=False):
+def write_architecture(path, reg, dropout, history, layers, gmitre_calc=False, eps_thres=1e-15, dominant_sets=True):
     """
     Writes evaluation metrics in file.
-    :param file_name:
+    :param path: name of the path to the file
+    :param reg: regularization factor
+    :param dropout: dropout rate
     :param history: ValLoss to retrieve model and other parameters
-    :param test: test dataset to be evaluated on
-    :param multi_frame: True if scenes include multiple frames, otherwise False
+    :param layers: dict with info about layers
     :param gmitre_calc: True if group mitre should be calculated, otherwise False
     :param eps_thres: threshold to be used in vector climb of dominant sets
     :param dominant_sets: True if dominant sets algorithm will be used, otherwise False
@@ -252,6 +253,15 @@ def write_architecture(path, reg, dropout, history, gmitre_calc=False):
     """
     file = open(path + '/architecture.txt', 'w+')
     file.write("reg= {}\ndropout= {}\n".format(str(reg), str(dropout)))
+
+    file.write("layers\n")
+    for key, value in layers.items():
+        file.write("\t{}: {}\n".format(key, str(value)))
+
+    file.write("dominant sets: {}\n".format('active' if dominant_sets else 'inactive'))
+    if dominant_sets:
+        file.write("\teps threshold: {}\n".format(eps_thres))
+
     file.write("best overall val loss: {}\n".format(str(history.best_val_mse)))
     file.write("best overall f1 1: {}\n".format(str(history.val_f1_one_obj['best_f1'])))
     file.write("best overall f1 2/3: {}\n".format(str(history.val_f1_two_thirds_obj['best_f1'])))
@@ -273,7 +283,7 @@ def write_object_history(file, history_object, history, test, multi_frame=False,
 def write_history(file_name, history, test, multi_frame=False, gmitre_calc=False, eps_thres=1e-15, dominant_sets=True):
     """
     Writes evaluation metrics in file.
-    :param file_name:
+    :param file_name: name of the file to be written
     :param history: ValLoss to retrieve model and other parameters
     :param test: test dataset to be evaluated on
     :param multi_frame: True if scenes include multiple frames, otherwise False
@@ -319,7 +329,7 @@ def write_history(file_name, history, test, multi_frame=False, gmitre_calc=False
 
 
 def save_model_data(dir_name, reg, dropout, history, test, multi_frame=False, no_pointnet=False,
-                    gmitre_calc=False, eps_thres=1e-15, dominant_sets=True):
+                    gmitre_calc=False, eps_thres=1e-15, dominant_sets=True, layers={}):
     """
     Save model and metrics to files.
     :param dir_name: name of folder to save data
@@ -332,11 +342,12 @@ def save_model_data(dir_name, reg, dropout, history, test, multi_frame=False, no
     :param gmitre_calc: True if group mitre should be calculated, otherwise False
     :param eps_thres: threshold to be used in vector climb of dominant sets
     :param dominant_sets: True if dominant sets algorithm will be used, otherwise False
+    :param layers: dict with info about layers
     :return: nothing
     """
     path = get_path(dir_name, no_pointnet)
 
-    write_architecture(path, reg, dropout, history)
+    write_architecture(path, reg, dropout, history, layers, gmitre_calc, eps_thres, dominant_sets)
 
     write_history(path + '/results.txt', history, test, multi_frame, gmitre_calc, eps_thres, dominant_sets)
 
