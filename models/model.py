@@ -169,4 +169,5 @@ if __name__ == '__main__':
 
     dir_name = '{}_{}_{}/fold_{}/{}'.format(args.dataset, args.frames, args.agents, args.fold, args.dir_name)
     save_model_data(dir_name, args.reg, args.dropout, history, test, True, gmitre_calc=args.gmitre_calc,
-                    eps_thres=args.eps_thres, dominant_sets=args.dominant_sets, layers=layers)
+                    eps_thres=args.eps_thres, dominant_sets=args.dominant_sets, layers=layers,
+                    no_context=args.no_context)

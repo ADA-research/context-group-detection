@@ -22,8 +22,6 @@ def get_args():
     # parser.add_argument('--dataset_path', type=str, default="../datasets/cocktail_party")
     parser.add_argument('--dataset', type=str, default="eth")
     parser.add_argument('--dataset_path', type=str, default="../datasets/ETH/seq_eth")
-    parser.add_argument('-np', '--no_pointnet', action="store_true", default=False)
-    parser.add_argument('-s', '--symmetric', action="store_true", default=False)
     parser.add_argument('-gm', '--gmitre_calc', action="store_true", default=True)
 
     return parser.parse_args()
@@ -43,8 +41,7 @@ if __name__ == "__main__":
 
         train_and_save_model(global_filters, individual_filters, combined_filters,
                              train, test, val, args.epochs, args.dataset, args.dataset_path,
-                             reg=args.reg, dropout=args.dropout, no_pointnet=args.no_pointnet,
-                             symmetric=args.symmetric, gmitre_calc=args.gmitre_calc, patience=args.patience,
+                             reg=args.reg, dropout=args.dropout, gmitre_calc=args.gmitre_calc, patience=args.patience,
                              dir_name='{}/fold_{}'.format(args.dataset, args.fold), eps_thres=args.eps_thres)
     else:
         train, test, val = load_data(
@@ -52,7 +49,6 @@ if __name__ == "__main__":
 
         train_and_save_model(global_filters, individual_filters, combined_filters,
                              train, test, val, args.epochs, args.dataset, args.dataset_path,
-                             reg=args.reg, dropout=args.dropout, no_pointnet=args.no_pointnet,
-                             symmetric=args.symmetric, gmitre_calc=args.gmitre_calc, patience=args.patience,
+                             reg=args.reg, dropout=args.dropout, gmitre_calc=args.gmitre_calc, patience=args.patience,
                              dir_name='{}_1_{}/fold_{}/{}'.format(args.dataset, args.agents, args.fold, args.dir_name),
                              eps_thres=args.eps_thres)

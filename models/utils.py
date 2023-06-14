@@ -145,8 +145,7 @@ def conv(filters, reg, name=None):
                   use_bias='True', kernel_regularizer=reg, activation=tf.nn.relu, name=name)
 
 
-def build_model(reg_amt, drop_amt, max_people, d, global_filters,
-                individual_filters, combined_filters, no_pointnet=False, symmetric=False):
+def build_model(reg_amt, drop_amt, max_people, d, global_filters, individual_filters, combined_filters):
     """
     Builds model based on given parameters.
     :param reg_amt: regularization factor
@@ -156,8 +155,6 @@ def build_model(reg_amt, drop_amt, max_people, d, global_filters,
     :param global_filters: filters for context branch
     :param individual_filters: filters for pair branch
     :param combined_filters: filters after concatenation
-    :param no_pointnet: TODO find out
-    :param symmetric: TODO find out
     :return: model
     """
     group_inputs = Input(shape=(1, max_people, d))
@@ -176,28 +173,20 @@ def build_model(reg_amt, drop_amt, max_people, d, global_filters,
     y_0 = Lambda(lambda inp: tf.slice(inp, [0, 0, 0, 0], [-1, -1, 1, -1]))(y)
     y_1 = Lambda(lambda inp: tf.slice(inp, [0, 0, 1, 0], [-1, -1, 1, -1]))(y)
 
-    if no_pointnet:
-        concat = Concatenate(name='concat')([Flatten()(y_0), Flatten()(y_1)])
-    else:
-        x = group_inputs
+    x = group_inputs
 
-        # Context Transform
-        for filters in global_filters:
-            x = conv(filters, reg)(x)
-            x = Dropout(drop_amt)(x)
-            x = BatchNormalization()(x)
-
-        x = MaxPooling2D(name="global_pool", pool_size=[1, max_people], strides=1, padding='valid')(x)
+    # Context Transform
+    for filters in global_filters:
+        x = conv(filters, reg)(x)
         x = Dropout(drop_amt)(x)
         x = BatchNormalization()(x)
-        x_flat = Flatten()(x)
 
-        # enforce symmetric affinity predictions by doing pointnet on 2 people
-        if symmetric:
-            y = MaxPooling2D(name="symmetric_pool", pool_size=[1, 2], strides=1, padding='valid')(y)
-            concat = Concatenate(name='concat')([x_flat, Flatten()(y)])
-        else:
-            concat = Concatenate(name='concat')([x_flat, Flatten()(y_0), Flatten()(y_1)])
+    x = MaxPooling2D(name="global_pool", pool_size=[1, max_people], strides=1, padding='valid')(x)
+    x = Dropout(drop_amt)(x)
+    x = BatchNormalization()(x)
+    x_flat = Flatten()(x)
+
+    concat = Concatenate(name='concat')([x_flat, Flatten()(y_0), Flatten()(y_1)])
 
     # Final MLP from paper
     for filters in combined_filters:
@@ -218,11 +207,10 @@ def build_model(reg_amt, drop_amt, max_people, d, global_filters,
     return model
 
 
-def get_path(dir_name, no_pointnet=False):
+def get_path(dir_name):
     """
     # creates a new directory to save the model into.
     :param dir_name: name of folder to save data
-    :param no_pointnet: TODO find out
     :return: path
     """
 
@@ -230,15 +218,10 @@ def get_path(dir_name, no_pointnet=False):
     if not os.path.isdir(path):
         os.makedirs(path)
 
-    if no_pointnet:
-        path += '/no_pointnet'
-        if not os.path.isdir(path):
-            os.makedirs(path)
-
     return path
 
 
-def write_architecture(path, reg, dropout, layers, eps_thres=1e-15, dominant_sets=True):
+def write_architecture(path, reg, dropout, layers, eps_thres=1e-15, dominant_sets=True, no_context=False):
     """
     Writes evaluation metrics in file.
     :param path: name of the path to the file
@@ -247,6 +230,7 @@ def write_architecture(path, reg, dropout, layers, eps_thres=1e-15, dominant_set
     :param layers: dict with info about layers
     :param eps_thres: threshold to be used in vector climb of dominant sets
     :param dominant_sets: True if dominant sets algorithm will be used, otherwise False
+    :param no_context: True if no context data will be used, otherwise False
     :return: nothing
     """
     file = open(path + '/architecture.txt', 'w+')
@@ -259,6 +243,8 @@ def write_architecture(path, reg, dropout, layers, eps_thres=1e-15, dominant_set
     file.write("dominant sets: {}\n".format('active' if dominant_sets else 'inactive'))
     if dominant_sets:
         file.write("\teps threshold: {}\n".format(eps_thres))
+
+    file.write("context: {}\n".format('active' if not no_context else 'inactive'))
 
     file.close()
 
@@ -321,8 +307,8 @@ def write_history(file_name, history, test, multi_frame=False, gmitre_calc=False
     file.close()
 
 
-def save_model_data(dir_name, reg, dropout, history, test, multi_frame=False, no_pointnet=False,
-                    gmitre_calc=False, eps_thres=1e-15, dominant_sets=True, layers={}):
+def save_model_data(dir_name, reg, dropout, history, test, multi_frame=False, gmitre_calc=False, eps_thres=1e-15,
+                    dominant_sets=True, layers={}, no_context=False):
     """
     Save model and metrics to files.
     :param dir_name: name of folder to save data
@@ -331,16 +317,16 @@ def save_model_data(dir_name, reg, dropout, history, test, multi_frame=False, no
     :param history: ValLoss to retrieve model and other parameters
     :param test: test dataset to be evaluated on
     :param multi_frame: True if scenes include multiple frames, otherwise False
-    :param no_pointnet: TODO find out
     :param gmitre_calc: True if group mitre should be calculated, otherwise False
     :param eps_thres: threshold to be used in vector climb of dominant sets
     :param dominant_sets: True if dominant sets algorithm will be used, otherwise False
     :param layers: dict with info about layers
+    :param no_context: True if no context data will be used, otherwise False
     :return: nothing
     """
-    path = get_path(dir_name, no_pointnet)
+    path = get_path(dir_name)
 
-    write_architecture(path, reg, dropout, layers, eps_thres, dominant_sets)
+    write_architecture(path, reg, dropout, layers, eps_thres, dominant_sets, no_context)
 
     write_history(path + '/results.txt', history, test, multi_frame, gmitre_calc, eps_thres, dominant_sets)
 
@@ -351,9 +337,8 @@ def save_model_data(dir_name, reg, dropout, history, test, multi_frame=False, no
 
 
 def train_and_save_model(global_filters, individual_filters, combined_filters,
-                         train, test, val, epochs, dataset, dataset_path, reg=0.0000001, dropout=.35,
-                         no_pointnet=False, symmetric=False, batch_size=64, patience=50, gmitre_calc=False,
-                         dir_name='', eps_thres=1e-15):
+                         train, test, val, epochs, dataset, dataset_path, reg=0.0000001, dropout=.35, batch_size=64,
+                         patience=50, gmitre_calc=False, dir_name='', eps_thres=1e-15):
     """
     Train and save model based on given parameters.
     :param global_filters: filters for context branch
@@ -367,8 +352,6 @@ def train_and_save_model(global_filters, individual_filters, combined_filters,
     :param dataset_path: path to raw dataset
     :param reg: regularization factor
     :param dropout: dropout rate
-    :param no_pointnet: TODO find out
-    :param symmetric: TODO find out
     :param batch_size: batch size used in training of model
     :param patience: number of epochs to be used in EarlyStopping callback
     :param gmitre_calc: True if group mitre should be calculated, otherwise False
@@ -383,8 +366,7 @@ def train_and_save_model(global_filters, individual_filters, combined_filters,
     _, _, max_people, d = train[0][0].shape
 
     # build model
-    model = build_model(reg, dropout, max_people, d, global_filters, individual_filters, combined_filters,
-                        no_pointnet=no_pointnet, symmetric=symmetric)
+    model = build_model(reg, dropout, max_people, d, global_filters, individual_filters, combined_filters)
 
     # train model
     tensorboard = TensorBoard(log_dir='./logs')
