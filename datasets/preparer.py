@@ -424,8 +424,9 @@ def train_val_split_frames(frames, idx, multi_frame=False):
     """
     Split train, test and val indices.
     :param frames: list of frames
+    :param idx: list of indices corresponding to the train and val set
     :param multi_frame: True if scenes include multiple frames, otherwise False
-    :return: train, test and val indices
+    :return: train and val indices
     """
     frame_ids = [frame[0] for frame in frames]
     train_val_frame_ids = [frame[0] for frame in frames[idx]]
