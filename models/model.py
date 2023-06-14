@@ -124,7 +124,7 @@ def get_args():
     parser.add_argument('--dir_name', type=str, default="dir_name")
     parser.add_argument('--dataset_path', type=str, default="../datasets/ETH/seq_eth")
     parser.add_argument('-l', '--layers', type=str,
-                        default="{\"pair_filters\": [32, 128, 256], \"context_filters\": [64, 128, 256], \"combination_filters\": [256, 64]}")
+                        default="{\"pair_filters\":[32,128,256],\"context_filters\":[64,128,256],\"combination_filters\":[256,64]}")
     parser.add_argument('--train_epochs', type=int, default=0)
     parser.add_argument('-e', '--epochs', type=int, default=1)
     parser.add_argument('-a', '--agents', type=int, default=10)

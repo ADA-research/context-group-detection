@@ -18,7 +18,7 @@ context=true
 dominant=false
 dataset="eth"
 dataset_path="../datasets/ETH/seq_eth"
-layers="{\"pair_filters\": [32, 128, 256], \"context_filters\": [64, 128, 256], \"combination_filters\": [256, 64]}"
+layers="{\"pair_filters\":[32,128,256],\"context_filters\":[64,128,256],\"combination_filters\":[256,64]}"
 
 # Read flags and their corresponding values
 while getopts "cde:f:p:m:t:s:r:l:" flag; do
