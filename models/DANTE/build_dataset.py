@@ -1,3 +1,4 @@
+# TODO possibly need to delete file
 import argparse
 import os
 import pickle
@@ -13,7 +14,6 @@ Use --augment_synthetic to add the synthetic data to the training set.
 Example usage:
 python build_dataset.py -p cocktail_party
 """
-
 
 def get_args():
     parser = argparse.ArgumentParser()
