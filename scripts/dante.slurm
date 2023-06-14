@@ -19,7 +19,7 @@ dataset="eth"
 dataset_path="../datasets/ETH/seq_eth"
 
 # Read flags and their corresponding values
-while getopts "de:f:p:m:t:" flag; do
+while getopts "de:f:p:m:t:r:s:" flag; do
   case ${flag} in
   d) dominant=true ;;
   f) fold="${OPTARG}" ;;
