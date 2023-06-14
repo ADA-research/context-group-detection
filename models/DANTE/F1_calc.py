@@ -123,23 +123,6 @@ def dbscan_algo(predictions, n_people, frames):
     return groups, agents_map
 
 
-# TODO fix bug
-# Traceback (most recent call last):
-#   File "/home/s3249484/context-group-detection/models/model.py", line 162, in <module>
-#     model.fit(train[0], train[1], epochs=args.epochs, batch_size=args.batch_size,
-#   File "/cm/shared/easybuild/GenuineIntel/software/TensorFlow/2.11.0-foss-2022a-CUDA-11.7.0/lib/python3.10/site-packages/keras/utils/traceback_utils.py", line 70, in error_handler
-#     raise e.with_traceback(filtered_tb) from None
-#   File "/home/s3249484/context-group-detection/models/utils.py", line 126, in on_epoch_end
-#     results = predict(self.val_data, self.model, self.groups, self.dataset, self.multi_frame,
-#   File "/home/s3249484/context-group-detection/models/utils.py", line 70, in predict
-#     return F1_calc_clone([2 / 3, 1], predictions, frames, groups, positions, multi_frame=multi_frame,
-#   File "/home/s3249484/context-group-detection/models/DANTE/F1_calc.py", line 183, in F1_calc_clone
-#     _, _, _, precision, recall = group_correctness(
-#   File "/home/s3249484/context-group-detection/models/DANTE/F1_calc.py", line 243, in group_correctness
-#     precision = float(TP) / (TP + FP)
-# ZeroDivisionError: float division by zero
-
-
 def F1_calc_clone(group_thresholds, affinities, frames, groups, positions, multi_frame=False,
                   non_reusable=False, dominant_sets=True, gmitre_calc=False, eps_thres=1e-15):
     """
