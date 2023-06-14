@@ -218,6 +218,48 @@ def build_model(reg_amt, drop_amt, max_people, d, global_filters,
     return model
 
 
+def get_path(dir_name, no_pointnet=False):
+    """
+    # creates a new directory to save the model into.
+    :param dir_name: name of folder to save data
+    :param no_pointnet: TODO find out
+    :return: path
+    """
+
+    path = 'results/{}'.format(dir_name)
+    if not os.path.isdir(path):
+        os.makedirs(path)
+
+    if no_pointnet:
+        path += '/no_pointnet'
+        if not os.path.isdir(path):
+            os.makedirs(path)
+
+    return path
+
+
+def write_architecture(path, reg, dropout, history, gmitre_calc=False):
+    """
+    Writes evaluation metrics in file.
+    :param file_name:
+    :param history: ValLoss to retrieve model and other parameters
+    :param test: test dataset to be evaluated on
+    :param multi_frame: True if scenes include multiple frames, otherwise False
+    :param gmitre_calc: True if group mitre should be calculated, otherwise False
+    :param eps_thres: threshold to be used in vector climb of dominant sets
+    :param dominant_sets: True if dominant sets algorithm will be used, otherwise False
+    :return: nothing
+    """
+    file = open(path + '/architecture.txt', 'w+')
+    file.write("reg= {}\ndropout= {}\n".format(str(reg), str(dropout)))
+    file.write("best overall val loss: {}\n".format(str(history.best_val_mse)))
+    file.write("best overall f1 1: {}\n".format(str(history.val_f1_one_obj['best_f1'])))
+    file.write("best overall f1 2/3: {}\n".format(str(history.val_f1_two_thirds_obj['best_f1'])))
+    if gmitre_calc:
+        file.write("best overall f1 gmitre: {}\n".format(str(history.val_f1_gmitre_obj['best_f1'])))
+    file.close()
+
+
 def write_object_history(file, history_object, history, test, multi_frame=False, gmitre_calc=False, eps_thres=1e-15,
                          dominant_sets=True):
     file.write("\tepoch: {}\n".format(str(history_object['epoch'])))
@@ -276,26 +318,6 @@ def write_history(file_name, history, test, multi_frame=False, gmitre_calc=False
     file.close()
 
 
-def get_path(dir_name, no_pointnet=False):
-    """
-    # creates a new directory to save the model into.
-    :param dir_name: name of folder to save data
-    :param no_pointnet: TODO find out
-    :return: path
-    """
-
-    path = 'results/{}'.format(dir_name)
-    if not os.path.isdir(path):
-        os.makedirs(path)
-
-    if no_pointnet:
-        path += '/no_pointnet'
-        if not os.path.isdir(path):
-            os.makedirs(path)
-
-    return path
-
-
 def save_model_data(dir_name, reg, dropout, history, test, multi_frame=False, no_pointnet=False,
                     gmitre_calc=False, eps_thres=1e-15, dominant_sets=True):
     """
@@ -312,35 +334,16 @@ def save_model_data(dir_name, reg, dropout, history, test, multi_frame=False, no
     :param dominant_sets: True if dominant sets algorithm will be used, otherwise False
     :return: nothing
     """
-    best_val_mses = []
-    best_val_f1s_one = []
-    best_val_f1s_gmitre = []
-    best_val_f1s_two_thirds = []
-    best_val_mses.append(history.best_val_mse)
-    best_val_f1s_one.append(history.val_f1_one_obj['best_f1'])
-    best_val_f1s_gmitre.append(history.val_f1_gmitre_obj['best_f1'])
-    best_val_f1s_two_thirds.append(history.val_f1_two_thirds_obj['best_f1'])
     path = get_path(dir_name, no_pointnet)
-    file = open(path + '/architecture.txt', 'w+')
-    file.write("reg= {}\ndropout= {}\n".format(str(reg), str(dropout)))
-    name = path
-    if not os.path.isdir(name):
-        os.makedirs(name)
-    write_history(name + '/results.txt', history, test, multi_frame, gmitre_calc, eps_thres, dominant_sets)
+
+    write_architecture(path, reg, dropout, history)
+
+    write_history(path + '/results.txt', history, test, multi_frame, gmitre_calc, eps_thres, dominant_sets)
+
     # TODO check which model should be saved
     #  right now the one with the best F1 T=1 is saved
-    history.val_f1_one_obj['model'].save(name + '/best_val_model.h5')
+    history.val_f1_one_obj['model'].save(path + '/best_val_model.h5')
     print("saved best val model as " + '/best_val_model.h5')
-    file.write("best overall val loss: {}\n".format(str(min(best_val_mses))))
-    file.write("best val losses per fold: {}\n\n".format(str(best_val_mses)))
-    file.write("best overall f1 1: {}\n".format(str(max(best_val_f1s_one))))
-    file.write("best f1 1s per fold: {}\n\n".format(str(best_val_f1s_one)))
-    file.write("best overall f1 2/3: {}\n".format(str(max(best_val_f1s_two_thirds))))
-    file.write("best f1 2/3s per fold: {}\n\n".format(str(best_val_f1s_two_thirds)))
-    if gmitre_calc:
-        file.write("best overall f1 gmitre: {}\n".format(str(max(best_val_f1s_gmitre))))
-        file.write("best f1 gmitres per fold: {}\n".format(str(best_val_f1s_gmitre)))
-    file.close()
 
 
 def train_and_save_model(global_filters, individual_filters, combined_filters,
