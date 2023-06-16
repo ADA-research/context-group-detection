@@ -23,8 +23,9 @@ def reshape_data(data):
     data_array = data_array.reshape((data[0][0].shape[0] * 10, 1, 10, 4))
 
     labels = np.repeat(data[1], 10)
-    frames = np.repeat(data[2], 10, axis=0)
-    return [data_array[:, :, 2:], data_array[:, :, :2]], labels, frames, data[3]
+    frames = np.asarray([([list_elem], val) for lst, val in data[2] for list_elem in lst], dtype=object)
+    groups = np.asarray([([list_elem], val) for lst, val in data[3] for list_elem in lst], dtype=object)
+    return [data_array[:, :, 2:], data_array[:, :, :2]], labels, frames, groups
 
 
 if __name__ == "__main__":
