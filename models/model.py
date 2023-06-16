@@ -118,6 +118,7 @@ def build_model(context_size, consecutive_frames, features, reg_amount, drop_amo
 def get_args():
     parser = argparse.ArgumentParser()
 
+    parser.add_argument('-f', '--fold', type=int, default=0)
     parser.add_argument('-c', '--config', type=str, default="./config/model.yml")
 
     return parser.parse_args()
@@ -132,7 +133,7 @@ if __name__ == '__main__':
 
     train, test, val = load_data(
         '../datasets/reformatted/{}_{}_{}/fold_{}'.format(
-            config['dataset'], config['frames'], config['agents'], config['fold']), config['no_context'])
+            config['dataset'], config['frames'], config['agents'], args.fold), config['no_context'])
 
     model = build_model(
         config['agents'] - 2, config['frames'], config['features'], config['reg'], config['dropout'],
@@ -149,7 +150,7 @@ if __name__ == '__main__':
               validation_data=(val[0], val[1]), callbacks=[tensorboard, early_stop, history])
 
     dir_name = '{}_{}_{}/fold_{}/{}'.format(
-        config['dataset'], config['frames'], config['agents'], config['fold'], config['dir_name'])
+        config['dataset'], config['frames'], config['agents'], args.fold, config['dir_name'])
     save_model_data(dir_name, config['reg'], config['dropout'], history, test, True, gmitre_calc=config['gmitre_calc'],
                     eps_thres=config['eps_thres'], dominant_sets=config['dominant_sets'], layers=config['layers'],
                     no_context=config['no_context'])

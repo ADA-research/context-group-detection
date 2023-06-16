@@ -1,5 +1,4 @@
 ---
-fold: 0
 dir_name: dir_name
 epochs: 1
 agents: 10

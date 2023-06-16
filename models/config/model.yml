@@ -1,5 +1,4 @@
 ---
-fold: 0
 agents: 10
 frames: 10
 features: 4
