@@ -1,6 +1,8 @@
 import argparse
 import os
 
+import numpy as np
+
 from models.utils import load_data, train_and_save_model, read_yaml
 
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
@@ -12,6 +14,22 @@ def get_args():
     parser.add_argument('-c', '--config', type=str, default="./config/dante.yml")
 
     return parser.parse_args()
+
+
+def reshape_data(data):
+    pair_array = np.array(data[0][:2])
+    pair_array = pair_array.reshape((data[0][0].shape[0], 10, 2, 4))
+    pair_array = np.concatenate([pair_array[:, i, :, :] for i in range(10)], axis=0)
+    pair_array = pair_array.reshape((data[0][0].shape[0] * 10, 1, 2, 4))
+
+    context_array = np.array(data[0][2:])
+    context_array = context_array.reshape((data[0][0].shape[0], 10, 8, 4))
+    context_array = np.concatenate([context_array[:, i, :, :] for i in range(10)], axis=0)
+    context_array = context_array.reshape((data[0][0].shape[0] * 10, 1, 8, 4))
+
+    labels = np.repeat(data[1], 10)
+    frames = np.repeat(data[2], 10, axis=0)
+    return [context_array, pair_array], labels, frames, data[3]
 
 
 if __name__ == "__main__":
@@ -34,7 +52,11 @@ if __name__ == "__main__":
                              eps_thres=config['eps_thres'])
     else:
         train, test, val = load_data(
-            '../datasets/reformatted/{}_1_{}/fold_{}'.format(config['dataset'], config['agents'], config['fold']))
+            '../datasets/reformatted/{}_10_{}/fold_{}'.format(config['dataset'], config['agents'], config['fold']))
+
+        train = reshape_data(train)
+        test = reshape_data(test)
+        val = reshape_data(val)
 
         train_and_save_model(global_filters, individual_filters, combined_filters, train, test, val, config['epochs'],
                              config['dataset'], config['dataset_path'], reg=config['reg'], dropout=config['dropout'],
