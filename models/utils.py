@@ -3,6 +3,7 @@ import pickle
 
 import numpy as np
 import tensorflow as tf
+import yaml
 from keras.callbacks import EarlyStopping, TensorBoard, Callback
 from keras.layers import Dense, Dropout, Conv2D, MaxPooling2D, Concatenate, Lambda, BatchNormalization, Flatten, Input
 from keras.models import Model
@@ -12,6 +13,11 @@ from keras.regularizers import l2
 from datasets.preparer import read_obsmat
 from models.DANTE.F1_calc import F1_calc, F1_calc_clone
 from models.DANTE.reformat_data import add_time, import_data
+
+
+def read_yaml(file_path):
+    with open(file_path, "r") as f:
+        return yaml.safe_load(f)
 
 
 def load_pickle_file(file):

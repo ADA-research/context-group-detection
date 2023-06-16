@@ -1,5 +1,4 @@
 import argparse
-import json
 import os
 
 import numpy as np
@@ -10,7 +9,7 @@ from keras.models import Model
 from keras.optimizers import Adam
 from keras.regularizers import l2
 
-from models.utils import ValLoss, load_data, save_model_data
+from models.utils import ValLoss, load_data, save_model_data, read_yaml
 
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 
@@ -119,26 +118,7 @@ def build_model(context_size, consecutive_frames, features, reg_amount, drop_amo
 def get_args():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--fold', type=str, default="0")
-    parser.add_argument('--dataset', type=str, default="eth")
-    parser.add_argument('--dir_name', type=str, default="dir_name")
-    parser.add_argument('--dataset_path', type=str, default="../datasets/ETH/seq_eth")
-    parser.add_argument('-l', '--layers', type=str,
-                        default="{\"pair_filters\":[32,128,256],\"context_filters\":[64,128,256],\"combination_filters\":[256,64]}")
-    parser.add_argument('--train_epochs', type=int, default=0)
-    parser.add_argument('-e', '--epochs', type=int, default=1)
-    parser.add_argument('-a', '--agents', type=int, default=10)
-    parser.add_argument('-cf', '--frames', type=int, default=10)
-    parser.add_argument('-f', '--features', type=int, default=4)
-    parser.add_argument('-p', '--patience', type=int, default=50)
-    parser.add_argument('-bs', '--batch_size', type=int, default=1024)
-    parser.add_argument('-r', '--reg', type=float, default=0.0000001)
-    parser.add_argument('-drop', '--dropout', type=float, default=0.35)
-    parser.add_argument('-et', '--eps_thres', type=float, default=1e-13)
-    parser.add_argument('-lr', '--learning_rate', type=float, default=0.0001)
-    parser.add_argument('-gm', '--gmitre_calc', action="store_true", default=True)
-    parser.add_argument('-ds', '--dominant_sets', action="store_true", default=False)
-    parser.add_argument('-nc', '--no_context', action="store_true", default=False)
+    parser.add_argument('-c', '--config', type=str, default="./config/model.yml")
 
     return parser.parse_args()
 
@@ -148,26 +128,28 @@ if __name__ == '__main__':
     tf.random.set_seed(0)
 
     args = get_args()
+    config = read_yaml(args.config)
 
     train, test, val = load_data(
-        '../datasets/reformatted/{}_{}_{}/fold_{}'.format(args.dataset, args.frames, args.agents, args.fold),
-        args.no_context)
+        '../datasets/reformatted/{}_{}_{}/fold_{}'.format(
+            config['dataset'], config['frames'], config['agents'], config['fold']), config['no_context'])
 
-    layers = json.loads(args.layers)
-
-    model = build_model(args.agents - 2, args.frames, args.features, args.reg, args.dropout, args.learning_rate,
-                        pair_filters=layers['pair_filters'], context_filters=layers['context_filters'],
-                        combination_filters=layers['combination_filters'], no_context=args.no_context)
+    model = build_model(
+        config['agents'] - 2, config['frames'], config['features'], config['reg'], config['dropout'],
+        config['learning_rate'], no_context=config['no_context'], pair_filters=config['layers']['pair_filters'],
+        context_filters=config['layers']['context_filters'],
+        combination_filters=config['layers']['combination_filters'])
 
     tensorboard = TensorBoard(log_dir='./logs')
-    early_stop = EarlyStopping(monitor='val_loss', patience=args.patience)
-    history = ValLoss(val, args.dataset, args.dataset_path, args.train_epochs, True, args.gmitre_calc, args.eps_thres,
-                      args.dominant_sets)
+    early_stop = EarlyStopping(monitor='val_loss', patience=config['patience'])
+    history = ValLoss(val, config['dataset'], config['dataset_path'], config['train_epochs'], True,
+                      config['gmitre_calc'], config['eps_thres'], config['dominant_sets'])
 
-    model.fit(train[0], train[1], epochs=args.epochs, batch_size=args.batch_size,
+    model.fit(train[0], train[1], epochs=config['epochs'], batch_size=config['batch_size'],
               validation_data=(val[0], val[1]), callbacks=[tensorboard, early_stop, history])
 
-    dir_name = '{}_{}_{}/fold_{}/{}'.format(args.dataset, args.frames, args.agents, args.fold, args.dir_name)
-    save_model_data(dir_name, args.reg, args.dropout, history, test, True, gmitre_calc=args.gmitre_calc,
-                    eps_thres=args.eps_thres, dominant_sets=args.dominant_sets, layers=layers,
-                    no_context=args.no_context)
+    dir_name = '{}_{}_{}/fold_{}/{}'.format(
+        config['dataset'], config['frames'], config['agents'], config['fold'], config['dir_name'])
+    save_model_data(dir_name, config['reg'], config['dropout'], history, test, True, gmitre_calc=config['gmitre_calc'],
+                    eps_thres=config['eps_thres'], dominant_sets=config['dominant_sets'], layers=config['layers'],
+                    no_context=config['no_context'])

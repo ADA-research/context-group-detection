@@ -1,0 +1,31 @@
+---
+fold: 0
+agents: 10
+frames: 10
+features: 4
+dataset: eth
+dir_name: dir_name
+dataset_path: ../datasets/ETH/seq_eth
+epochs: 1
+patience: 50
+train_epochs: 0
+batch_size: 1024
+eps_thres: 1.0e-13
+learning_rate: 0.0001
+no_context: false
+gmitre_calc: true
+dominant_sets: false
+reg: 1.0e-07
+dropout: 0.35
+layers:
+  pair_filters:
+    - 32
+    - 128
+    - 256
+  context_filters:
+    - 64
+    - 128
+    - 256
+  combination_filters:
+    - 256
+    - 64
