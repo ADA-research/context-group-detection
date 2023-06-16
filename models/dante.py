@@ -47,7 +47,11 @@ if __name__ == "__main__":
                              eps_thres=config['eps_thres'])
     else:
         train, test, val = load_data(
-            '../datasets/reformatted/{}_1_{}/fold_{}'.format(config['dataset'], config['agents'], config['fold']))
+            '../datasets/reformatted/{}_10_{}/fold_{}'.format(config['dataset'], config['agents'], config['fold']))
+
+        train = reshape_data(train)
+        test = reshape_data(test)
+        val = reshape_data(val)
 
         train_and_save_model(global_filters, individual_filters, combined_filters, train, test, val, config['epochs'],
                              config['dataset'], config['dataset_path'], reg=config['reg'], dropout=config['dropout'],
