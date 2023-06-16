@@ -17,19 +17,14 @@ def get_args():
 
 
 def reshape_data(data):
-    pair_array = np.array(data[0][:2])
-    pair_array = pair_array.reshape((data[0][0].shape[0], 10, 2, 4))
-    pair_array = np.concatenate([pair_array[:, i, :, :] for i in range(10)], axis=0)
-    pair_array = pair_array.reshape((data[0][0].shape[0] * 10, 1, 2, 4))
-
-    context_array = np.array(data[0][2:])
-    context_array = context_array.reshape((data[0][0].shape[0], 10, 8, 4))
-    context_array = np.concatenate([context_array[:, i, :, :] for i in range(10)], axis=0)
-    context_array = context_array.reshape((data[0][0].shape[0] * 10, 1, 8, 4))
+    data_array = np.array(data[0])
+    data_array = data_array.reshape((data[0][0].shape[0], 10, 10, 4))
+    data_array = np.concatenate([data_array[:, i, :, :] for i in range(10)], axis=0)
+    data_array = data_array.reshape((data[0][0].shape[0] * 10, 1, 10, 4))
 
     labels = np.repeat(data[1], 10)
     frames = np.repeat(data[2], 10, axis=0)
-    return [context_array, pair_array], labels, frames, data[3]
+    return [data_array[:, :, 2:], data_array[:, :, :2]], labels, frames, data[3]
 
 
 if __name__ == "__main__":
