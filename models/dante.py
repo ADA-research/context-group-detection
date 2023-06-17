@@ -12,7 +12,9 @@ def get_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument('-f', '--fold', type=int, default=0)
-    parser.add_argument('-c', '--config', type=str, default="./config/dante.yml")
+    parser.add_argument('-e', '--epochs', type=int, default=1)
+    parser.add_argument('-d', '--dir_name', type=str, default="dir_name")
+    parser.add_argument('-c', '--config', type=str, default="./config/dante_test.yml")
 
     return parser.parse_args()
 
@@ -42,22 +44,22 @@ if __name__ == "__main__":
     if config['dataset'] == 'cocktail_party':
         train, test, val = load_data('../datasets/{}/fold_{}'.format(config['dataset'], args.fold))
 
-        train_and_save_model(global_filters, individual_filters, combined_filters, train, test, val, config['epochs'],
+        train_and_save_model(global_filters, individual_filters, combined_filters, train, test, val, args.epochs,
                              config['dataset'], config['dataset_path'], reg=config['reg'], dropout=config['dropout'],
                              gmitre_calc=config['gmitre_calc'], patience=config['patience'],
                              dir_name='{}/fold_{}'.format(config['dataset'], args.fold),
                              eps_thres=config['eps_thres'])
     else:
         train, test, val = load_data(
-            '../datasets/reformatted/{}_10_{}/fold_{}'.format(config['dataset'], config['agents'], args.fold))
+            '../datasets/reformatted/{}_1_{}/fold_{}'.format(config['dataset'], config['agents'], args.fold))
 
-        train = reshape_data(train)
-        test = reshape_data(test)
-        val = reshape_data(val)
+        # train = reshape_data(train)
+        # test = reshape_data(test)
+        # val = reshape_data(val)
 
-        train_and_save_model(global_filters, individual_filters, combined_filters, train, test, val, config['epochs'],
+        train_and_save_model(global_filters, individual_filters, combined_filters, train, test, val, args.epochs,
                              config['dataset'], config['dataset_path'], reg=config['reg'], dropout=config['dropout'],
                              gmitre_calc=config['gmitre_calc'], patience=config['patience'],
                              dir_name='{}_1_{}/fold_{}/{}'.format(
-                                 config['dataset'], config['agents'], args.fold, config['dir_name']),
+                                 config['dataset'], config['agents'], args.fold, args.dir_name),
                              eps_thres=config['eps_thres'])

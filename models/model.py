@@ -119,7 +119,9 @@ def get_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument('-f', '--fold', type=int, default=0)
-    parser.add_argument('-c', '--config', type=str, default="./config/model.yml")
+    parser.add_argument('-e', '--epochs', type=int, default=1)
+    parser.add_argument('-d', '--dir_name', type=str, default="dir_name")
+    parser.add_argument('-c', '--config', type=str, default="./config/model_test.yml")
 
     return parser.parse_args()
 
@@ -146,11 +148,11 @@ if __name__ == '__main__':
     history = ValLoss(val, config['dataset'], config['dataset_path'], config['train_epochs'], True,
                       config['gmitre_calc'], config['eps_thres'], config['dominant_sets'])
 
-    model.fit(train[0], train[1], epochs=config['epochs'], batch_size=config['batch_size'],
+    model.fit(train[0], train[1], epochs=args.epochs, batch_size=config['batch_size'],
               validation_data=(val[0], val[1]), callbacks=[tensorboard, early_stop, history])
 
     dir_name = '{}_{}_{}/fold_{}/{}'.format(
-        config['dataset'], config['frames'], config['agents'], args.fold, config['dir_name'])
+        config['dataset'], config['frames'], config['agents'], args.fold, args.dir_name)
     save_model_data(dir_name, config['reg'], config['dropout'], history, test, True, gmitre_calc=config['gmitre_calc'],
                     eps_thres=config['eps_thres'], dominant_sets=config['dominant_sets'], layers=config['layers'],
                     no_context=config['no_context'])
