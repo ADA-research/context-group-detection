@@ -9,7 +9,7 @@
 #SBATCH --mem-per-gpu=5G
 
 # Default values
-config="../config/model.json"
+config="./config/model.yml"
 fold=0
 epochs=1
 dir_name=""
