@@ -644,7 +644,7 @@ if __name__ == '__main__':
                                                                  max_pair_samples=max_samples[dataset],
                                                                  shift=args.shift)
 
-        save_folder = '{}_shift'.format(args.save_folder) if args.shift else args.save_folder
+        save_folder = '{}_shifted'.format(args.save_folder) if args.shift else args.save_folder
         # save dataset in folds
         save_folds(save_folder, dataset, args.frames_num, args.agents_num, data, labels, frames, filtered_groups,
                    multi_frame)
