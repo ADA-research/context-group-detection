@@ -265,6 +265,33 @@ def get_agent_data_for_frames(dataframe, agents, frames):
     return list(data.groupby('agent_id')['measurement'].apply(list).values)
 
 
+def shift_data(pair_data, context_data, frames):
+    new_context_data = [[] for i in range(len(context_data))]
+    for i in range(frames):
+        x1 = pair_data[0][i][0]
+        y1 = pair_data[0][i][1]
+        x2 = pair_data[1][i][0]
+        y2 = pair_data[1][i][1]
+        a = .5 * (x1 + x2)
+        b = .5 * (y1 + y2)
+        dx = x1 - x2
+        dy = y1 - y2
+        b0 = dx / np.sqrt(dx ** 2 + dy ** 2)
+        b1 = dy / np.sqrt(dx ** 2 + dy ** 2)
+
+        for j, agent in enumerate(context_data):
+            x = agent[i][0]
+            y = agent[i][1]
+            # shift, project each x and y
+            x_shift = x - a
+            y_shift = y - b
+            x_proj = b0 * x_shift + b1 * y_shift
+            y_proj = b1 * x_shift - b0 * y_shift
+            new_context_data[j].append((x_proj, y_proj, agent[i][2], agent[i][3]))
+
+    return new_context_data
+
+
 def get_pair_label(groups, agents):
     """
     Checks if agents are in the same group.
@@ -275,7 +302,7 @@ def get_pair_label(groups, agents):
     return any(all(agent in group for agent in agents) for group in groups)
 
 
-def scene_sample(dataframe, groups, pair_agents, context_agents, frames, data, labels):
+def scene_sample(dataframe, groups, pair_agents, context_agents, frames, data, labels, shift=False):
     """
     Sampling scene by getting agents and label data.
     :param dataframe: dataframe to retrieve data
@@ -289,6 +316,8 @@ def scene_sample(dataframe, groups, pair_agents, context_agents, frames, data, l
     """
     pair_data = get_agent_data_for_frames(dataframe, pair_agents, frames)
     context_data = get_agent_data_for_frames(dataframe, context_agents, frames)
+    if shift:
+        context_data = shift_data(pair_data, context_data, len(frames))
     pair_data.extend(context_data)
     data.append(pair_data)
     label = get_pair_label(groups, pair_agents)
@@ -354,7 +383,7 @@ def dataset_size_calculator(group_pairs, frame_comb_data, min_pair_samples, max_
 
 
 def dataset_reformat(dataframe, groups, group_pairs, frame_comb_data, agents_minimum, min_pair_samples,
-                     max_pair_samples):
+                     max_pair_samples, shift=False):
     """
     Gather data from all possible scenes based on given parameters.
     :param dataframe: dataframe to retrieve data
@@ -381,7 +410,7 @@ def dataset_reformat(dataframe, groups, group_pairs, frame_comb_data, agents_min
             scene_agents = comb_agents - set(pair_agents)
             for i in range(pair_samples):
                 context_agents = random.sample(scene_agents, agents_minimum - 2)
-                scene_sample(dataframe, groups, pair_agents, context_agents, comb_frames, data, labels)
+                scene_sample(dataframe, groups, pair_agents, context_agents, comb_frames, data, labels, shift)
                 frames.append((comb_frames, pair_agents))
         combs_groups.append((comb_frames, comb_groups))
     return np.asarray(data), np.asarray(labels), np.asarray(frames, dtype=object), np.asarray(combs_groups,
@@ -505,6 +534,7 @@ def get_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument('-r', '--report', action="store_true", default=False)
+    parser.add_argument('-s', '--shift', action="store_true", default=True)
     parser.add_argument('-p', '--plot', action="store_true", default=False)
     parser.add_argument('-f', '--frames_num', type=int, default=10)
     parser.add_argument('-a', '--agents_num', type=int, default=10)
@@ -611,10 +641,12 @@ if __name__ == '__main__':
         data, labels, frames, filtered_groups = dataset_reformat(dataframe=df, groups=groups, group_pairs=group_pairs,
                                                                  frame_comb_data=combs, agents_minimum=args.agents_num,
                                                                  min_pair_samples=min_samples[dataset],
-                                                                 max_pair_samples=max_samples[dataset])
+                                                                 max_pair_samples=max_samples[dataset],
+                                                                 shift=args.shift)
 
+        save_folder = '{}_shift'.format(args.save_folder) if args.shift else args.save_folder
         # save dataset in folds
-        save_folds(args.save_folder, dataset, args.frames_num, args.agents_num, data, labels, frames, filtered_groups,
+        save_folds(save_folder, dataset, args.frames_num, args.agents_num, data, labels, frames, filtered_groups,
                    multi_frame)
 
         end = datetime.now()

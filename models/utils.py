@@ -1,5 +1,6 @@
 import os
 import pickle
+import re
 
 import numpy as np
 import tensorflow as tf
@@ -12,7 +13,6 @@ from keras.regularizers import l2
 
 from datasets.preparer import read_obsmat
 from models.DANTE.F1_calc import F1_calc, F1_calc_clone
-from models.DANTE.reformat_data import add_time, import_data
 
 
 def read_yaml(file_path):
@@ -75,6 +75,36 @@ def predict(data, model, groups, dataset, multi_frame=False, positions=None, gmi
 
     return F1_calc_clone([2 / 3, 1], predictions, frames, groups, positions, multi_frame=multi_frame,
                          gmitre_calc=gmitre_calc, eps_thres=eps_thres, dominant_sets=dominant_sets)
+
+
+# generates feature and ground-truth group matrices from data files
+def import_data(dataset_path):
+    positions = np.genfromtxt(dataset_path + "/DS_utils/features.txt", dtype='str')
+    groups = np.genfromtxt(dataset_path + "/DS_utils/group_names.txt", dtype='str', delimiter=',')
+    return positions, groups
+
+
+# run this to generate Groups_at_time, Groups is from import_gc_data()
+# Groups is of the form: time < ID001 ID002 > < ID003 > etc.
+# returns dictionary from time to array of group arrays
+# eg. time -> [[ID001, ID002], [ID003], ...]
+def add_time(Groups):
+    Groups_at_time = {}
+    for groups in Groups:
+        groups_arr = re.split(" < | > < ", groups)
+        Groups_at_time[groups_arr[0]] = []
+        last_index = -1
+
+        for group in groups_arr[1:]:
+            last_index += 1
+            Groups_at_time[groups_arr[0]].append(re.split(" ", group))
+
+        # remove last > character
+        if len(groups_arr[1:]) == 0:
+            continue
+        Groups_at_time[groups_arr[0]][last_index] = Groups_at_time[groups_arr[0]][last_index][:-1]
+
+    return Groups_at_time
 
 
 class ValLoss(Callback):
