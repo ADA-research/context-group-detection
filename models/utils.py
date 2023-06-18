@@ -65,7 +65,7 @@ def predict(data, model, groups, dataset, multi_frame=False, positions=None, gmi
         predictions = model.predict(X)
 
         return F1_calc([2 / 3, 1], predictions, frames, groups, positions, n_people, n_features, eps_thres=eps_thres)
-    elif dataset in ["eth", "hotel", "zara01", "zara02", "students03"]:
+    elif dataset in ["eth", "eth_shifted", "hotel", "zara01", "zara02", "students03"]:
         pass
     else:
         raise Exception("unknown dataset")
