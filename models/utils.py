@@ -128,7 +128,7 @@ class ValLoss(Callback):
         if dataset in ["cocktail_party"]:
             self.positions, groups = import_data(dataset_path)
             self.groups = add_time(groups)
-        elif dataset in ["eth", "hotel", "zara01", "zara02", "students03"]:
+        elif dataset in ["eth", "eth_shifted", "hotel", "zara01", "zara02", "students03"]:
             self.positions = read_obsmat(dataset_path)
             self.groups = val_data[3]
         else:
