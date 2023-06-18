@@ -5,7 +5,7 @@ patience: 100
 dropout: 0.35
 reg: 0.0000001
 eps_thres: 1.0e-13
-dataset: eth
+dataset: eth_shifted
 dataset_path: ../datasets/ETH/seq_eth
 gmitre_calc: true
 #dataset: cocktail_party

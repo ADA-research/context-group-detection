@@ -2,7 +2,7 @@
 agents: 10
 frames: 10
 features: 4
-dataset: eth
+dataset: eth_shifted
 dataset_path: ../datasets/ETH/seq_eth
 patience: 100
 train_epochs: 0
