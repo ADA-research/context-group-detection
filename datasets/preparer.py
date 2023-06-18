@@ -399,7 +399,7 @@ def dataset_reformat(dataframe, groups, group_pairs, frame_comb_data, agents_min
     labels = []
     frames = []
     combs_groups = []
-    for frame_comb in frame_comb_data:
+    for frame_comb in frame_comb_data[:10]:
         comb_frames = frame_comb['frames']
         comb_agents = frame_comb['common_agents']
         comb_groups = frame_comb['groups']
@@ -644,9 +644,9 @@ if __name__ == '__main__':
                                                                  max_pair_samples=max_samples[dataset],
                                                                  shift=args.shift)
 
-        save_folder = '{}_shifted'.format(args.save_folder) if args.shift else args.save_folder
+        dataset = '{}_shifted'.format(dataset) if args.shift else dataset
         # save dataset in folds
-        save_folds(save_folder, dataset, args.frames_num, args.agents_num, data, labels, frames, filtered_groups,
+        save_folds(args.save_folder, dataset, args.frames_num, args.agents_num, data, labels, frames, filtered_groups,
                    multi_frame)
 
         end = datetime.now()
