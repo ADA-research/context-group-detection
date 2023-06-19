@@ -10,7 +10,6 @@ batch_size: 1024
 eps_thres: 1.0e-13
 learning_rate: 0.0001
 no_context: false
-gmitre_calc: true
 dominant_sets: true
 reg: 1.0e-07
 dropout: 0.35
