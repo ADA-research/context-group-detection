@@ -15,6 +15,7 @@ logs
 models/config
 models/results
 models/DANTE/models
+scripts
 
 # ignored files
 notes.txt
