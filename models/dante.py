@@ -23,7 +23,7 @@ def get_args():
     parser.add_argument('-f', '--fold', type=int, default=0)
     parser.add_argument('-e', '--epochs', type=int, default=1)
     parser.add_argument('-d', '--dir_name', type=str, default="dir_name")
-    parser.add_argument('-c', '--config', type=str, default="./config/dante_test.yml")
+    parser.add_argument('-c', '--config', type=str, default="./config/dante.yml")
 
     return parser.parse_args()
 
