@@ -65,10 +65,12 @@ def predict(data, model, groups, dataset, multi_frame=False, positions=None, gmi
         predictions = model.predict(X)
 
         return F1_calc([2 / 3, 1], predictions, frames, groups, positions, n_people, n_features, eps_thres=eps_thres)
-    elif dataset in ["eth", "eth_shifted", "hotel", "zara01", "zara02", "students03"]:
-        pass
     else:
-        raise Exception("unknown dataset")
+        dataset_name = dataset
+        if "_shifted" in dataset_name:
+            dataset_name = dataset_name.replace("_shifted", "")
+        if dataset_name not in ["eth", "hotel", "zara01", "zara02", "students03"]:
+            raise Exception("unknown dataset")
 
     X, y, frames, groups = data
     predictions = model.predict(X)
@@ -128,11 +130,15 @@ class ValLoss(Callback):
         if dataset in ["cocktail_party"]:
             self.positions, groups = import_data(dataset_path)
             self.groups = add_time(groups)
-        elif dataset in ["eth", "eth_shifted", "hotel", "zara01", "zara02", "students03"]:
-            self.positions = read_obsmat(dataset_path)
-            self.groups = val_data[3]
         else:
-            raise Exception("unrecognized dataset")
+            dataset_name = dataset
+            if "_shifted" in dataset_name:
+                dataset_name = dataset_name.replace("_shifted", "")
+            if dataset_name in ["eth", "hotel", "zara01", "zara02", "students03"]:
+                self.positions = read_obsmat(dataset_path)
+                self.groups = val_data[3]
+            else:
+                raise Exception("unrecognized dataset")
 
         self.best_model = None
         self.best_val_mse = float("inf")
