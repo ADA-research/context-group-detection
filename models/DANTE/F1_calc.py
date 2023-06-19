@@ -124,7 +124,7 @@ def dbscan_algo(predictions, n_people, frames):
 
 
 def F1_calc_clone(group_thresholds, affinities, frames, groups, positions, multi_frame=False,
-                  non_reusable=False, dominant_sets=True, gmitre_calc=False, eps_thres=1e-15):
+                  non_reusable=False, dominant_sets=True, eps_thres=1e-15):
     """
     Calculates average F1 for thresholds 2/3, 1 and group mitre.
     :param group_thresholds: threshold for group to be considered correctly detected
@@ -135,13 +135,10 @@ def F1_calc_clone(group_thresholds, affinities, frames, groups, positions, multi
     :param multi_frame: True if scenes include multiple frames, otherwise False
     :param non_reusable: if predicted groups can be reused
     :param dominant_sets: True if dominant sets algorithm will be used, otherwise False
-    :param gmitre_calc: True if group mitre should be calculated, otherwise False
     :param eps_thres: threshold to be used in vector climb of dominant sets
     :param dominant_sets: True if dominant sets algorithm will be used, otherwise False
     :return: list of F1, precision, recall for T=2/3, T=1 and group mitre
     """
-    if gmitre_calc:
-        group_thresholds.append(None)
     avg_results = [np.array([0.0, 0.0]) for _ in range(len(group_thresholds))]
 
     num_times = 1

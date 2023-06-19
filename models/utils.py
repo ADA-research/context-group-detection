@@ -42,8 +42,7 @@ def load_data(path, no_context=False):
     return train, test, val
 
 
-def predict(data, model, groups, dataset, multi_frame=False, positions=None, gmitre_calc=False, eps_thres=1e-15,
-            dominant_sets=True):
+def predict(data, model, groups, dataset, multi_frame=False, positions=None, eps_thres=1e-15, dominant_sets=True):
     """
     Gives T=1 and T=2/3 F1 scores.
     :param data: data to be used during prediction
@@ -52,7 +51,6 @@ def predict(data, model, groups, dataset, multi_frame=False, positions=None, gmi
     :param dataset: name of dataset
     :param multi_frame: True if scenes include multiple frames, otherwise False
     :param positions: data in raw format
-    :param gmitre_calc: True if group mitre should be calculated, otherwise False
     :param eps_thres: threshold to be used in vector climb of dominant sets
     :param dominant_sets: True if dominant sets algorithm will be used, otherwise False
     :return: T=1 and T=2/3 F1 scores
@@ -75,8 +73,8 @@ def predict(data, model, groups, dataset, multi_frame=False, positions=None, gmi
     X, y, frames, groups = data
     predictions = model.predict(X)
 
-    return F1_calc_clone([2 / 3, 1], predictions, frames, groups, positions, multi_frame=multi_frame,
-                         gmitre_calc=gmitre_calc, eps_thres=eps_thres, dominant_sets=dominant_sets)
+    return F1_calc_clone([2 / 3, 1, None], predictions, frames, groups, positions, multi_frame=multi_frame,
+                         eps_thres=eps_thres, dominant_sets=dominant_sets)
 
 
 # generates feature and ground-truth group matrices from data files
@@ -114,14 +112,13 @@ class ValLoss(Callback):
     Records train and val losses and mse.
     """
 
-    def __init__(self, val_data, dataset, dataset_path, train_epochs=0, multi_frame=False, gmitre_calc=False,
-                 eps_thres=1e-15, dominant_sets=True):
+    def __init__(self, val_data, dataset, dataset_path, train_epochs=0, multi_frame=False, eps_thres=1e-15,
+                 dominant_sets=True):
         super(ValLoss, self).__init__()
         self.val_data = val_data
         self.dataset = dataset
         self.dataset_path = dataset_path
         self.multi_frame = multi_frame
-        self.gmitre_calc = gmitre_calc
         self.train_epochs = train_epochs
         self.eps_thres = eps_thres
         self.dominant_sets = dominant_sets
@@ -144,6 +141,10 @@ class ValLoss(Callback):
         self.best_val_mse = float("inf")
         self.best_epoch = -1
 
+        self.best_f1_avg_model = None
+        self.best_f1_avg = float("-inf")
+        self.best_f1_avg_epoch = -1
+
         self.val_f1_one_obj = {"f1s": [], "best_f1": float('-inf')}
         self.val_f1_two_thirds_obj = {"f1s": [], "best_f1": float('-inf')}
         self.val_f1_gmitre_obj = {"f1s": [], "best_f1": float('-inf')}
@@ -165,17 +166,26 @@ class ValLoss(Callback):
             self.best_val_mse = logs['val_mse']
             self.best_epoch = epoch
 
-        results = predict(self.val_data, self.model, self.groups, self.dataset, self.multi_frame,
-                          self.positions, self.gmitre_calc, self.eps_thres, self.dominant_sets)
+        results = predict(self.val_data, self.model, self.groups, self.dataset, self.multi_frame, self.positions,
+                          self.eps_thres, self.dominant_sets)
 
+        avg = 0
         objs = [self.val_f1_two_thirds_obj, self.val_f1_one_obj, self.val_f1_gmitre_obj]
         for result, obj in zip(results, objs):
             f1 = result[0]
+            avg += f1
             if f1 > obj['best_f1']:
                 obj['best_f1'] = f1
                 obj['epoch'] = epoch
                 obj['model'] = self.model
             obj['f1s'].append(f1)
+
+        avg = avg / len(objs)
+        if avg >= self.best_f1_avg:
+            self.best_f1_avg_model = self.model
+            self.best_f1_avg = avg
+            self.best_f1_avg_epoch = epoch
+
         self.val_losses.append(logs['val_loss'])
         self.train_losses.append(logs['loss'])
         self.val_mses.append(logs['val_mse'])
@@ -291,24 +301,22 @@ def write_architecture(path, reg, dropout, layers, eps_thres=1e-15, dominant_set
     file.close()
 
 
-def write_object_history(file, history_object, history, test, multi_frame=False, gmitre_calc=False, eps_thres=1e-15,
-                         dominant_sets=True):
+def write_object_history(file, history_object, history, test, multi_frame=False, eps_thres=1e-15, dominant_sets=True):
     file.write("\tepoch: {}\n".format(str(history_object['epoch'])))
     results = predict(test, history_object['model'], history.groups, history.dataset, multi_frame, history.positions,
-                      gmitre_calc, eps_thres, dominant_sets)
+                      eps_thres, dominant_sets)
     file.write(' '.join(['\ttest_f1s:', ' '.join([str(result[0]) for result in results])]) + '\n')
     file.write(' '.join(['\tprecisions:', ' '.join([str(result[1]) for result in results])]) + '\n')
     file.write(' '.join(['\trecalls:', ' '.join([str(result[2]) for result in results])]) + '\n')
 
 
-def write_history(file_name, history, test, multi_frame=False, gmitre_calc=False, eps_thres=1e-15, dominant_sets=True):
+def write_history(file_name, history, test, multi_frame=False, eps_thres=1e-15, dominant_sets=True):
     """
     Writes evaluation metrics in file.
     :param file_name: name of the file to be written
     :param history: ValLoss to retrieve model and other parameters
     :param test: test dataset to be evaluated on
     :param multi_frame: True if scenes include multiple frames, otherwise False
-    :param gmitre_calc: True if group mitre should be calculated, otherwise False
     :param eps_thres: threshold to be used in vector climb of dominant sets
     :param dominant_sets: True if dominant sets algorithm will be used, otherwise False
     :return: nothing
@@ -316,40 +324,40 @@ def write_history(file_name, history, test, multi_frame=False, gmitre_calc=False
     file = open(file_name, 'w+')
 
     file.write("best_val: {}\n".format(str(history.best_val_mse)))
-    file.write("epoch: {}\n".format(str(history.best_epoch)))
+    file.write("\tepoch: {}\n".format(str(history.best_epoch)))
+
+    file.write("best_avg: {}\n".format(str(history.best_f1_avg)))
+    file.write("\tepoch: {}\n".format(str(history.best_f1_avg_epoch)))
+    results = predict(test, history.best_f1_avg_model, history.groups, history.dataset, multi_frame, history.positions,
+                      eps_thres, dominant_sets)
+    file.write(' '.join(['\ttest_f1s:', ' '.join([str(result[0]) for result in results])]) + '\n')
+    file.write(' '.join(['\tprecisions:', ' '.join([str(result[1]) for result in results])]) + '\n')
+    file.write(' '.join(['\trecalls:', ' '.join([str(result[2]) for result in results])]) + '\n')
 
     file.write("best_val_f1_1: {}\n".format(str(history.val_f1_one_obj['best_f1'])))
     write_object_history(
-        file, history.val_f1_one_obj, history, test, multi_frame, gmitre_calc, eps_thres, dominant_sets)
+        file, history.val_f1_one_obj, history, test, multi_frame, eps_thres, dominant_sets)
 
     file.write("best_val_f1_2/3: {}\n".format(str(history.val_f1_two_thirds_obj['best_f1'])))
     write_object_history(
-        file, history.val_f1_two_thirds_obj, history, test, multi_frame, gmitre_calc, eps_thres, dominant_sets)
+        file, history.val_f1_two_thirds_obj, history, test, multi_frame, eps_thres, dominant_sets)
 
-    if gmitre_calc:
-        file.write("best_val_f1_gmitre: {}\n".format(str(history.val_f1_gmitre_obj['best_f1'])))
-        write_object_history(
-            file, history.val_f1_gmitre_obj, history, test, multi_frame, gmitre_calc, eps_thres, dominant_sets)
+    file.write("best_val_f1_gmitre: {}\n".format(str(history.val_f1_gmitre_obj['best_f1'])))
+    write_object_history(file, history.val_f1_gmitre_obj, history, test, multi_frame, eps_thres, dominant_sets)
 
-    if gmitre_calc:
-        file.write('{:<10s} {:<10s} {:<10s} {:<10s} {:<10s} {:<10s} {:<10s}\n'.format(
-            'train loss', 'val loss', 'train mse', 'val mse', 'val 1 f1', 'val 2/3 f1', 'val gmitre f1'))
-        for i in range(len(history.train_losses)):
-            file.write('{:<10.7f} {:<10.7f} {:<10.7f} {:<10.7f} {:<10.7f} {:<10.7f} {:<10.7f}\n'.format(
-                history.train_losses[i], history.val_losses[i], history.train_mses[i], history.val_mses[i],
-                history.val_f1_one_obj['f1s'][i], history.val_f1_two_thirds_obj['f1s'][i],
-                history.val_f1_gmitre_obj['f1s'][i]))
-    else:
-        file.write('{:<10s} {:<10s} {:<10s} {:<10s} {:<10s} {:<10s}\n'.format(
-            'train loss', 'val loss', 'train mse', 'val mse', 'val 1 f1', 'val 2/3 f1'))
-        for i in range(len(history.train_losses)):
-            file.write('{:<10.7f} {:<10.7f} {:<10.7f} {:<10.7f} {:<10.7f} {:<10.7f}\n'.format(
-                history.train_losses[i], history.val_losses[i], history.train_mses[i], history.val_mses[i],
-                history.val_f1_one_obj['f1s'][i], history.val_f1_two_thirds_obj['f1s'][i]))
+    file.write('{:<10s} {:<10s} {:<10s} {:<10s} {:<10s} {:<10s} {:<13s} {:<10s}\n'.format(
+        'train loss', 'val loss', 'train mse', 'val mse', 'val 1 f1', 'val 2/3 f1', 'val gmitre f1', 'f1 avg'))
+    for i in range(len(history.train_losses)):
+        avg = (history.val_f1_one_obj['f1s'][i] + history.val_f1_two_thirds_obj['f1s'][i] +
+               history.val_f1_gmitre_obj['f1s'][i]) / 3
+        file.write('{:<10.7f} {:<10.7f} {:<10.7f} {:<10.7f} {:<10.7f} {:<10.7f} {:<13.7f} {:<10.7f}\n'.format(
+            history.train_losses[i], history.val_losses[i], history.train_mses[i], history.val_mses[i],
+            history.val_f1_one_obj['f1s'][i], history.val_f1_two_thirds_obj['f1s'][i],
+            history.val_f1_gmitre_obj['f1s'][i], avg))
     file.close()
 
 
-def save_model_data(dir_name, reg, dropout, history, test, multi_frame=False, gmitre_calc=False, eps_thres=1e-15,
+def save_model_data(dir_name, reg, dropout, history, test, multi_frame=False, eps_thres=1e-15,
                     dominant_sets=True, layers={}, no_context=False):
     """
     Save model and metrics to files.
@@ -359,7 +367,6 @@ def save_model_data(dir_name, reg, dropout, history, test, multi_frame=False, gm
     :param history: ValLoss to retrieve model and other parameters
     :param test: test dataset to be evaluated on
     :param multi_frame: True if scenes include multiple frames, otherwise False
-    :param gmitre_calc: True if group mitre should be calculated, otherwise False
     :param eps_thres: threshold to be used in vector climb of dominant sets
     :param dominant_sets: True if dominant sets algorithm will be used, otherwise False
     :param layers: dict with info about layers
@@ -370,17 +377,15 @@ def save_model_data(dir_name, reg, dropout, history, test, multi_frame=False, gm
 
     write_architecture(path, reg, dropout, layers, eps_thres, dominant_sets, no_context)
 
-    write_history(path + '/results.txt', history, test, multi_frame, gmitre_calc, eps_thres, dominant_sets)
+    write_history(path + '/results.txt', history, test, multi_frame, eps_thres, dominant_sets)
 
-    # TODO check which model should be saved
-    #  right now the one with the best F1 T=1 is saved
-    history.val_f1_one_obj['model'].save(path + '/best_val_model.h5')
-    print("saved best val model as " + '/best_val_model.h5')
+    history.best_f1_avg_model.save(path + '/best_val_model.h5')
+    print("saved best avg model as " + '/best_val_model.h5')
 
 
 def train_and_save_model(global_filters, individual_filters, combined_filters,
                          train, test, val, epochs, dataset, dataset_path, reg=0.0000001, dropout=.35, batch_size=64,
-                         patience=50, gmitre_calc=False, dir_name='', eps_thres=1e-15):
+                         patience=50, dir_name='', eps_thres=1e-15):
     """
     Train and save model based on given parameters.
     :param global_filters: filters for context branch
@@ -396,7 +401,6 @@ def train_and_save_model(global_filters, individual_filters, combined_filters,
     :param dropout: dropout rate
     :param batch_size: batch size used in training of model
     :param patience: number of epochs to be used in EarlyStopping callback
-    :param gmitre_calc: True if group mitre should be calculated, otherwise False
     :param dir_name: location to save results
     :param eps_thres: threshold to be used in vector climb of dominant sets
     :return: nothing
@@ -413,9 +417,9 @@ def train_and_save_model(global_filters, individual_filters, combined_filters,
     # train model
     tensorboard = TensorBoard(log_dir='./logs')
     early_stop = EarlyStopping(monitor='val_loss', patience=patience)
-    history = ValLoss(val, dataset, dataset_path, gmitre_calc=gmitre_calc, eps_thres=eps_thres)
+    history = ValLoss(val, dataset, dataset_path, eps_thres=eps_thres)
 
     model.fit(train[0], train[1], epochs=epochs, batch_size=batch_size,
               validation_data=(val[0], val[1]), callbacks=[tensorboard, history, early_stop])
 
-    save_model_data(dir_name, reg, dropout, history, test, gmitre_calc=gmitre_calc, eps_thres=eps_thres)
+    save_model_data(dir_name, reg, dropout, history, test, eps_thres=eps_thres)
