@@ -2,7 +2,7 @@
 This dataset contains two experiments coined as ETH (left image) and Hotel (right image):
 <p align='center'>
   <img src='./seq_eth/reference.png' width=320\>
-  <img src='./seq_hotel/reference.png' width=300\>
+  <img src='./seq_hotel/reference.png' width=320\>
 </p>
 
 * This dataset is extensively used in Human Trajectory Prediction literature.
