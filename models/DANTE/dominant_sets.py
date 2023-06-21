@@ -91,7 +91,6 @@ def weight(S, i, A, depth):
         for j in range(len(R)):
             if R[j]:
                 sum_weights += phi(R, j, i, A) * weight(R, j, A, depth + 1)
-                # print('depth: {}'.format(depth))
         return sum_weights
 
 

@@ -261,7 +261,7 @@ def build_model(reg_amt, drop_amt, max_people, d, global_filters, individual_fil
 
 def get_path(dir_name):
     """
-    # creates a new directory to save the model into.
+    creates a new directory to save the model into.
     :param dir_name: name of folder to save data
     :return: path
     """

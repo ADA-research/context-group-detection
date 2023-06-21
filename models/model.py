@@ -57,9 +57,6 @@ def build_model(context_size, consecutive_frames, features, reg_amount, drop_amo
         pair_x = Dropout(drop_amount)(pair_x)
         pair_x = BatchNormalization()(pair_x)
     pair_conv = pair_x
-    # max_pool = MaxPooling1D()(batch_norm)
-    # drop = Dropout(drop_amount)(max_pool)
-    # batch_norm = BatchNormalization()(drop)
     pair_layer = pair_conv
 
     if no_context:
@@ -86,9 +83,6 @@ def build_model(context_size, consecutive_frames, features, reg_amount, drop_amo
             context_x = Dropout(drop_amount)(context_x)
             context_x = BatchNormalization()(context_x)
         context_conv = context_x
-        # max_pool = MaxPooling1D()(batch_norm)
-        # drop = Dropout(drop_amount)(max_pool)
-        # batch_norm = BatchNormalization()(drop)
         context_layer = context_conv
 
         # Concatenate the outputs of the two branches
