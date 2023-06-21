@@ -6,9 +6,8 @@ The [dataset](https://graphics.cs.ucy.ac.cy/research/downloads/crowd-data.html) 
 - University Students (students01, students03 and uni_examples)
 
 <p align='center'>
-  <img src='./zara01/reference.png' width='320px' \>
-  <img src='./arxiepiskopi/reference.png' width='320px' \>
-  <img src='./students03/reference.png' width='320px' \>
+  <img src='./zara01/reference.png' width=320\>
+  <img src='./students03/reference.png' width=320\>
 </p>
 
 * This dataset is extensively used in Human Trajectory Prediction literature.
