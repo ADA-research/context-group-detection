@@ -405,10 +405,6 @@ def train_and_save_model(global_filters, individual_filters, combined_filters,
     :param eps_thres: threshold to be used in vector climb of dominant sets
     :return: nothing
     """
-    # ensures repeatability
-    tf.random.set_seed(0)
-    np.random.seed(0)
-
     _, _, max_people, d = train[0][0].shape
 
     # build model

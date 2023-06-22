@@ -112,6 +112,7 @@ def build_model(context_size, consecutive_frames, features, reg_amount, drop_amo
 def get_args():
     parser = argparse.ArgumentParser()
 
+    parser.add_argument('--seed', type=int, default=14)
     parser.add_argument('-f', '--fold', type=int, default=0)
     parser.add_argument('-e', '--epochs', type=int, default=1)
     parser.add_argument('-d', '--dir_name', type=str, default="dir_name")
@@ -121,10 +122,12 @@ def get_args():
 
 
 if __name__ == '__main__':
-    np.random.seed(0)
-    tf.random.set_seed(0)
 
     args = get_args()
+
+    np.random.seed(args.seed)
+    tf.random.set_seed(args.seed)
+
     config = read_yaml(args.config)
 
     train, test, val = load_data(

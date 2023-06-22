@@ -1,6 +1,9 @@
 import argparse
 import os
 
+import numpy as np
+import tensorflow as tf
+
 from models.utils import load_data, train_and_save_model, read_yaml
 
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
@@ -9,6 +12,7 @@ os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 def get_args():
     parser = argparse.ArgumentParser()
 
+    parser.add_argument('--seed', type=int, default=14)
     parser.add_argument('-f', '--fold', type=int, default=0)
     parser.add_argument('-e', '--epochs', type=int, default=1)
     parser.add_argument('-d', '--dir_name', type=str, default="dir_name")
@@ -19,6 +23,10 @@ def get_args():
 
 if __name__ == "__main__":
     args = get_args()
+
+    np.random.seed(args.seed)
+    tf.random.set_seed(args.seed)
+
     config = read_yaml(args.config)
 
     # set model architecture
