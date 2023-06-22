@@ -430,7 +430,7 @@ def dataset_reformat(dataframe, groups, group_pairs, scene_data, agents_minimum,
                     context_agents = non_pair_agents
                     fake_context = agents_minimum - 2 - len(non_pair_agents)
                 else:
-                    context_agents = random.sample(non_pair_agents, agents_minimum - 2)
+                    context_agents = random.sample(list(non_pair_agents), agents_minimum - 2)
                     fake_context = 0
                 scene_sample(
                     dataframe, groups, pair_agents, context_agents, scene_frame_ids, data, labels, shift, fake_context)
