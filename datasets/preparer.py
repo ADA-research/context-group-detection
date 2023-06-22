@@ -15,9 +15,6 @@ from sklearn.model_selection import train_test_split
 
 from datasets.loader import read_obsmat, read_groups
 
-random.seed(14)
-np.random.seed(14)
-
 
 def report(name, data):
     """
@@ -198,46 +195,7 @@ def filter_difference_between_frame_combinations(combinations, diff_between_fram
     return filtered_combinations
 
 
-def get_frame_combs_data(dataframe, agents_minimum, consecutive_frames, difference_between_frames, groups, step):
-    """
-    Get frame combinations based on given parameters.
-    :param dataframe: dataframe to be filtered
-    :param agents_minimum: minimum number of agents for frame not to be removed
-    :param consecutive_frames: minimum number of frames for agent not to be removed
-    :param difference_between_frames: difference between frames to be continuous
-    :param groups: groups to check which groups exist in every combination
-    :param step: difference between start of each time window
-    :return: frame combinations after filtering
-    """
-    # get agents by frame
-    agents_by_frame = dataframe.groupby('frame_id')['agent_id'].apply(list).reset_index(name='agents')
-
-    # get frame combinations
-    frame_ids = agents_by_frame.frame_id.values
-    frame_id_combinations = [list(frame_ids[i:i + consecutive_frames]) for i in
-                             range(0, len(frame_ids[:-consecutive_frames]), step)]
-    frame_id_combinations = filter_difference_between_frame_combinations(frame_id_combinations,
-                                                                         difference_between_frames)
-
-    # check agents intersection in frame combinations
-    combs = []
-    for frames in frame_id_combinations:
-        agent_list = [set(agents_by_frame[agents_by_frame['frame_id'] == frame]['agents'].iloc[0]) for frame in frames]
-        common_agents = set.intersection(*agent_list)
-        # ignore frame combinations with not enough common agents
-        if len(common_agents) >= agents_minimum:
-            comb_dict = {
-                'frames': frames,
-                'common_agents': common_agents,
-                'total_agents': set.union(*agent_list),
-                'groups': get_frame_comb_groups(common_agents, groups)
-            }
-            combs.append(comb_dict)
-
-    return combs
-
-
-def get_frame_comb_groups(agents, groups):
+def get_scene_groups(agents, groups):
     """
     Filter groups with agents that exist in frame combination.
     :param agents: agents in frame combination
@@ -251,6 +209,47 @@ def get_frame_comb_groups(agents, groups):
                 comb_groups.append(group)
     comb_groups_filtered = [[agent for agent in comb_group if agent in agents] for comb_group in comb_groups]
     return comb_groups_filtered
+
+
+def get_scene_data(dataframe, agents_minimum, consecutive_frames, difference_between_frames, groups, step):
+    """
+    Get scenes based on given parameters.
+    :param dataframe: dataframe to be filtered
+    :param agents_minimum: minimum number of agents for frame not to be removed
+    :param consecutive_frames: minimum number of frames for agent not to be removed
+    :param difference_between_frames: difference between frames to be continuous
+    :param groups: groups to check which groups exist in every scene
+    :param step: difference between start of each time window
+    :return: scenes after filtering
+    """
+    # get agents by frame
+    agents_by_frame = dataframe.groupby('frame_id')['agent_id'].apply(list).reset_index(name='agents')
+
+    # get frame combinations
+    frame_ids = agents_by_frame.frame_id.values
+    frame_id_combinations = [list(frame_ids[i:i + consecutive_frames]) for i in
+                             range(0, len(frame_ids[:-consecutive_frames]), step)]
+    frame_id_combinations = filter_difference_between_frame_combinations(frame_id_combinations,
+                                                                         difference_between_frames)
+
+    # check agents intersection in frame id combinations
+    scenes = []
+    for frames in frame_id_combinations:
+        agent_list = [set(agents_by_frame[agents_by_frame['frame_id'] == frame]['agents'].iloc[0]) for frame in frames]
+        common_agents = set.intersection(*agent_list)
+        # ignore scenes with not enough common agents
+        # TODO filter only scenes with less than 2 agents
+        #  based on common or total agents???
+        if len(common_agents) >= 2:
+            scene_dict = {
+                'frames': frames,
+                'common_agents': common_agents,
+                'total_agents': set.union(*agent_list),
+                'groups': get_scene_groups(common_agents, groups)
+            }
+            scenes.append(scene_dict)
+
+    return scenes
 
 
 def get_agent_data_for_frames(dataframe, agents, frames):
@@ -292,6 +291,12 @@ def shift_data(pair_data, context_data, frames):
     return new_context_data
 
 
+def fill_data(pair_data, context_data, fake_context):
+    for i in range(fake_context):
+        context_data.append([tuple([0] * len(pair_data[0][0]))] * len(pair_data[0]))
+    return context_data
+
+
 def get_pair_label(groups, agents):
     """
     Checks if agents are in the same group.
@@ -302,7 +307,7 @@ def get_pair_label(groups, agents):
     return any(all(agent in group for agent in agents) for group in groups)
 
 
-def scene_sample(dataframe, groups, pair_agents, context_agents, frames, data, labels, shift=False):
+def scene_sample(dataframe, groups, pair_agents, context_agents, frames, data, labels, shift=False, fake_context=0):
     """
     Sampling scene by getting agents and label data.
     :param dataframe: dataframe to retrieve data
@@ -312,12 +317,16 @@ def scene_sample(dataframe, groups, pair_agents, context_agents, frames, data, l
     :param frames: list of frames for which to get data
     :param data: list to store agent data
     :param labels: list to store group relationship
+    :param shift: True if to transform context according to pair coordinates, otherwise False
+    :param fake_context: number of fake agents to fill data for
     :return: nothing
     """
     pair_data = get_agent_data_for_frames(dataframe, pair_agents, frames)
     context_data = get_agent_data_for_frames(dataframe, context_agents, frames)
     if shift:
         context_data = shift_data(pair_data, context_data, len(frames))
+    if fake_context:
+        context_data = fill_data(pair_data, context_data, fake_context)
     pair_data.extend(context_data)
     data.append(pair_data)
     label = get_pair_label(groups, pair_agents)
@@ -346,12 +355,18 @@ def get_pairs_sample_rates(pairs, group_pairs, min_pair_samples, max_pair_sample
 
     if same_pairs_num > different_pairs_num:
         same_pairs_sampling_rate = min_pair_samples
-        different_pairs_sampling_rate = min(
-            int(min_pair_samples * same_pairs_num / different_pairs_num), max_pair_samples)
+        if different_pairs_num == 0:
+            different_pairs_sampling_rate = 0
+        else:
+            different_pairs_sampling_rate = min(
+                int(min_pair_samples * same_pairs_num / different_pairs_num), max_pair_samples)
     else:
         different_pairs_sampling_rate = min_pair_samples
-        same_pairs_sampling_rate = min(
-            int(min_pair_samples * different_pairs_num / same_pairs_num) if same_pairs_num > 0 else 0, max_pair_samples)
+        if same_pairs_num == 0:
+            same_pairs_sampling_rate = 0
+        else:
+            same_pairs_sampling_rate = min(
+                int(min_pair_samples * different_pairs_num / same_pairs_num) if same_pairs_num > 0 else 0, max_pair_samples)
 
     pairs_sample_rates = []
     for pair in pairs:
@@ -363,18 +378,18 @@ def get_pairs_sample_rates(pairs, group_pairs, min_pair_samples, max_pair_sample
     return pairs_sample_rates
 
 
-def dataset_size_calculator(group_pairs, frame_comb_data, min_pair_samples, max_pair_samples):
+def dataset_size_calculator(group_pairs, scene_data, min_pair_samples, max_pair_samples):
     """
     Gather data from all possible scenes based on given parameters.
     :param group_pairs: pairs of agents in the same group
-    :param frame_comb_data: valid continuous frame combinations
+    :param scene_data: valid scenes
     :param min_pair_samples: minimum samples to get from a scene for each pair
     :param max_pair_samples: maximum samples to get from a scene for each pair
     :return: dataset
     """
     samples = 0
-    for frame_comb in frame_comb_data:
-        comb_agents = frame_comb['common_agents']
+    for scene in scene_data:
+        comb_agents = scene['common_agents']
 
         pairs = list(combinations(comb_agents, 2))
         pairs_samples = get_pairs_sample_rates(pairs, group_pairs, min_pair_samples, max_pair_samples)
@@ -382,39 +397,47 @@ def dataset_size_calculator(group_pairs, frame_comb_data, min_pair_samples, max_
     return samples
 
 
-def dataset_reformat(dataframe, groups, group_pairs, frame_comb_data, agents_minimum, min_pair_samples,
+def dataset_reformat(dataframe, groups, group_pairs, scene_data, agents_minimum, min_pair_samples,
                      max_pair_samples, shift=False):
     """
     Gather data from all possible scenes based on given parameters.
     :param dataframe: dataframe to retrieve data
     :param groups: list of groups
     :param group_pairs: pairs of agents in the same group
-    :param frame_comb_data: valid continuous frame combinations
+    :param scene_data: valid continuous frame combinations
     :param agents_minimum: minimum agents (pair + context) in a scene
     :param min_pair_samples: minimum samples to get from a scene for each pair
     :param max_pair_samples: maximum samples to get from a scene for each pair
+    :param shift: True if to transform context according to pair coordinates, otherwise False
     :return: dataset
     """
     data = []
     labels = []
-    frames = []
-    combs_groups = []
-    for frame_comb in frame_comb_data[:10]:
-        comb_frames = frame_comb['frames']
-        comb_agents = frame_comb['common_agents']
-        comb_groups = frame_comb['groups']
+    scenes_frames = []
+    scenes_groups = []
+    for scene in scene_data:
+        scene_frame_ids = scene['frames']
+        scene_groups = scene['groups']
+        # TODO common or total agents???
+        scene_agents = scene['common_agents']
 
-        pairs = list(combinations(comb_agents, 2))
+        pairs = list(combinations(scene_agents, 2))
         pairs_samples = get_pairs_sample_rates(pairs, group_pairs, min_pair_samples, max_pair_samples)
         for pair_agents, pair_samples in zip(pairs, pairs_samples):
-            scene_agents = comb_agents - set(pair_agents)
+            non_pair_agents = scene_agents - set(pair_agents)
             for i in range(pair_samples):
-                context_agents = random.sample(scene_agents, agents_minimum - 2)
-                scene_sample(dataframe, groups, pair_agents, context_agents, comb_frames, data, labels, shift)
-                frames.append((comb_frames, pair_agents))
-        combs_groups.append((comb_frames, comb_groups))
-    return np.asarray(data), np.asarray(labels), np.asarray(frames, dtype=object), np.asarray(combs_groups,
-                                                                                              dtype=object)
+                if len(non_pair_agents) < agents_minimum - 2:
+                    context_agents = non_pair_agents
+                    fake_context = agents_minimum - 2 - len(non_pair_agents)
+                else:
+                    context_agents = random.sample(non_pair_agents, agents_minimum - 2)
+                    fake_context = 0
+                scene_sample(
+                    dataframe, groups, pair_agents, context_agents, scene_frame_ids, data, labels, shift, fake_context)
+                scenes_frames.append((scene_frame_ids, pair_agents))
+        scenes_groups.append((scene_frame_ids, scene_groups))
+    return np.asarray(data), np.asarray(labels), np.asarray(scenes_frames, dtype=object), np.asarray(scenes_groups,
+                                                                                                     dtype=object)
 
 
 def folds_split(frames, folds_num, multi_frame=False):
@@ -533,14 +556,15 @@ def save_folds(save_folder, dataset, frames_num, agents_num, data, labels, frame
 def get_args():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('-r', '--report', action="store_true", default=False)
-    parser.add_argument('-s', '--shift', action="store_true", default=True)
-    parser.add_argument('-p', '--plot', action="store_true", default=False)
+    parser.add_argument('--seed', type=int, default=14)
     parser.add_argument('-f', '--frames_num', type=int, default=10)
     parser.add_argument('-a', '--agents_num', type=int, default=10)
     parser.add_argument('-ts', '--target_size', type=int, default=100000)
     parser.add_argument('-d', '--dataset', type=str, default='eth')
     parser.add_argument('-sf', '--save_folder', type=str, default='./reformatted')
+    parser.add_argument('-p', '--plot', action="store_true", default=False)
+    parser.add_argument('-s', '--shift', action="store_true", default=True)
+    parser.add_argument('-r', '--report', action="store_true", default=False)
 
     return parser.parse_args()
 
@@ -550,6 +574,9 @@ if __name__ == '__main__':
     print('Started at {}'.format(start))
 
     args = get_args()
+
+    random.seed(args.seed)
+    np.random.seed(args.seed)
 
     # create datasets report
     datasets_dict = {
@@ -628,18 +655,18 @@ if __name__ == '__main__':
         group_pairs = get_group_pairs(groups)
         difference = datasets_dict[dataset]['difference']
 
-        # remove agents with low number of frames or agents
-        df = remove_agents_and_frames_with_insufficient_data(dataframe=df, frames_threshold=args.frames_num,
-                                                             agents_threshold=args.agents_num)
+        # remove frames with low number of frames or agents
+        # df = remove_agents_and_frames_with_insufficient_data(dataframe=df, frames_threshold=args.frames_num,
+        #                                                      agents_threshold=args.agents_num)
 
-        # get frame combinations data
-        combs = get_frame_combs_data(dataframe=df, agents_minimum=args.agents_num,
-                                     consecutive_frames=args.frames_num, difference_between_frames=difference,
-                                     groups=groups, step=steps[dataset])
+        # get scene data
+        scenes = get_scene_data(dataframe=df, agents_minimum=args.agents_num,
+                                consecutive_frames=args.frames_num, difference_between_frames=difference,
+                                groups=groups, step=steps[dataset])
 
         # format dataset to be used by proposed approach
         data, labels, frames, filtered_groups = dataset_reformat(dataframe=df, groups=groups, group_pairs=group_pairs,
-                                                                 frame_comb_data=combs, agents_minimum=args.agents_num,
+                                                                 scene_data=scenes, agents_minimum=args.agents_num,
                                                                  min_pair_samples=min_samples[dataset],
                                                                  max_pair_samples=max_samples[dataset],
                                                                  shift=args.shift)
