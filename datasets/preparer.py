@@ -252,6 +252,71 @@ def get_scene_data(dataframe, agents_minimum, consecutive_frames, difference_bet
     return scenes
 
 
+def get_pairs_sample_rates(pairs, group_pairs, min_pair_samples, max_pair_samples):
+    """
+    Set sample rate for pairs in same and different groups in order to have balanced samples.
+    :param pairs: list of pairs in scene
+    :param group_pairs: list of pairs in same group
+    :param min_pair_samples: minimum number of samples to get from a pair in a scene
+    :param max_pair_samples: maximum number of samples to get from a pair in a scene
+    :return: list of pairs sample rates
+    """
+    same = []
+    different = []
+    for pair in pairs:
+        if pair in group_pairs:
+            same.append(pair)
+        else:
+            different.append(pair)
+
+    same_pairs_num = len(same)
+    different_pairs_num = len(different)
+
+    if same_pairs_num > different_pairs_num:
+        same_pairs_sampling_rate = min_pair_samples
+        if different_pairs_num == 0:
+            different_pairs_sampling_rate = 0
+        else:
+            different_pairs_sampling_rate = min(
+                int(min_pair_samples * same_pairs_num / different_pairs_num), max_pair_samples)
+    else:
+        different_pairs_sampling_rate = min_pair_samples
+        if same_pairs_num == 0:
+            same_pairs_sampling_rate = 0
+        else:
+            same_pairs_sampling_rate = min(
+                int(min_pair_samples * different_pairs_num / same_pairs_num) if same_pairs_num > 0 else 0,
+                max_pair_samples)
+
+    pairs_sample_rates = []
+    for pair in pairs:
+        if pair in same:
+            pairs_sample_rates.append(same_pairs_sampling_rate)
+        else:
+            pairs_sample_rates.append(different_pairs_sampling_rate)
+
+    return pairs_sample_rates
+
+
+def dataset_size_calculator(group_pairs, scene_data, min_pair_samples, max_pair_samples):
+    """
+    Gather data from all possible scenes based on given parameters.
+    :param group_pairs: pairs of agents in the same group
+    :param scene_data: valid scenes
+    :param min_pair_samples: minimum samples to get from a scene for each pair
+    :param max_pair_samples: maximum samples to get from a scene for each pair
+    :return: dataset
+    """
+    samples = 0
+    for scene in scene_data:
+        comb_agents = scene['common_agents']
+
+        pairs = list(combinations(comb_agents, 2))
+        pairs_samples = get_pairs_sample_rates(pairs, group_pairs, min_pair_samples, max_pair_samples)
+        samples += sum(pairs_samples)
+    return samples
+
+
 def get_agent_data_for_frames(dataframe, agents, frames):
     """
     Returns a list of tuples with location and velocity data for each frame and agent
@@ -307,96 +372,6 @@ def get_pair_label(groups, agents):
     return any(all(agent in group for agent in agents) for group in groups)
 
 
-def scene_sample(dataframe, groups, pair_agents, context_agents, frames, data, labels, shift=False, fake_context=0):
-    """
-    Sampling scene by getting agents and label data.
-    :param dataframe: dataframe to retrieve data
-    :param groups: list of groups to search
-    :param pair_agents: list of pair agents in the scene
-    :param context_agents: list of context agents in the scene
-    :param frames: list of frames for which to get data
-    :param data: list to store agent data
-    :param labels: list to store group relationship
-    :param shift: True if to transform context according to pair coordinates, otherwise False
-    :param fake_context: number of fake agents to fill data for
-    :return: nothing
-    """
-    pair_data = get_agent_data_for_frames(dataframe, pair_agents, frames)
-    context_data = get_agent_data_for_frames(dataframe, context_agents, frames)
-    if shift:
-        context_data = shift_data(pair_data, context_data, len(frames))
-    if fake_context:
-        context_data = fill_data(pair_data, context_data, fake_context)
-    pair_data.extend(context_data)
-    data.append(pair_data)
-    label = get_pair_label(groups, pair_agents)
-    labels.append(label)
-
-
-def get_pairs_sample_rates(pairs, group_pairs, min_pair_samples, max_pair_samples):
-    """
-    Set sample rate for pairs in same and different groups in order to have balanced samples.
-    :param pairs: list of pairs in scene
-    :param group_pairs: list of pairs in same group
-    :param min_pair_samples: minimum number of samples to get from a pair in a scene
-    :param max_pair_samples: maximum number of samples to get from a pair in a scene
-    :return: list of pairs sample rates
-    """
-    same = []
-    different = []
-    for pair in pairs:
-        if pair in group_pairs:
-            same.append(pair)
-        else:
-            different.append(pair)
-
-    same_pairs_num = len(same)
-    different_pairs_num = len(different)
-
-    if same_pairs_num > different_pairs_num:
-        same_pairs_sampling_rate = min_pair_samples
-        if different_pairs_num == 0:
-            different_pairs_sampling_rate = 0
-        else:
-            different_pairs_sampling_rate = min(
-                int(min_pair_samples * same_pairs_num / different_pairs_num), max_pair_samples)
-    else:
-        different_pairs_sampling_rate = min_pair_samples
-        if same_pairs_num == 0:
-            same_pairs_sampling_rate = 0
-        else:
-            same_pairs_sampling_rate = min(
-                int(min_pair_samples * different_pairs_num / same_pairs_num) if same_pairs_num > 0 else 0, max_pair_samples)
-
-    pairs_sample_rates = []
-    for pair in pairs:
-        if pair in same:
-            pairs_sample_rates.append(same_pairs_sampling_rate)
-        else:
-            pairs_sample_rates.append(different_pairs_sampling_rate)
-
-    return pairs_sample_rates
-
-
-def dataset_size_calculator(group_pairs, scene_data, min_pair_samples, max_pair_samples):
-    """
-    Gather data from all possible scenes based on given parameters.
-    :param group_pairs: pairs of agents in the same group
-    :param scene_data: valid scenes
-    :param min_pair_samples: minimum samples to get from a scene for each pair
-    :param max_pair_samples: maximum samples to get from a scene for each pair
-    :return: dataset
-    """
-    samples = 0
-    for scene in scene_data:
-        comb_agents = scene['common_agents']
-
-        pairs = list(combinations(comb_agents, 2))
-        pairs_samples = get_pairs_sample_rates(pairs, group_pairs, min_pair_samples, max_pair_samples)
-        samples += sum(pairs_samples)
-    return samples
-
-
 def dataset_reformat(dataframe, groups, group_pairs, scene_data, agents_minimum, min_pair_samples,
                      max_pair_samples, shift=False):
     """
@@ -425,15 +400,20 @@ def dataset_reformat(dataframe, groups, group_pairs, scene_data, agents_minimum,
         pairs_samples = get_pairs_sample_rates(pairs, group_pairs, min_pair_samples, max_pair_samples)
         for pair_agents, pair_samples in zip(pairs, pairs_samples):
             non_pair_agents = scene_agents - set(pair_agents)
+            pair_data = get_agent_data_for_frames(dataframe, pair_agents, scene_frame_ids)
+            non_pair_data = get_agent_data_for_frames(dataframe, non_pair_agents, scene_frame_ids)
+            if shift and len(non_pair_data) > 0:
+                non_pair_data = shift_data(pair_data, non_pair_data, len(scene_frame_ids))
             for i in range(pair_samples):
-                if len(non_pair_agents) < agents_minimum - 2:
-                    context_agents = non_pair_agents
-                    fake_context = agents_minimum - 2 - len(non_pair_agents)
+                if len(non_pair_data) < agents_minimum - 2:
+                    context_data = non_pair_data[:]
+                    fake_context = agents_minimum - 2 - len(non_pair_data)
+                    context_data = fill_data(pair_data, context_data, fake_context)
                 else:
-                    context_agents = random.sample(list(non_pair_agents), agents_minimum - 2)
-                    fake_context = 0
-                scene_sample(
-                    dataframe, groups, pair_agents, context_agents, scene_frame_ids, data, labels, shift, fake_context)
+                    context_data = random.sample(non_pair_data, agents_minimum - 2)
+                data.append(pair_data + context_data)
+                label = get_pair_label(groups, pair_agents)
+                labels.append(label)
                 scenes_frames.append((scene_frame_ids, pair_agents))
         scenes_groups.append((scene_frame_ids, scene_groups))
     return np.asarray(data), np.asarray(labels), np.asarray(scenes_frames, dtype=object), np.asarray(scenes_groups,
