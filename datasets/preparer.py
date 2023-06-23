@@ -1,4 +1,5 @@
 import argparse
+import math
 import os
 import pickle
 import random
@@ -295,7 +296,7 @@ def get_pairs_sample_rates(pairs, group_pairs, min_pair_samples, max_pair_sample
         else:
             pairs_sample_rates.append(different_pairs_sampling_rate)
 
-    return pairs_sample_rates
+    return pairs_sample_rates, same_pairs_num, different_pairs_num
 
 
 def dataset_size_calculator(group_pairs, scene_data, min_pair_samples, max_pair_samples):
@@ -307,14 +308,17 @@ def dataset_size_calculator(group_pairs, scene_data, min_pair_samples, max_pair_
     :param max_pair_samples: maximum samples to get from a scene for each pair
     :return: dataset
     """
-    samples = 0
+    samples, same_pairs, different_pairs = 0, 0, 0
     for scene in scene_data:
         comb_agents = scene['common_agents']
 
         pairs = list(combinations(comb_agents, 2))
-        pairs_samples = get_pairs_sample_rates(pairs, group_pairs, min_pair_samples, max_pair_samples)
+        pairs_samples, same_pairs_num, different_pairs_num = get_pairs_sample_rates(pairs, group_pairs,
+                                                                                    min_pair_samples, max_pair_samples)
+        same_pairs += same_pairs_num
+        different_pairs += different_pairs_num
         samples += sum(pairs_samples)
-    return samples
+    return samples, same_pairs, different_pairs
 
 
 def get_agent_data_for_frames(dataframe, agents, frames):
@@ -362,6 +366,38 @@ def fill_data(pair_data, context_data, fake_context):
     return context_data
 
 
+def calculate_distance(x1, y1, x2, y2):
+    distance = math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
+    return distance
+
+
+def context_sample(pair_data, non_pair_data, context_size):
+    """
+    Sample the closest agents to the pair as the context.
+    :param pair_data: data of agent pair
+    :param non_pair_data: data of rest of the agents in the scene
+    :param context_size: size of context.
+    :return: context data
+    """
+    frames = len(pair_data[0])
+    x1 = np.mean([pair_data[0][i][0] for i in range(frames)])
+    y1 = np.mean([pair_data[0][i][1] for i in range(frames)])
+    x2 = np.mean([pair_data[1][i][0] for i in range(frames)])
+    y2 = np.mean([pair_data[1][i][1] for i in range(frames)])
+    pair_locations = ((x1 + x2) / 2, (y1 + y2) / 2)
+    non_pair_distances = []
+    for j, non_pair in enumerate(non_pair_data):
+        x = np.mean([non_pair[i][0] for i in range(frames)])
+        y = np.mean([non_pair[i][1] for i in range(frames)])
+        distance = calculate_distance(pair_locations[0], pair_locations[1], x, y)
+        non_pair_distances.append((j, distance))
+
+    non_pair_distances_sorted = sorted(non_pair_distances, key=lambda x: x[1])
+    context_data = [non_pair_data[i] for i in [distance[0] for distance in non_pair_distances_sorted[:context_size]]]
+
+    return context_data
+
+
 def get_pair_label(groups, agents):
     """
     Checks if agents are in the same group.
@@ -397,7 +433,7 @@ def dataset_reformat(dataframe, groups, group_pairs, scene_data, agents_minimum,
         scene_agents = scene['common_agents']
 
         pairs = list(combinations(scene_agents, 2))
-        pairs_samples = get_pairs_sample_rates(pairs, group_pairs, min_pair_samples, max_pair_samples)
+        pairs_samples, _, _ = get_pairs_sample_rates(pairs, group_pairs, min_pair_samples, max_pair_samples)
         for pair_agents, pair_samples in zip(pairs, pairs_samples):
             non_pair_agents = scene_agents - set(pair_agents)
             pair_data = get_agent_data_for_frames(dataframe, pair_agents, scene_frame_ids)
@@ -405,12 +441,15 @@ def dataset_reformat(dataframe, groups, group_pairs, scene_data, agents_minimum,
             if shift and len(non_pair_data) > 0:
                 non_pair_data = shift_data(pair_data, non_pair_data, len(scene_frame_ids))
             for i in range(pair_samples):
-                if len(non_pair_data) < agents_minimum - 2:
+                if len(non_pair_data) <= agents_minimum - 2:
                     context_data = non_pair_data[:]
                     fake_context = agents_minimum - 2 - len(non_pair_data)
                     context_data = fill_data(pair_data, context_data, fake_context)
                 else:
+                    # random sampling
                     context_data = random.sample(non_pair_data, agents_minimum - 2)
+                    # getting the closest agents
+                    # context_data = context_sample(pair_data, non_pair_data, agents_minimum - 2)
                 data.append(pair_data + context_data)
                 label = get_pair_label(groups, pair_agents)
                 labels.append(label)
@@ -584,13 +623,13 @@ if __name__ == '__main__':
         multi_frame = False
         steps = {
             'eth': 2,
-            'hotel': 1,
-            'zara01': 1,
+            'hotel': 2,
+            'zara01': 2,
             'zara02': 3,
             'students03': 5
         }
         min_samples = {
-            'eth': 8,
+            'eth': 5,
             'hotel': 10,
             'zara01': 10,
             'zara02': 5,
@@ -613,17 +652,17 @@ if __name__ == '__main__':
             'students03': 5
         }
         min_samples = {
-            'eth': 10,
-            'hotel': 40,
-            'zara01': 20,
-            'zara02': 10,
+            'eth': 5,
+            'hotel': 10,
+            'zara01': 5,
+            'zara02': 5,
             'students03': 2
         }
         max_samples = {
-            'eth': 1000,
-            'hotel': 1000,
-            'zara01': 1000,
-            'zara02': 1000,
+            'eth': 100,
+            'hotel': 100,
+            'zara01': 100,
+            'zara02': 100,
             'students03': 10
         }
     for dataset in datasets_dict.keys():
