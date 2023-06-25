@@ -168,8 +168,6 @@ def F1_calc_clone(group_thresholds, affinities, frames, groups, positions, multi
             # bool_groups, agents_map = naive_group(predictions, n_people, frames[idx], new=True)
 
         groups_at_time = [group[1] for group in groups if group[0] == unique_frame][0]
-        if len(agents_map.values()) < 10:
-            print('Wrong number of agents in map')
         include_single_agent_groups(groups_at_time, agents_map.values())
         predicted_groups = group_names_clone(bool_groups, agents_map, n_people)
         include_single_agent_groups(predicted_groups, agents_map.values())
