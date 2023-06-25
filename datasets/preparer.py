@@ -296,29 +296,32 @@ def get_pairs_sample_rates(pairs, group_pairs, min_pair_samples, max_pair_sample
         else:
             pairs_sample_rates.append(different_pairs_sampling_rate)
 
-    return pairs_sample_rates, same_pairs_num, different_pairs_num
+    return pairs_sample_rates
 
 
-def dataset_size_calculator(group_pairs, scene_data, min_pair_samples, max_pair_samples):
+def dataset_size_calculator(group_pairs, scene_data, agents_minimum, min_pair_samples, max_pair_samples):
     """
     Gather data from all possible scenes based on given parameters.
     :param group_pairs: pairs of agents in the same group
     :param scene_data: valid scenes
+    :param agents_minimum: minimum agents (pair + context) in a scene
     :param min_pair_samples: minimum samples to get from a scene for each pair
     :param max_pair_samples: maximum samples to get from a scene for each pair
     :return: dataset
     """
     samples, same_pairs, different_pairs = 0, 0, 0
     for scene in scene_data:
-        comb_agents = scene['common_agents']
+        scene_agents = scene['common_agents']
 
-        pairs = list(combinations(comb_agents, 2))
-        pairs_samples, same_pairs_num, different_pairs_num = get_pairs_sample_rates(pairs, group_pairs,
-                                                                                    min_pair_samples, max_pair_samples)
-        same_pairs += same_pairs_num
-        different_pairs += different_pairs_num
-        samples += sum(pairs_samples)
-    return samples, same_pairs, different_pairs
+        pairs = list(combinations(scene_agents, 2))
+        pairs_samples = get_pairs_sample_rates(pairs, group_pairs, min_pair_samples, max_pair_samples)
+        for pair_agents, pair_samples in zip(pairs, pairs_samples):
+            non_pair_agents = scene_agents - set(pair_agents)
+            if len(non_pair_agents) <= agents_minimum - 2:
+                samples += 1
+            else:
+                samples += pair_samples
+    return samples
 
 
 def get_agent_data_for_frames(dataframe, agents, frames):
@@ -408,6 +411,12 @@ def get_pair_label(groups, agents):
     return any(all(agent in group for agent in agents) for group in groups)
 
 
+def gather_data(context_data, data, groups, labels, pair_agents, pair_data, scene_frame_ids, scenes_frames):
+    data.append(pair_data + context_data)
+    labels.append(get_pair_label(groups, pair_agents))
+    scenes_frames.append((scene_frame_ids, pair_agents))
+
+
 def dataset_reformat(dataframe, groups, group_pairs, scene_data, agents_minimum, min_pair_samples,
                      max_pair_samples, shift=False):
     """
@@ -433,27 +442,26 @@ def dataset_reformat(dataframe, groups, group_pairs, scene_data, agents_minimum,
         scene_agents = scene['common_agents']
 
         pairs = list(combinations(scene_agents, 2))
-        pairs_samples, _, _ = get_pairs_sample_rates(pairs, group_pairs, min_pair_samples, max_pair_samples)
+        pairs_samples = get_pairs_sample_rates(pairs, group_pairs, min_pair_samples, max_pair_samples)
         for pair_agents, pair_samples in zip(pairs, pairs_samples):
             non_pair_agents = scene_agents - set(pair_agents)
             pair_data = get_agent_data_for_frames(dataframe, pair_agents, scene_frame_ids)
             non_pair_data = get_agent_data_for_frames(dataframe, non_pair_agents, scene_frame_ids)
             if shift and len(non_pair_data) > 0:
                 non_pair_data = shift_data(pair_data, non_pair_data, len(scene_frame_ids))
-            for i in range(pair_samples):
-                if len(non_pair_data) <= agents_minimum - 2:
-                    context_data = non_pair_data[:]
-                    fake_context = agents_minimum - 2 - len(non_pair_data)
-                    context_data = fill_data(pair_data, context_data, fake_context)
-                else:
+            if len(non_pair_data) <= agents_minimum - 2:
+                context_data = non_pair_data[:]
+                fake_context = agents_minimum - 2 - len(non_pair_data)
+                context_data = fill_data(pair_data, context_data, fake_context)
+                gather_data(context_data, data, groups, labels, pair_agents, pair_data, scene_frame_ids, scenes_frames)
+            else:
+                for i in range(pair_samples):
                     # random sampling
                     context_data = random.sample(non_pair_data, agents_minimum - 2)
                     # getting the closest agents
                     # context_data = context_sample(pair_data, non_pair_data, agents_minimum - 2)
-                data.append(pair_data + context_data)
-                label = get_pair_label(groups, pair_agents)
-                labels.append(label)
-                scenes_frames.append((scene_frame_ids, pair_agents))
+                    gather_data(
+                        context_data, data, groups, labels, pair_agents, pair_data, scene_frame_ids, scenes_frames)
         scenes_groups.append((scene_frame_ids, scene_groups))
     return np.asarray(data), np.asarray(labels), np.asarray(scenes_frames, dtype=object), np.asarray(scenes_groups,
                                                                                                      dtype=object)
@@ -624,7 +632,7 @@ if __name__ == '__main__':
         steps = {
             'eth': 2,
             'hotel': 2,
-            'zara01': 2,
+            'zara01': 1,
             'zara02': 3,
             'students03': 5
         }
@@ -636,10 +644,10 @@ if __name__ == '__main__':
             'students03': 2
         }
         max_samples = {
-            'eth': 100,
-            'hotel': 100,
-            'zara01': 100,
-            'zara02': 100,
+            'eth': 1000,
+            'hotel': 1000,
+            'zara01': 1000,
+            'zara02': 1000,
             'students03': 5
         }
     else:
@@ -652,17 +660,17 @@ if __name__ == '__main__':
             'students03': 5
         }
         min_samples = {
-            'eth': 5,
-            'hotel': 10,
-            'zara01': 5,
-            'zara02': 5,
+            'eth': 10,
+            'hotel': 50,
+            'zara01': 20,
+            'zara02': 10,
             'students03': 2
         }
         max_samples = {
-            'eth': 100,
-            'hotel': 100,
-            'zara01': 100,
-            'zara02': 100,
+            'eth': 1000,
+            'hotel': 1000,
+            'zara01': 1000,
+            'zara02': 1000,
             'students03': 10
         }
     for dataset in datasets_dict.keys():
