@@ -11,16 +11,18 @@
 # Default values
 config="./config/model.yml"
 fold=0
+seed=14
 epochs=1
 dir_name=""
 
 # Read flags and their corresponding values
-while getopts "c:f:e:d:" flag; do
+while getopts "c:f:e:d:s:" flag; do
   case ${flag} in
   c) config="${OPTARG}" ;;
   f) fold="${OPTARG}" ;;
   e) epochs="${OPTARG}" ;;
   d) dir_name="${OPTARG}" ;;
+  s) seed="${OPTARG}" ;;
   *)
     echo "Invalid flag: ${flag}" >&2
     exit 1
@@ -36,10 +38,10 @@ export PYTHONPATH="${PYTHONPATH}:${HOME}/context-group-detection/"
 echo "User: ${SLURM_JOB_USER}, hostname: ${HOSTNAME}, job_id: ${SLURM_JOB_ID}"
 echo "Current working directory: $(pwd)"
 
-echo "Using config file at: ${config}, fold: ${fold}, epochs: ${epochs}, dir_name: ${dir_name}"
+echo "Using config file at: ${config}, fold: ${fold}, epochs: ${epochs}, dir_name: ${dir_name}, seed: ${seed}"
 
 echo "Script starting"
 cd "${HOME}/context-group-detection/models" || exit
-python model.py -c ${config} -f ${fold} -e ${epochs} -d ${dir_name}
+python model.py -c ${config} -f ${fold} -e ${epochs} -d ${dir_name} --seed ${seed}
 
 echo "Script finished"
