@@ -75,7 +75,9 @@ def collect_results(results_path, dir_name):
         fold_path = results_path + '/' + fold
         if os.path.isdir(fold_path):
             for folder in os.listdir(fold_path):
-                if folder.startswith(dir_name):
+                start = folder.startswith(dir_name)
+                rest_digit = folder.replace(dir_name, '')[1:].isdigit()
+                if start and rest_digit:
                     folder_path = fold_path + '/' + folder
                     results.append(read_results(folder_path))
 
