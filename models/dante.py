@@ -49,6 +49,6 @@ if __name__ == "__main__":
         train_and_save_model(global_filters, individual_filters, combined_filters, train, test, val, args.epochs,
                              config['dataset'], config['dataset_path'], reg=config['reg'], dropout=config['dropout'],
                              patience=config['patience'],
-                             dir_name='{}_1_{}/fold_{}/{}'.format(
-                                 config['dataset'], config['agents'], args.fold, args.dir_name),
+                             dir_name='{}_1_{}/fold_{}/{}_{}'.format(
+                                 config['dataset'], config['agents'], args.fold, args.dir_name, args.seed),
                              eps_thres=config['eps_thres'])
