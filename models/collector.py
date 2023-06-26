@@ -75,7 +75,7 @@ def collect_results(results_path, dir_name):
         fold_path = results_path + '/' + fold
         if os.path.isdir(fold_path):
             for folder in os.listdir(fold_path):
-                if folder == dir_name:
+                if folder.startswith(dir_name):
                     folder_path = fold_path + '/' + folder
                     results.append(read_results(folder_path))
 
@@ -95,9 +95,9 @@ def write_results(results, file_path, dir_name):
 def get_args():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--dataset', type=str, default="eth")
+    parser.add_argument('--dataset', type=str, default="eth_shifted")
     parser.add_argument('-a', '--agents', type=int, default=10)
-    parser.add_argument('-cf', '--frames', type=int, default=10)
+    parser.add_argument('-cf', '--frames', type=int, default=1)
     parser.add_argument('--dir_name', type=str, default="e150")
 
     return parser.parse_args()
