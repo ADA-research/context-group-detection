@@ -239,8 +239,6 @@ def get_scene_data(dataframe, agents_minimum, consecutive_frames, difference_bet
         agent_list = [set(agents_by_frame[agents_by_frame['frame_id'] == frame]['agents'].iloc[0]) for frame in frames]
         common_agents = set.intersection(*agent_list)
         # ignore scenes with not enough common agents
-        # TODO filter only scenes with less than 2 agents
-        #  based on common or total agents???
         if len(common_agents) >= 2:
             scene_dict = {
                 'frames': frames,
@@ -438,7 +436,6 @@ def dataset_reformat(dataframe, groups, group_pairs, scene_data, agents_minimum,
     for scene in scene_data:
         scene_frame_ids = scene['frames']
         scene_groups = scene['groups']
-        # TODO common or total agents???
         scene_agents = scene['common_agents']
 
         pairs = list(combinations(scene_agents, 2))
