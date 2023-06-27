@@ -626,50 +626,96 @@ if __name__ == '__main__':
 
     if args.frames_num == 1:
         multi_frame = False
-        steps = {
-            'eth': 2,
-            'hotel': 2,
-            'zara01': 1,
-            'zara02': 3,
-            'students03': 5
-        }
-        min_samples = {
-            'eth': 5,
-            'hotel': 10,
-            'zara01': 10,
-            'zara02': 5,
-            'students03': 2
-        }
-        max_samples = {
-            'eth': 1000,
-            'hotel': 1000,
-            'zara01': 1000,
-            'zara02': 1000,
-            'students03': 5
-        }
+        if args.agents_num == 5:
+            steps = {
+                'eth': 2,
+                'hotel': 2,
+                'zara01': 2,
+                'zara02': 3,
+                'students03': 6
+            }
+            min_samples = {
+                'eth': 5,
+                'hotel': 10,
+                'zara01': 10,
+                'zara02': 5,
+                'students03': 2
+            }
+            max_samples = {
+                'eth': 100,
+                'hotel': 100,
+                'zara01': 100,
+                'zara02': 100,
+                'students03': 10
+            }
+        else:
+            steps = {
+                'eth': 2,
+                'hotel': 2,
+                'zara01': 1,
+                'zara02': 3,
+                'students03': 5
+            }
+            min_samples = {
+                'eth': 5,
+                'hotel': 10,
+                'zara01': 10,
+                'zara02': 5,
+                'students03': 2
+            }
+            max_samples = {
+                'eth': 1000,
+                'hotel': 1000,
+                'zara01': 1000,
+                'zara02': 1000,
+                'students03': 5
+            }
     else:
         multi_frame = True
-        steps = {
-            'eth': 1,
-            'hotel': 1,
-            'zara01': 1,
-            'zara02': 3,
-            'students03': 5
-        }
-        min_samples = {
-            'eth': 10,
-            'hotel': 50,
-            'zara01': 20,
-            'zara02': 10,
-            'students03': 2
-        }
-        max_samples = {
-            'eth': 1000,
-            'hotel': 1000,
-            'zara01': 1000,
-            'zara02': 1000,
-            'students03': 10
-        }
+        if args.agents_num == 5:
+            steps = {
+                'eth': 2,
+                'hotel': 1,
+                'zara01': 1,
+                'zara02': 3,
+                'students03': 5
+            }
+            min_samples = {
+                'eth': 10,
+                'hotel': 10,
+                'zara01': 10,
+                'zara02': 10,
+                'students03': 2
+            }
+            max_samples = {
+                'eth': 1000,
+                'hotel': 1000,
+                'zara01': 1000,
+                'zara02': 1000,
+                'students03': 10
+            }
+        else:
+            steps = {
+                'eth': 1,
+                'hotel': 1,
+                'zara01': 1,
+                'zara02': 3,
+                'students03': 5
+            }
+            min_samples = {
+                'eth': 10,
+                'hotel': 50,
+                'zara01': 20,
+                'zara02': 10,
+                'students03': 2
+            }
+            max_samples = {
+                'eth': 1000,
+                'hotel': 1000,
+                'zara01': 1000,
+                'zara02': 1000,
+                'students03': 10
+            }
     for dataset in datasets_dict.keys():
         dataset_start = datetime.now()
         print('Dataset: {}, started at: {}'.format(dataset, dataset_start))
