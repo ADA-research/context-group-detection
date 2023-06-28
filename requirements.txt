@@ -5,3 +5,4 @@ pandas
 seaborn
 xlsxwriter
 scikit-learn
+torch
