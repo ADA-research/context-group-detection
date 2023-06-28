@@ -52,7 +52,7 @@ def build_model(context_size, consecutive_frames, features, reg_amount, drop_amo
 
     pair_x = pair_concatenated
     for filters in pair_filters:
-        pair_x = Conv1D(filters=filters, kernel_size=3, kernel_regularizer=reg, activation='relu',
+        pair_x = Conv1D(filters=filters, kernel_size=1, kernel_regularizer=reg, activation='relu',
                         name='pair_conv_{}'.format(filters))(pair_x)
         pair_x = Dropout(drop_amount)(pair_x)
         pair_x = BatchNormalization()(pair_x)
@@ -78,7 +78,7 @@ def build_model(context_size, consecutive_frames, features, reg_amount, drop_amo
 
         context_x = context_concatenated
         for filters in context_filters:
-            context_x = Conv1D(filters=filters, kernel_size=3, kernel_regularizer=reg, activation='relu',
+            context_x = Conv1D(filters=filters, kernel_size=1, kernel_regularizer=reg, activation='relu',
                                name='context_conv_{}'.format(filters))(context_x)
             context_x = Dropout(drop_amount)(context_x)
             context_x = BatchNormalization()(context_x)
