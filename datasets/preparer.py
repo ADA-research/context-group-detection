@@ -577,6 +577,148 @@ def save_folds(save_folder, dataset, frames_num, agents_num, data, labels, frame
         dump('{}/val.p'.format(path), val)
 
 
+def get_sample_params(frames_num, agents_num):
+    if frames_num == 1:
+        multi_frame = False
+        if agents_num == 6:
+            steps = {
+                'eth': 2,
+                'hotel': 2,
+                'zara01': 2,
+                'zara02': 3,
+                'students03': 6
+            }
+            min_samples = {
+                'eth': 5,
+                'hotel': 10,
+                'zara01': 10,
+                'zara02': 5,
+                'students03': 2
+            }
+            max_samples = {
+                'eth': 100,
+                'hotel': 100,
+                'zara01': 100,
+                'zara02': 100,
+                'students03': 10
+            }
+        elif agents_num == 10:
+            steps = {
+                'eth': 2,
+                'hotel': 2,
+                'zara01': 1,
+                'zara02': 3,
+                'students03': 5
+            }
+            min_samples = {
+                'eth': 5,
+                'hotel': 10,
+                'zara01': 10,
+                'zara02': 5,
+                'students03': 2
+            }
+            max_samples = {
+                'eth': 1000,
+                'hotel': 1000,
+                'zara01': 1000,
+                'zara02': 1000,
+                'students03': 5
+            }
+    elif frames_num == 5:
+        multi_frame = True
+        if agents_num == 6:
+            steps = {
+                'eth': 3,
+                'hotel': 2,
+                'zara01': 2,
+                'zara02': 5,
+                'students03': 6
+            }
+            min_samples = {
+                'eth': 10,
+                'hotel': 15,
+                'zara01': 15,
+                'zara02': 10,
+                'students03': 2
+            }
+            max_samples = {
+                'eth': 1000,
+                'hotel': 1000,
+                'zara01': 1000,
+                'zara02': 1000,
+                'students03': 10
+            }
+        elif agents_num == 10:
+            steps = {
+                'eth': 2,
+                'hotel': 1,
+                'zara01': 1,
+                'zara02': 3,
+                'students03': 5
+            }
+            min_samples = {
+                'eth': 10,
+                'hotel': 15,
+                'zara01': 15,
+                'zara02': 10,
+                'students03': 2
+            }
+            max_samples = {
+                'eth': 1000,
+                'hotel': 1000,
+                'zara01': 1000,
+                'zara02': 1000,
+                'students03': 10
+            }
+    elif frames_num == 10:
+        multi_frame = True
+        if agents_num == 6:
+            steps = {
+                'eth': 2,
+                'hotel': 1,
+                'zara01': 1,
+                'zara02': 4,
+                'students03': 5
+            }
+            min_samples = {
+                'eth': 10,
+                'hotel': 15,
+                'zara01': 10,
+                'zara02': 10,
+                'students03': 2
+            }
+            max_samples = {
+                'eth': 1000,
+                'hotel': 1000,
+                'zara01': 1000,
+                'zara02': 1000,
+                'students03': 10
+            }
+        elif agents_num == 10:
+            steps = {
+                'eth': 1,
+                'hotel': 1,
+                'zara01': 1,
+                'zara02': 3,
+                'students03': 5
+            }
+            min_samples = {
+                'eth': 10,
+                'hotel': 50,
+                'zara01': 20,
+                'zara02': 10,
+                'students03': 2
+            }
+            max_samples = {
+                'eth': 1000,
+                'hotel': 1000,
+                'zara01': 1000,
+                'zara02': 1000,
+                'students03': 10
+            }
+    return multi_frame, min_samples, max_samples, steps
+
+
 def get_args():
     parser = argparse.ArgumentParser()
 
@@ -624,98 +766,7 @@ if __name__ == '__main__':
     if args.plot:
         groups_size_hist(groups_dict, './group_size_plot.png')
 
-    if args.frames_num == 1:
-        multi_frame = False
-        if args.agents_num == 6:
-            steps = {
-                'eth': 2,
-                'hotel': 2,
-                'zara01': 2,
-                'zara02': 3,
-                'students03': 6
-            }
-            min_samples = {
-                'eth': 5,
-                'hotel': 10,
-                'zara01': 10,
-                'zara02': 5,
-                'students03': 2
-            }
-            max_samples = {
-                'eth': 100,
-                'hotel': 100,
-                'zara01': 100,
-                'zara02': 100,
-                'students03': 10
-            }
-        else:
-            steps = {
-                'eth': 2,
-                'hotel': 2,
-                'zara01': 1,
-                'zara02': 3,
-                'students03': 5
-            }
-            min_samples = {
-                'eth': 5,
-                'hotel': 10,
-                'zara01': 10,
-                'zara02': 5,
-                'students03': 2
-            }
-            max_samples = {
-                'eth': 1000,
-                'hotel': 1000,
-                'zara01': 1000,
-                'zara02': 1000,
-                'students03': 5
-            }
-    else:
-        multi_frame = True
-        if args.agents_num == 6:
-            steps = {
-                'eth': 2,
-                'hotel': 1,
-                'zara01': 1,
-                'zara02': 4,
-                'students03': 5
-            }
-            min_samples = {
-                'eth': 10,
-                'hotel': 15,
-                'zara01': 10,
-                'zara02': 10,
-                'students03': 2
-            }
-            max_samples = {
-                'eth': 1000,
-                'hotel': 1000,
-                'zara01': 1000,
-                'zara02': 1000,
-                'students03': 10
-            }
-        else:
-            steps = {
-                'eth': 1,
-                'hotel': 1,
-                'zara01': 1,
-                'zara02': 3,
-                'students03': 5
-            }
-            min_samples = {
-                'eth': 10,
-                'hotel': 50,
-                'zara01': 20,
-                'zara02': 10,
-                'students03': 2
-            }
-            max_samples = {
-                'eth': 1000,
-                'hotel': 1000,
-                'zara01': 1000,
-                'zara02': 1000,
-                'students03': 10
-            }
+    multi_frame, min_samples, max_samples, steps = get_sample_params(args.frames_num, args.agents_num)
     for dataset in datasets_dict.keys():
         dataset_start = datetime.now()
         print('Dataset: {}, started at: {}'.format(dataset, dataset_start))
