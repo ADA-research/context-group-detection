@@ -1,6 +1,4 @@
 ---
-agents: 10
-frames: 10
 features: 4
 dataset: eth_shifted
 dataset_path: ../datasets/ETH/seq_eth
@@ -9,7 +7,6 @@ train_epochs: 0
 batch_size: 1024
 eps_thres: 1.0e-13
 learning_rate: 0.0001
-no_context: false
 dominant_sets: true
 reg: 1.0e-07
 dropout: 0.35

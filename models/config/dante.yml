@@ -1,5 +1,4 @@
 ---
-agents: 10
 features: 4
 patience: 150
 dropout: 0.35

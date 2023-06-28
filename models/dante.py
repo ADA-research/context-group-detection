@@ -15,6 +15,7 @@ def get_args():
     parser.add_argument('--seed', type=int, default=14)
     parser.add_argument('-f', '--fold', type=int, default=0)
     parser.add_argument('-e', '--epochs', type=int, default=1)
+    parser.add_argument('-a', '--agents', type=int, default=10)
     parser.add_argument('-d', '--dir_name', type=str, default="dir_name")
     parser.add_argument('-c', '--config', type=str, default="./config/dante.yml")
 
@@ -44,11 +45,11 @@ if __name__ == "__main__":
                              eps_thres=config['eps_thres'])
     else:
         train, test, val = load_data(
-            '../datasets/reformatted/{}_1_{}/fold_{}'.format(config['dataset'], config['agents'], args.fold))
+            '../datasets/reformatted/{}_1_{}/fold_{}'.format(config['dataset'], args.agents, args.fold))
 
         train_and_save_model(global_filters, individual_filters, combined_filters, train, test, val, args.epochs,
                              config['dataset'], config['dataset_path'], reg=config['reg'], dropout=config['dropout'],
                              patience=config['patience'],
                              dir_name='{}_1_{}/fold_{}/{}_{}'.format(
-                                 config['dataset'], config['agents'], args.fold, args.dir_name, args.seed),
+                                 config['dataset'], args.agents, args.fold, args.dir_name, args.seed),
                              eps_thres=config['eps_thres'])

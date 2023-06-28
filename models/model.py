@@ -115,8 +115,11 @@ def get_args():
     parser.add_argument('--seed', type=int, default=14)
     parser.add_argument('-f', '--fold', type=int, default=0)
     parser.add_argument('-e', '--epochs', type=int, default=1)
+    parser.add_argument('-a', '--agents', type=int, default=10)
+    parser.add_argument('-t', '--frames', type=int, default=10)
     parser.add_argument('-d', '--dir_name', type=str, default="dir_name")
     parser.add_argument('-c', '--config', type=str, default="./config/model.yml")
+    parser.add_argument('-nc', '--no_context', action="store_true", default=False)
 
     return parser.parse_args()
 
@@ -132,11 +135,11 @@ if __name__ == '__main__':
 
     train, test, val = load_data(
         '../datasets/reformatted/{}_{}_{}/fold_{}'.format(
-            config['dataset'], config['frames'], config['agents'], args.fold), config['no_context'])
+            config['dataset'], args.frames, args.agents, args.fold), args.no_context)
 
     model = build_model(
-        config['agents'] - 2, config['frames'], config['features'], config['reg'], config['dropout'],
-        config['learning_rate'], no_context=config['no_context'], pair_filters=config['layers']['pair_filters'],
+        args.agents - 2, args.frames, config['features'], config['reg'], config['dropout'],
+        config['learning_rate'], no_context=args.no_context, pair_filters=config['layers']['pair_filters'],
         context_filters=config['layers']['context_filters'],
         combination_filters=config['layers']['combination_filters'])
 
@@ -149,6 +152,6 @@ if __name__ == '__main__':
               validation_data=(val[0], val[1]), callbacks=[tensorboard, early_stop, history])
 
     dir_name = '{}_{}_{}/fold_{}/{}_{}'.format(
-        config['dataset'], config['frames'], config['agents'], args.fold, args.dir_name, args.seed)
+        config['dataset'], args.frames, args.agents, args.fold, args.dir_name, args.seed)
     save_model_data(dir_name, config['reg'], config['dropout'], history, test, True, eps_thres=config['eps_thres'],
-                    dominant_sets=config['dominant_sets'], layers=config['layers'], no_context=config['no_context'])
+                    dominant_sets=config['dominant_sets'], layers=config['layers'], no_context=args.no_context)

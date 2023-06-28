@@ -15,9 +15,12 @@ fold=0
 seed=14
 epochs=1
 dir_name=""
+agents=10
+frames=1
+nc=false
 
 # Read flags and their corresponding values
-while getopts "m:c:f:e:d:s:" flag; do
+while getopts "m:c:f:e:d:s:a:t:n:" flag; do
   case ${flag} in
   m) model="${OPTARG}" ;;
   c) config="${OPTARG}" ;;
@@ -25,6 +28,9 @@ while getopts "m:c:f:e:d:s:" flag; do
   e) epochs="${OPTARG}" ;;
   d) dir_name="${OPTARG}" ;;
   s) seed="${OPTARG}" ;;
+  a) agents="${OPTARG}" ;;
+  t) frames="${OPTARG}" ;;
+  n) nc=true ;;
   *)
     echo "Invalid flag: ${flag}" >&2
     exit 1
@@ -40,11 +46,21 @@ export PYTHONPATH="${PYTHONPATH}:${HOME}/context-group-detection/"
 echo "User: ${SLURM_JOB_USER}, hostname: ${HOSTNAME}, job_id: ${SLURM_JOB_ID}"
 echo "Current working directory: $(pwd)"
 
-echo "Running ${model}"
+echo "Running ${model}, agents: ${agents}, frames: ${frames}, nc: ${nc}"
 echo "Using config file at: ${config}, fold: ${fold}, epochs: ${epochs}, dir_name: ${dir_name}, seed: ${seed}"
+
+nc_flag=""
+if [ ${nc} ]; then
+  nc_flag="-nc"
+fi
+
+frames_flag=""
+if [ ${frames} == 1 ]; then
+  frames_flag="-t ${frames}"
+fi
 
 echo "Script starting"
 cd "${HOME}/context-group-detection/models" || exit
-python ${model}.py -c ${config} -f ${fold} -e ${epochs} -d ${dir_name} --seed ${seed}
+python ${model}.py -c ${config} -f ${fold} -e ${epochs} -d ${dir_name} --seed ${seed} -a ${agents} ${frames_flag} ${nc_flag}
 
 echo "Script finished"
