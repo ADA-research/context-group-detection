@@ -561,9 +561,9 @@ def save_folds(save_folder, dataset, frames_num, agents_num, data, labels, frame
 
         if multi_frame:
             train = (
-                [data[idx_train, :, j] for j in range(agents_num)], labels[idx_train], frames[idx_train], groups_train)
-            test = ([data[idx_test, :, j] for j in range(agents_num)], labels[idx_test], frames[idx_test], groups_test)
-            val = ([data[idx_val, :, j] for j in range(agents_num)], labels[idx_val], frames[idx_val], groups_val)
+                [data[idx_train, j, :] for j in range(agents_num)], labels[idx_train], frames[idx_train], groups_train)
+            test = ([data[idx_test, j, :] for j in range(agents_num)], labels[idx_test], frames[idx_test], groups_test)
+            val = ([data[idx_val, j, :] for j in range(agents_num)], labels[idx_val], frames[idx_val], groups_val)
         else:
             train = (
                 [data[idx_train, :, 2:], data[idx_train, :, :2]], labels[idx_train], frames[idx_train], groups_train)
@@ -626,7 +626,7 @@ if __name__ == '__main__':
 
     if args.frames_num == 1:
         multi_frame = False
-        if args.agents_num == 5:
+        if args.agents_num == 6:
             steps = {
                 'eth': 2,
                 'hotel': 2,
@@ -672,17 +672,17 @@ if __name__ == '__main__':
             }
     else:
         multi_frame = True
-        if args.agents_num == 5:
+        if args.agents_num == 6:
             steps = {
                 'eth': 2,
                 'hotel': 1,
                 'zara01': 1,
-                'zara02': 3,
+                'zara02': 4,
                 'students03': 5
             }
             min_samples = {
                 'eth': 10,
-                'hotel': 10,
+                'hotel': 15,
                 'zara01': 10,
                 'zara02': 10,
                 'students03': 2
