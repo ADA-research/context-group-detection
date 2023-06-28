@@ -20,7 +20,7 @@ frames=1
 nc=false
 
 # Read flags and their corresponding values
-while getopts "m:c:f:e:d:s:a:t:n:" flag; do
+while getopts "m:c:f:e:d:s:a:t:n" flag; do
   case ${flag} in
   m) model="${OPTARG}" ;;
   c) config="${OPTARG}" ;;
@@ -50,12 +50,12 @@ echo "Running ${model}, agents: ${agents}, frames: ${frames}, nc: ${nc}"
 echo "Using config file at: ${config}, fold: ${fold}, epochs: ${epochs}, dir_name: ${dir_name}, seed: ${seed}"
 
 nc_flag=""
-if [ ${nc} ]; then
+if [ ${nc} = true ]; then
   nc_flag="-nc"
 fi
 
 frames_flag=""
-if [ ${frames} == 1 ]; then
+if [ ${frames} -ne 1 ]; then
   frames_flag="-t ${frames}"
 fi
 
