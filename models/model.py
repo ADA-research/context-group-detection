@@ -151,7 +151,8 @@ if __name__ == '__main__':
     model.fit(train[0], train[1], epochs=args.epochs, batch_size=config['batch_size'],
               validation_data=(val[0], val[1]), callbacks=[tensorboard, early_stop, history])
 
-    dir_name = '{}_{}_{}/fold_{}/{}_{}'.format(
-        config['dataset'], args.frames, args.agents, args.fold, args.dir_name, args.seed)
+    no_context = "nc_" if args.no_context else ""
+    dir_name = '{}_{}_{}/fold_{}/{}_{}{}'.format(
+        config['dataset'], args.frames, args.agents, args.fold, args.dir_name, no_context, args.seed)
     save_model_data(dir_name, config['reg'], config['dropout'], history, test, True, eps_thres=config['eps_thres'],
                     dominant_sets=config['dominant_sets'], layers=config['layers'], no_context=args.no_context)
