@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --array=4-5
+#SBATCH --array=2-4
 #SBATCH --job-name=train_model
 #SBATCH --output=%x_%j.out
 #SBATCH --mail-user="thomasmaliappis@gmail.com"
@@ -62,6 +62,6 @@ fi
 
 echo "Script starting"
 cd "${HOME}/context-group-detection/models" || exit
-python ${model}.py -c ${config} -f ${fold} -e ${epochs} -d ${dir_name} --seed ${seed} -a ${agents} ${frames_flag} ${nc_flag}
+python ${model}.py -c ${config} -f ${fold} -e ${epochs} -d ${dir_name} --seed ${SLURM_ARRAY_TASK_ID} -a ${agents} ${frames_flag} ${nc_flag}
 
 echo "Script finished"
