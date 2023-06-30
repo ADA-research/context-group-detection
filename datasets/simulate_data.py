@@ -143,8 +143,8 @@ if __name__ == '__main__':
             else:
                 plt.plot(positions[agent, :, 0], positions[agent, :, 1], marker=marker)
 
-    plt.xlabel('X position')
-    plt.ylabel('Y position')
     plt.title('Trajectory Simulation')
+    plt.xlabel('X')
+    plt.ylabel('Y')
     plt.legend()
     plt.show()
