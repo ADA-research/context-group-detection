@@ -137,10 +137,14 @@ if __name__ == '__main__':
     for group_idx, group in enumerate(groups):
         marker = np.random.choice(markers)
         markers.remove(marker)
-        for agent in group:
-            plt.plot(positions[agent, :, 0], positions[agent, :, 1], marker=marker)
+        for i, agent in enumerate(group):
+            if i == 0:
+                plt.plot(positions[agent, :, 0], positions[agent, :, 1], marker=marker, label='group {}'.format(group_idx))
+            else:
+                plt.plot(positions[agent, :, 0], positions[agent, :, 1], marker=marker)
 
     plt.xlabel('X position')
     plt.ylabel('Y position')
     plt.title('Trajectory Simulation')
+    plt.legend()
     plt.show()
