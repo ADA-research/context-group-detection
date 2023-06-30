@@ -1,3 +1,5 @@
+import argparse
+
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -5,42 +7,54 @@ import numpy as np
 def get_group_trajectory(agents_per_group, num_steps, group_velocity, initial_position, final_position, waypoints):
     # Generate initial positions and velocities for the group
     initial_positions = np.random.normal(loc=initial_position, scale=2, size=(agents_per_group, 2))
-    velocities = np.random.normal(loc=group_velocity, scale=0.2, size=(agents_per_group, 2))
+    final_positions = np.random.normal(loc=final_position, scale=2, size=(agents_per_group, 2))
+    initial_velocities = np.random.normal(loc=group_velocity, scale=0.2, size=(agents_per_group, 2))
 
     # Initialize arrays to store trajectory data
-    positions = np.zeros((agents_per_group, num_steps, 2), dtype=np.float64)  # (agents_per_group, num_steps, x/y)
-    all_velocities = np.zeros((agents_per_group, num_steps, 2),
-                              dtype=np.float64)  # (agents_per_group, num_steps, vx/vy)
+    # (agents_per_group, num_steps, x/y)
+    positions = np.zeros((agents_per_group, num_steps, 2), dtype=np.float64)
+    # (agents_per_group, num_steps, vx/vy)
+    velocities = np.zeros((agents_per_group, num_steps, 2), dtype=np.float64)
+
+    # Create a list of waypoints including the final position
+    all_waypoints = waypoints + [final_position]
+
+    steps = int((num_steps - 1) / len(all_waypoints))
 
     # Simulate the trajectory for each agent in the group
     for a in range(agents_per_group):
         position = initial_positions[a, :]
         positions[a, 0, :] = position
-        all_velocities[a, 0, :] = velocities[a, :]
+        velocity = initial_velocities[a, :]
+        velocities[a, 0, :] = velocity
 
-        # Create a list of waypoints including the final position
-        all_waypoints = waypoints + [final_position]
-
-        steps = int((num_steps - 1) / len(all_waypoints))
-
+        current_waypoint = initial_position
         for i in range(len(all_waypoints)):
+            next_waypoint = all_waypoints[i]
             # Calculate the direction vector towards the next waypoint
-            direction = all_waypoints[i] - position
+            direction = next_waypoint - current_waypoint
             distance = np.linalg.norm(direction)
             direction /= distance
+            adjusted_velocity = distance / steps
+            velocity = direction * adjusted_velocity
 
-            # Update position based on velocity and direction
+            # Update position based on velocity
             for t in range(i * steps, (i + 1) * steps):
-                position += velocities[a, :] * direction
-
-                # Update velocity towards the next waypoint
-                velocities[a, :] += direction * group_velocity
+                position += velocity
+                position += np.random.normal(scale=0.3, size=2)
 
                 # Store the updated position and velocity
                 positions[a, t + 1, :] = position
-                all_velocities[a, t + 1, :] = velocities[a, :]
+                velocities[a, t + 1, :] = velocity
+                # Add small noise to the velocity vector
+                # velocity += np.random.normal(scale=0.3, size=2)
+            current_waypoint = next_waypoint
 
-    return positions, all_velocities
+    for step in reversed(range(num_steps)):
+        if positions[0, step, 0] == 0 and positions[0, step, 1] == 0:
+            positions[:, step, :] = final_positions
+
+    return positions, velocities
 
 
 def generate_random_waypoints(max_num_waypoints, x_range, y_range):
@@ -55,8 +69,17 @@ def generate_random_waypoints(max_num_waypoints, x_range, y_range):
 def simulate_group_trajectory(agents_per_group, num_steps, group_velocity, max_num_waypoints, x_range, y_range):
     # Simulation parameters
     # Generate random start and final positions
-    start_position = np.array([np.random.uniform(*x_range), np.random.uniform(*y_range)])
-    final_position = np.array([np.random.uniform(*x_range), np.random.uniform(*y_range)])
+    start_x = np.random.choice([x_range[0], x_range[1]])
+    start_y = np.random.uniform(*y_range)
+    if np.random.choice([True, False]):
+        start_x, start_y = start_y, start_x
+    start_position = np.array([start_x, start_y])
+
+    final_x = np.random.choice([x_range[0], x_range[1]])
+    final_y = np.random.uniform(*y_range)
+    if np.random.choice([True, False]):
+        final_x, final_y = final_y, final_x
+    final_position = np.array([final_x, final_y])
     # Generate random waypoints
     waypoints = generate_random_waypoints(max_num_waypoints=max_num_waypoints, x_range=x_range, y_range=y_range)
     # Simulate trajectory for a single group
@@ -69,42 +92,55 @@ def simulate_group_trajectory(agents_per_group, num_steps, group_velocity, max_n
     return positions, velocities
 
 
-num_steps = 1000
-group_velocity = 0.1
-x_range = (0, 100)  # Range for x-coordinate of waypoints
-y_range = (0, 100)  # Range for y-coordinate of waypoints
+def get_args():
+    parser = argparse.ArgumentParser()
 
-positions = []
-velocities = []
-groups = []
-agent_id = 0
+    parser.add_argument('--seed', type=int, default=3)
+    parser.add_argument('--frames', type=int, default=100)
+    parser.add_argument('--velocity', type=float, default=0.1)
 
-num_groups = 2
-for group in range(num_groups):
-    agents_per_group = np.random.randint(3, 7)
-    group_positions, group_velocities = simulate_group_trajectory(agents_per_group=agents_per_group,
-                                                                  num_steps=num_steps,
-                                                                  group_velocity=group_velocity,
-                                                                  max_num_waypoints=3,
-                                                                  x_range=x_range,
-                                                                  y_range=y_range)
-    positions.append(group_positions)
-    velocities.append(group_velocities)
-    groups.append(list(range(agent_id, agent_id + len(group_positions))))
-    agent_id += len(group_positions)
+    return parser.parse_args()
 
-positions = np.concatenate(positions)
-velocities = np.concatenate(velocities)
 
-# Visualize trajectory
-for a in range(len(positions)):
-    if a in groups[0]:
-        marker = 'o'
-    else:
-        marker = 'x'
-    plt.plot(positions[a, :, 0], positions[a, :, 1], marker='o')
+if __name__ == '__main__':
+    args = get_args()
+    np.random.seed(args.seed)
+    num_steps = args.frames
+    group_velocity = args.velocity
+    x_range = (0, 100)  # Range for x-coordinate of waypoints
+    y_range = (0, 100)  # Range for y-coordinate of waypoints
 
-plt.xlabel('X position')
-plt.ylabel('Y position')
-plt.title('Trajectory Simulation')
-plt.show()
+    positions = []
+    velocities = []
+    groups = []
+
+    agents = 0
+    num_groups = 4
+    for group in range(num_groups):
+        agents_per_group = np.random.randint(3, 7)
+        group_positions, group_velocities = simulate_group_trajectory(agents_per_group=agents_per_group,
+                                                                      num_steps=num_steps,
+                                                                      group_velocity=group_velocity,
+                                                                      max_num_waypoints=3,
+                                                                      x_range=x_range,
+                                                                      y_range=y_range)
+        positions.append(group_positions)
+        velocities.append(group_velocities)
+        groups.append(list(range(agents, agents + len(group_positions))))
+        agents += len(group_positions)
+
+    positions = np.concatenate(positions)
+    velocities = np.concatenate(velocities)
+
+    # Visualize trajectory
+    markers = ['.', ',', 'o', 'v', '^', '<', '>', 's', '+', 'x', 'D', 'd', 'p', '*', 'h', 'H']
+    for group_idx, group in enumerate(groups):
+        marker = np.random.choice(markers)
+        markers.remove(marker)
+        for agent in group:
+            plt.plot(positions[agent, :, 0], positions[agent, :, 1], marker=marker)
+
+    plt.xlabel('X position')
+    plt.ylabel('Y position')
+    plt.title('Trajectory Simulation')
+    plt.show()
