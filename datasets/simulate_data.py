@@ -99,6 +99,8 @@ def plot_trajectories(positions, groups):
     for group_idx, group in enumerate(groups):
         marker = np.random.choice(markers)
         markers.remove(marker)
+        if not markers:
+            markers = ['.', ',', 'o', 'v', '^', '<', '>', 's', '+', 'x', 'D', 'd', 'p', '*', 'h', 'H']
         for i, agent in enumerate(group):
             if i == 0:
                 plt.plot(positions[agent, :, 0], positions[agent, :, 1], marker=marker,
@@ -112,18 +114,18 @@ def plot_trajectories(positions, groups):
     plt.show()
 
 
-def create_simulation(num_steps, group_velocity, x_range, y_range):
+def create_simulation(num_steps, group_velocity, x_range, y_range, num_groups, min_agents_per_group,
+                      max_agents_per_group, max_num_waypoints):
     positions = []
     velocities = []
     groups = []
     agents = 0
-    num_groups = 4
     for group in range(num_groups):
-        agents_per_group = np.random.randint(2, 6)
+        agents_per_group = np.random.randint(min_agents_per_group, max_agents_per_group)
         group_positions, group_velocities = simulate_group_trajectory(agents_per_group=agents_per_group,
                                                                       num_steps=num_steps,
                                                                       group_velocity=group_velocity,
-                                                                      max_num_waypoints=3,
+                                                                      max_num_waypoints=max_num_waypoints,
                                                                       x_range=x_range,
                                                                       y_range=y_range)
         positions.append(group_positions)
@@ -136,26 +138,58 @@ def create_simulation(num_steps, group_velocity, x_range, y_range):
     return positions, velocities, groups
 
 
-def create_dataframe(data):
+def create_simulation_dataframe(data, frames_per_group, dataset_frames):
     agent_dfs = []
 
+    last_start_frame = dataset_frames - frames_per_group
+    start_frames = [0, last_start_frame] + list(range(0, last_start_frame, int(frames_per_group / 2)))
+
     for agent in range(data.shape[0]):
+        start_frame = np.random.choice(start_frames)
         agent_df = pd.DataFrame(data[agent].reshape(-1, 4), columns=['pos_x', 'pos_y', 'v_x', 'v_y'])
         agent_df['agent_id'] = agent
-        agent_df['frame_id'] = [i for i, _ in enumerate(agent_df['agent_id'])]
+        agent_df['frame_id'] = [i + start_frame for i, _ in enumerate(agent_df['agent_id'])]
         agent_dfs.append(agent_df)
 
     df = pd.concat(agent_dfs, ignore_index=True)
 
+    d_frame = np.diff(pd.unique(df["frame_id"]))
+    fps = d_frame[0] * 1
+    df["timestamp"] = df["frame_id"] / fps
+
+    df.sort_values(by=['agent_id', 'frame_id'], inplace=True)
+    df['measurement'] = df[['pos_x', 'pos_y', 'v_x', 'v_y']].apply(tuple, axis=1)
+
     return df
+
+
+def get_simulation_dataframe(frames_per_group, initial_velocity, num_groups, min_agents_per_group, max_agents_per_group,
+                             max_num_waypoints, dataset_frames):
+    positions, velocities, groups = create_simulation(num_steps=frames_per_group,
+                                                      group_velocity=initial_velocity,
+                                                      num_groups=num_groups,
+                                                      min_agents_per_group=min_agents_per_group,
+                                                      max_agents_per_group=max_agents_per_group,
+                                                      max_num_waypoints=max_num_waypoints,
+                                                      x_range=(0, 100),
+                                                      y_range=(0, 100))
+    data = np.concatenate((positions, velocities), axis=2)
+    df = create_simulation_dataframe(data, frames_per_group, dataset_frames)
+
+    return positions, groups, df
 
 
 def get_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--seed', type=int, default=3)
-    parser.add_argument('--frames', type=int, default=100)
+    parser.add_argument('--groups', type=int, default=10)
     parser.add_argument('--velocity', type=float, default=0.1)
+    parser.add_argument('--frames_per_group', type=int, default=100)
+    parser.add_argument('--dataset_frames', type=int, default=1000)
+    parser.add_argument('--max_num_waypoints', type=int, default=3)
+    parser.add_argument('--min_agents_per_group', type=int, default=2)
+    parser.add_argument('--max_agents_per_group', type=int, default=6)
     parser.add_argument('--plot', action="store_true", default=True)
 
     return parser.parse_args()
@@ -166,12 +200,13 @@ if __name__ == '__main__':
 
     np.random.seed(args.seed)
 
-    positions, velocities, groups = create_simulation(num_steps=args.frames,
-                                                      group_velocity=args.velocity,
-                                                      x_range=(0, 100),
-                                                      y_range=(0, 100))
+    positions, groups, df = get_simulation_dataframe(num_groups=args.groups,
+                                                     dataset_frames=args.dataset_frames,
+                                                     frames_per_group=args.frames_per_group,
+                                                     initial_velocity=args.velocity,
+                                                     min_agents_per_group=args.min_agents_per_group,
+                                                     max_agents_per_group=args.max_agents_per_group,
+                                                     max_num_waypoints=args.max_num_waypoints)
 
-    data = np.concatenate((positions, velocities), axis=2)
-    df = create_dataframe(data)
-
-    plot_trajectories(positions, groups)
+    if args.plot:
+        plot_trajectories(positions, groups)
