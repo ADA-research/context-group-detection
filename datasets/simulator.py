@@ -158,10 +158,11 @@ def create_simulation(num_steps, initial_velocity, x_range, y_range, num_groups,
     return positions, velocities, groups
 
 
-def get_simulation_dataframe(data, frames_per_group, dataset_frames):
+def get_simulation_dataframe(data, groups, frames_per_group, dataset_frames):
     """
     Get dataframe of simulation.
     :param data: simulation data
+    :param groups: group information
     :param frames_per_group: number of data frames for each group
     :param dataset_frames: total number of data frames for simulation
     :return: dataframe of simulation
@@ -169,10 +170,16 @@ def get_simulation_dataframe(data, frames_per_group, dataset_frames):
     agent_dfs = []
 
     last_start_frame = dataset_frames - frames_per_group
-    start_frames = [0, last_start_frame] + list(range(0, last_start_frame + 1, int(frames_per_group / 2)))
+    start_frame_values = [0, last_start_frame] + list(range(0, last_start_frame + 1, int(frames_per_group / 2)))
+
+    start_frames = {}
+    for group in groups:
+        start_frame = np.random.choice(start_frame_values)
+        for agent in group:
+            start_frames[agent] = start_frame
 
     for agent in range(data.shape[0]):
-        start_frame = np.random.choice(start_frames)
+        start_frame = start_frames[agent]
         agent_df = pd.DataFrame(data[agent].reshape(-1, 4), columns=['pos_x', 'pos_y', 'v_x', 'v_y'])
         agent_df['agent_id'] = agent
         agent_df['frame_id'] = [i + start_frame for i, _ in enumerate(agent_df['agent_id'])]
@@ -216,21 +223,26 @@ def get_simulation_data(frames_per_group, initial_velocity, num_groups, min_agen
                                                       x_range=(0, 100),
                                                       y_range=(0, 100))
     data = np.concatenate((positions, velocities), axis=2)
-    df = get_simulation_dataframe(data, frames_per_group, dataset_frames)
+    df = get_simulation_dataframe(data, groups, frames_per_group, dataset_frames)
 
     return df, groups
 
 
-def plot_trajectories(positions, groups, frames_range=(0, 100)):
+def plot_trajectories(df, groups, frames_range=(0, 100)):
     """
     Plot the trajectories for given frames.
-    :param positions: position data
+    :param df: simulation data
     :param groups: group information
     :param frames_range: frames to be considered on the plot
-    :return:
+    :return: nothing
     """
+    df = df[(df['frame_id'] >= frames_range[0]) & (df['frame_id'] < frames_range[1])]
+    agents = df['agent_id'].unique()
 
-    positions = positions[:, frames_range[0]:frames_range[1]]
+    # Get a color palette
+    color_palette = plt.get_cmap('tab10')
+    # Generate a list of colors
+    colors = [color_palette(i) for i in range(len(groups))]
 
     markers = ['.', ',', 'o', 'v', '^', '<', '>', 's', '+', 'x', 'D', 'd', 'p', '*', 'h', 'H']
     for group_idx, group in enumerate(groups):
@@ -238,43 +250,22 @@ def plot_trajectories(positions, groups, frames_range=(0, 100)):
         markers.remove(marker)
         if not markers:
             markers = ['.', ',', 'o', 'v', '^', '<', '>', 's', '+', 'x', 'D', 'd', 'p', '*', 'h', 'H']
-        for i, agent in enumerate(group):
-            # TODO do not plot zeros
-            if i == 0:
-                plt.plot(positions[agent, :, 0], positions[agent, :, 1], marker=marker,
-                         label='group {}'.format(group_idx))
-            else:
-                plt.plot(positions[agent, :, 0], positions[agent, :, 1], marker=marker)
+        first = True
+        for agent in group:
+            if agent in agents:
+                if first:
+                    plt.plot(list(df[df['agent_id'] == agent]['pos_x']), list(df[df['agent_id'] == agent]['pos_y']),
+                             color=colors[group_idx], marker=marker, label='group {}'.format(group_idx))
+                    first = False
+                else:
+                    plt.plot(list(df[df['agent_id'] == agent]['pos_x']), list(df[df['agent_id'] == agent]['pos_y']),
+                             color=colors[group_idx], marker=marker)
 
     plt.title('Trajectory Simulation')
     plt.xlabel('X')
     plt.ylabel('Y')
     plt.legend()
     plt.show()
-
-
-def get_positions(df):
-    """
-    Get positions from dataframe.
-    :param df: simulation dataframe
-    :return: position data
-    """
-    grouped = df.groupby(['agent_id', 'frame_id'])
-    measurements = grouped['measurement'].apply(lambda x: x.apply(lambda y: y[:2]).values[:2])
-
-    agent_ids = df['agent_id'].unique()
-    frame_ids = df['frame_id'].unique()
-    agent_id_to_idx = {agent_id: idx for idx, agent_id in enumerate(agent_ids)}
-    frame_id_to_idx = {frame_id: idx for idx, frame_id in enumerate(frame_ids)}
-
-    positions = np.zeros((len(agent_ids), len(frame_ids), 2))
-
-    for (agent_id, frame_id), measurement in measurements.items():
-        agent_idx = agent_id_to_idx[agent_id]
-        frame_idx = frame_id_to_idx[frame_id]
-        positions[agent_idx][frame_idx] = measurement[0]
-
-    return positions
 
 
 def save_data(df, groups):
@@ -319,7 +310,5 @@ if __name__ == '__main__':
 
     save_data(df, groups)
 
-    positions = get_positions(df)
-
     if args.plot:
-        plot_trajectories(positions, groups)
+        plot_trajectories(df, groups, frames_range=(0, args.dataset_frames))
