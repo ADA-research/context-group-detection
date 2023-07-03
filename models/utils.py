@@ -65,6 +65,7 @@ def predict(data, model, groups, dataset, multi_frame=False, positions=None, eps
         return F1_calc([2 / 3, 1], predictions, frames, groups, positions, n_people, n_features, eps_thres=eps_thres)
     else:
         dataset_name = dataset
+        # TODO add simulation dataset handling
         if "_shifted" in dataset_name:
             dataset_name = dataset_name.replace("_shifted", "")
         if dataset_name not in ["eth", "hotel", "zara01", "zara02", "students03"]:
@@ -129,6 +130,7 @@ class ValLoss(Callback):
             self.groups = add_time(groups)
         else:
             dataset_name = dataset
+            # TODO add simulation dataset handling
             if "_shifted" in dataset_name:
                 dataset_name = dataset_name.replace("_shifted", "")
             if dataset_name in ["eth", "hotel", "zara01", "zara02", "students03"]:
