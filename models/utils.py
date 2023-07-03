@@ -11,7 +11,7 @@ from keras.models import Model
 from keras.optimizers import Adam
 from keras.regularizers import l2
 
-from datasets.preparer import read_obsmat
+from datasets.preparer import read_obsmat, read_sim
 from models.DANTE.F1_calc import F1_calc, F1_calc_clone
 
 
@@ -65,10 +65,9 @@ def predict(data, model, groups, dataset, multi_frame=False, positions=None, eps
         return F1_calc([2 / 3, 1], predictions, frames, groups, positions, n_people, n_features, eps_thres=eps_thres)
     else:
         dataset_name = dataset
-        # TODO add simulation dataset handling
         if "_shifted" in dataset_name:
             dataset_name = dataset_name.replace("_shifted", "")
-        if dataset_name not in ["eth", "hotel", "zara01", "zara02", "students03"]:
+        if dataset_name not in ["eth", "hotel", "zara01", "zara02", "students03"] and "sim_" not in dataset_name:
             raise Exception("unknown dataset")
 
     X, y, frames, groups = data
@@ -130,10 +129,12 @@ class ValLoss(Callback):
             self.groups = add_time(groups)
         else:
             dataset_name = dataset
-            # TODO add simulation dataset handling
             if "_shifted" in dataset_name:
                 dataset_name = dataset_name.replace("_shifted", "")
-            if dataset_name in ["eth", "hotel", "zara01", "zara02", "students03"]:
+            if "sim_" in dataset_name:
+                self.positions = read_sim(dataset_path)
+                self.groups = val_data[3]
+            elif dataset_name in ["eth", "hotel", "zara01", "zara02", "students03"]:
                 self.positions = read_obsmat(dataset_path)
                 self.groups = val_data[3]
             else:
