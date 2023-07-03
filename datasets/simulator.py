@@ -1,4 +1,5 @@
 import argparse
+import os
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -168,7 +169,7 @@ def get_simulation_dataframe(data, frames_per_group, dataset_frames):
     agent_dfs = []
 
     last_start_frame = dataset_frames - frames_per_group
-    start_frames = [0, last_start_frame] + list(range(0, last_start_frame, int(frames_per_group / 2)))
+    start_frames = [0, last_start_frame] + list(range(0, last_start_frame + 1, int(frames_per_group / 2)))
 
     for agent in range(data.shape[0]):
         start_frame = np.random.choice(start_frames)
@@ -190,7 +191,7 @@ def get_simulation_dataframe(data, frames_per_group, dataset_frames):
 
 
 def get_simulation_data(frames_per_group, initial_velocity, num_groups, min_agents_per_group, max_agents_per_group,
-                        max_num_waypoints, dataset_frames):
+                        max_num_waypoints, dataset_frames, seed):
     """
     Create simulation and get data based on parameters.
     :param frames_per_group: number of data frames for each group
@@ -200,8 +201,12 @@ def get_simulation_data(frames_per_group, initial_velocity, num_groups, min_agen
     :param max_agents_per_group: maximum number of agents in a group
     :param max_num_waypoints: maximum number of waypoints
     :param dataset_frames: total number of data frames for simulation
-    :return:
+    :param seed: random seed to be used
+    :return: dataframe + groups
     """
+
+    np.random.seed(seed)
+
     positions, velocities, groups = create_simulation(num_steps=frames_per_group,
                                                       initial_velocity=initial_velocity,
                                                       num_groups=num_groups,
@@ -213,17 +218,20 @@ def get_simulation_data(frames_per_group, initial_velocity, num_groups, min_agen
     data = np.concatenate((positions, velocities), axis=2)
     df = get_simulation_dataframe(data, frames_per_group, dataset_frames)
 
-    return positions, groups, df
+    return df, groups
 
 
-def plot_trajectories(positions, groups):
+def plot_trajectories(positions, groups, frames_range=(0, 100)):
     """
-
-    :param positions:
-    :param groups:
+    Plot the trajectories for given frames.
+    :param positions: position data
+    :param groups: group information
+    :param frames_range: frames to be considered on the plot
     :return:
     """
-    # Visualize trajectory
+
+    positions = positions[:, frames_range[0]:frames_range[1]]
+
     markers = ['.', ',', 'o', 'v', '^', '<', '>', 's', '+', 'x', 'D', 'd', 'p', '*', 'h', 'H']
     for group_idx, group in enumerate(groups):
         marker = np.random.choice(markers)
@@ -231,16 +239,53 @@ def plot_trajectories(positions, groups):
         if not markers:
             markers = ['.', ',', 'o', 'v', '^', '<', '>', 's', '+', 'x', 'D', 'd', 'p', '*', 'h', 'H']
         for i, agent in enumerate(group):
+            # TODO do not plot zeros
             if i == 0:
                 plt.plot(positions[agent, :, 0], positions[agent, :, 1], marker=marker,
                          label='group {}'.format(group_idx))
             else:
                 plt.plot(positions[agent, :, 0], positions[agent, :, 1], marker=marker)
+
     plt.title('Trajectory Simulation')
     plt.xlabel('X')
     plt.ylabel('Y')
     plt.legend()
     plt.show()
+
+
+def get_positions(df):
+    """
+    Get positions from dataframe.
+    :param df: simulation dataframe
+    :return: position data
+    """
+    grouped = df.groupby(['agent_id', 'frame_id'])
+    measurements = grouped['measurement'].apply(lambda x: x.apply(lambda y: y[:2]).values[:2])
+
+    agent_ids = df['agent_id'].unique()
+    frame_ids = df['frame_id'].unique()
+    agent_id_to_idx = {agent_id: idx for idx, agent_id in enumerate(agent_ids)}
+    frame_id_to_idx = {frame_id: idx for idx, frame_id in enumerate(frame_ids)}
+
+    positions = np.zeros((len(agent_ids), len(frame_ids), 2))
+
+    for (agent_id, frame_id), measurement in measurements.items():
+        agent_idx = agent_id_to_idx[agent_id]
+        frame_idx = frame_id_to_idx[frame_id]
+        positions[agent_idx][frame_idx] = measurement[0]
+
+    return positions
+
+
+def save_data(df, groups):
+    os.makedirs(args.save_folder + '/sim_{}'.format(args.seed), exist_ok=True)
+    df.to_csv(args.save_folder + '/sim_{}/data.csv'.format(args.seed))
+
+    group_filename = args.save_folder + '/sim_{}/groups.txt'.format(args.seed)
+
+    with open(group_filename, 'w') as file:
+        for group in groups:
+            file.write(' '.join(str(agent_id) for agent_id in group) + '\n')
 
 
 def get_args():
@@ -254,6 +299,7 @@ def get_args():
     parser.add_argument('--max_num_waypoints', type=int, default=3)
     parser.add_argument('--min_agents_per_group', type=int, default=2)
     parser.add_argument('--max_agents_per_group', type=int, default=6)
+    parser.add_argument('--save_folder', type=str, default='./simulation')
     parser.add_argument('--plot', action="store_true", default=True)
 
     return parser.parse_args()
@@ -262,15 +308,18 @@ def get_args():
 if __name__ == '__main__':
     args = get_args()
 
-    np.random.seed(args.seed)
+    df, groups = get_simulation_data(num_groups=args.groups,
+                                     dataset_frames=args.dataset_frames,
+                                     frames_per_group=args.frames_per_group,
+                                     initial_velocity=args.velocity,
+                                     min_agents_per_group=args.min_agents_per_group,
+                                     max_agents_per_group=args.max_agents_per_group,
+                                     max_num_waypoints=args.max_num_waypoints,
+                                     seed=args.seed)
 
-    positions, groups, df = get_simulation_data(num_groups=args.groups,
-                                                dataset_frames=args.dataset_frames,
-                                                frames_per_group=args.frames_per_group,
-                                                initial_velocity=args.velocity,
-                                                min_agents_per_group=args.min_agents_per_group,
-                                                max_agents_per_group=args.max_agents_per_group,
-                                                max_num_waypoints=args.max_num_waypoints)
+    save_data(df, groups)
+
+    positions = get_positions(df)
 
     if args.plot:
         plot_trajectories(positions, groups)
