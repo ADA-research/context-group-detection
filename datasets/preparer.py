@@ -14,7 +14,7 @@ import xlsxwriter
 from matplotlib import pyplot as plt
 from sklearn.model_selection import train_test_split
 
-from datasets.loader import read_obsmat, read_groups
+from datasets.loader import read_obsmat, read_groups, read_sim
 
 
 def report(name, data):
@@ -76,13 +76,17 @@ def groups_size_hist(groups_dict, save_loc):
     plt.show()
 
 
-def dataset_data(dataset_path):
+def dataset_data(dataset_path, sim=False):
     """
     Get data for specified dataset.
     :param dataset_path: string of where to find dataset
+    :param sim: True if used for simulation dataset, False otherwise
     :return: dictionary with data
     """
-    df = read_obsmat(dataset_path)
+    if sim:
+        df = read_sim(dataset_path)
+    else:
+        df = read_obsmat(dataset_path)
     groups = read_groups(dataset_path)
 
     agents_num = df.agent_id.unique().size
@@ -586,21 +590,24 @@ def get_sample_params(frames_num, agents_num):
                 'hotel': 2,
                 'zara01': 2,
                 'zara02': 3,
-                'students03': 6
+                'students03': 6,
+                'sim_3': 3
             }
             min_samples = {
                 'eth': 5,
                 'hotel': 10,
                 'zara01': 10,
                 'zara02': 5,
-                'students03': 2
+                'students03': 2,
+                'sim_3': 10
             }
             max_samples = {
                 'eth': 100,
                 'hotel': 100,
                 'zara01': 100,
                 'zara02': 100,
-                'students03': 10
+                'students03': 10,
+                'sim_3': 1000
             }
         elif agents_num == 10:
             steps = {
@@ -608,21 +615,24 @@ def get_sample_params(frames_num, agents_num):
                 'hotel': 2,
                 'zara01': 1,
                 'zara02': 3,
-                'students03': 5
+                'students03': 5,
+                'sim_3': 3
             }
             min_samples = {
                 'eth': 5,
                 'hotel': 10,
                 'zara01': 10,
                 'zara02': 5,
-                'students03': 2
+                'students03': 2,
+                'sim_3': 10
             }
             max_samples = {
                 'eth': 1000,
                 'hotel': 1000,
                 'zara01': 1000,
                 'zara02': 1000,
-                'students03': 5
+                'students03': 5,
+                'sim_3': 1000
             }
     elif frames_num == 5:
         multi_frame = True
@@ -632,21 +642,24 @@ def get_sample_params(frames_num, agents_num):
                 'hotel': 2,
                 'zara01': 2,
                 'zara02': 5,
-                'students03': 6
+                'students03': 6,
+                'sim_3': 3
             }
             min_samples = {
                 'eth': 10,
                 'hotel': 15,
                 'zara01': 15,
                 'zara02': 10,
-                'students03': 2
+                'students03': 2,
+                'sim_3': 10
             }
             max_samples = {
                 'eth': 1000,
                 'hotel': 1000,
                 'zara01': 1000,
                 'zara02': 1000,
-                'students03': 10
+                'students03': 10,
+                'sim_3': 1000
             }
         elif agents_num == 10:
             steps = {
@@ -654,21 +667,24 @@ def get_sample_params(frames_num, agents_num):
                 'hotel': 1,
                 'zara01': 1,
                 'zara02': 3,
-                'students03': 5
+                'students03': 5,
+                'sim_3': 2
             }
             min_samples = {
                 'eth': 10,
                 'hotel': 15,
                 'zara01': 15,
                 'zara02': 10,
-                'students03': 2
+                'students03': 2,
+                'sim_3': 10
             }
             max_samples = {
                 'eth': 1000,
                 'hotel': 1000,
                 'zara01': 1000,
                 'zara02': 1000,
-                'students03': 10
+                'students03': 10,
+                'sim_3': 1000
             }
     elif frames_num == 10:
         multi_frame = True
@@ -678,21 +694,24 @@ def get_sample_params(frames_num, agents_num):
                 'hotel': 1,
                 'zara01': 1,
                 'zara02': 4,
-                'students03': 5
+                'students03': 5,
+                'sim_3': 3
             }
             min_samples = {
                 'eth': 10,
                 'hotel': 15,
                 'zara01': 10,
                 'zara02': 10,
-                'students03': 2
+                'students03': 2,
+                'sim_3': 10
             }
             max_samples = {
                 'eth': 1000,
                 'hotel': 1000,
                 'zara01': 1000,
                 'zara02': 1000,
-                'students03': 10
+                'students03': 10,
+                'sim_3': 1000
             }
         elif agents_num == 10:
             steps = {
@@ -700,21 +719,24 @@ def get_sample_params(frames_num, agents_num):
                 'hotel': 1,
                 'zara01': 1,
                 'zara02': 3,
-                'students03': 5
+                'students03': 5,
+                'sim_3': 2
             }
             min_samples = {
                 'eth': 10,
                 'hotel': 50,
                 'zara01': 20,
                 'zara02': 10,
-                'students03': 2
+                'students03': 2,
+                'sim_3': 10
             }
             max_samples = {
                 'eth': 1000,
                 'hotel': 1000,
                 'zara01': 1000,
                 'zara02': 1000,
-                'students03': 10
+                'students03': 10,
+                'sim_3': 1000
             }
     return multi_frame, min_samples, max_samples, steps
 
@@ -750,7 +772,8 @@ if __name__ == '__main__':
         'hotel': dataset_data('./ETH/seq_hotel'),
         'zara01': dataset_data('./UCY/zara01'),
         'zara02': dataset_data('./UCY/zara02'),
-        'students03': dataset_data('./UCY/students03')
+        'students03': dataset_data('./UCY/students03'),
+        'sim_3': dataset_data('./simulation/sim_3', sim=True)
     }
     if args.report:
         report('datasets.xlsx', datasets_dict)
@@ -761,7 +784,8 @@ if __name__ == '__main__':
         'hotel': read_groups('./ETH/seq_hotel'),
         'zara01': read_groups('./UCY/zara01'),
         'zara02': read_groups('./UCY/zara02'),
-        'students03': read_groups('./UCY/students03')
+        'students03': read_groups('./UCY/students03'),
+        'sim_3': read_groups('./simulation/sim_3')
     }
     if args.plot:
         groups_size_hist(groups_dict, './group_size_plot.png')
