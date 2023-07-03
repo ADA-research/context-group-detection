@@ -5,11 +5,38 @@ import numpy as np
 import pandas as pd
 
 
-def get_group_trajectory(agents_per_group, num_steps, group_velocity, initial_position, final_position, waypoints):
+def generate_waypoints(max_num_waypoints, x_range, y_range):
+    """
+    Generate waypoints for a group based on parameters.
+    :param max_num_waypoints: maximum number of waypoints
+    :param x_range: range of x-axis
+    :param y_range: range of y-axis
+    :return: coordinates of generated waypoints
+    """
+    num_waypoints = np.random.randint(0, max_num_waypoints + 1)
+    waypoints = []
+    for _ in range(num_waypoints):
+        waypoint = np.array([np.random.uniform(*x_range), np.random.uniform(*y_range)])
+        waypoints.append(waypoint)
+    return waypoints
+
+
+def generate_group_trajectories(agents_per_group, num_steps, initial_velocity, initial_position, final_position,
+                                waypoints):
+    """
+    Generate trajectories of a group based on parameters.
+    :param agents_per_group: number of agents in group
+    :param num_steps: length of data
+    :param initial_velocity: starting velocity of group
+    :param initial_position: initial position of group members
+    :param final_position: final position of group members
+    :param waypoints: list of waypoints for group to go through
+    :return: arrays of positions and velocities
+    """
     # Generate initial positions and velocities for the group
     initial_positions = np.random.normal(loc=initial_position, scale=2, size=(agents_per_group, 2))
     final_positions = np.random.normal(loc=final_position, scale=2, size=(agents_per_group, 2))
-    initial_velocities = np.random.normal(loc=group_velocity, scale=0.2, size=(agents_per_group, 2))
+    initial_velocities = np.random.normal(loc=initial_velocity, scale=0.2, size=(agents_per_group, 2))
 
     # Initialize arrays to store trajectory data
     # (agents_per_group, num_steps, x/y)
@@ -58,16 +85,17 @@ def get_group_trajectory(agents_per_group, num_steps, group_velocity, initial_po
     return positions, velocities
 
 
-def generate_random_waypoints(max_num_waypoints, x_range, y_range):
-    num_waypoints = np.random.randint(0, max_num_waypoints + 1)
-    waypoints = []
-    for _ in range(num_waypoints):
-        waypoint = np.array([np.random.uniform(*x_range), np.random.uniform(*y_range)])
-        waypoints.append(waypoint)
-    return waypoints
-
-
-def simulate_group_trajectory(agents_per_group, num_steps, group_velocity, max_num_waypoints, x_range, y_range):
+def simulate_group_trajectories(agents_per_group, num_steps, initial_velocity, max_num_waypoints, x_range, y_range):
+    """
+    Simulate trajectories of single group based on parameters.
+    :param agents_per_group: number of agents in group
+    :param num_steps: length of data
+    :param initial_velocity: starting velocity of group
+    :param max_num_waypoints: maximum number of waypoints
+    :param x_range: range of x-axis
+    :param y_range: range of y-axis
+    :return: arrays of positions and velocities
+    """
     # Simulation parameters
     # Generate random start and final positions
     start_x = np.random.choice([x_range[0], x_range[1]])
@@ -82,52 +110,43 @@ def simulate_group_trajectory(agents_per_group, num_steps, group_velocity, max_n
         final_x, final_y = final_y, final_x
     final_position = np.array([final_x, final_y])
     # Generate random waypoints
-    waypoints = generate_random_waypoints(max_num_waypoints=max_num_waypoints, x_range=x_range, y_range=y_range)
+    waypoints = generate_waypoints(max_num_waypoints=max_num_waypoints, x_range=x_range, y_range=y_range)
     # Simulate trajectory for a single group
-    positions, velocities = get_group_trajectory(agents_per_group=agents_per_group,
-                                                 num_steps=num_steps,
-                                                 group_velocity=group_velocity,
-                                                 initial_position=start_position,
-                                                 final_position=final_position,
-                                                 waypoints=waypoints)
+    positions, velocities = generate_group_trajectories(agents_per_group=agents_per_group,
+                                                        num_steps=num_steps,
+                                                        initial_velocity=initial_velocity,
+                                                        initial_position=start_position,
+                                                        final_position=final_position,
+                                                        waypoints=waypoints)
     return positions, velocities
 
 
-def plot_trajectories(positions, groups):
-    # Visualize trajectory
-    markers = ['.', ',', 'o', 'v', '^', '<', '>', 's', '+', 'x', 'D', 'd', 'p', '*', 'h', 'H']
-    for group_idx, group in enumerate(groups):
-        marker = np.random.choice(markers)
-        markers.remove(marker)
-        if not markers:
-            markers = ['.', ',', 'o', 'v', '^', '<', '>', 's', '+', 'x', 'D', 'd', 'p', '*', 'h', 'H']
-        for i, agent in enumerate(group):
-            if i == 0:
-                plt.plot(positions[agent, :, 0], positions[agent, :, 1], marker=marker,
-                         label='group {}'.format(group_idx))
-            else:
-                plt.plot(positions[agent, :, 0], positions[agent, :, 1], marker=marker)
-    plt.title('Trajectory Simulation')
-    plt.xlabel('X')
-    plt.ylabel('Y')
-    plt.legend()
-    plt.show()
-
-
-def create_simulation(num_steps, group_velocity, x_range, y_range, num_groups, min_agents_per_group,
+def create_simulation(num_steps, initial_velocity, x_range, y_range, num_groups, min_agents_per_group,
                       max_agents_per_group, max_num_waypoints):
+    """
+    Create simulation data based on parameters.
+    :param num_steps: number of data frames for each group
+    :param initial_velocity: starting velocity of group
+    :param x_range: range of x-axis
+    :param y_range: range of y-axis
+    :param num_groups: number of groups to be generated
+    :param min_agents_per_group: minimum number of agents in a group
+    :param max_agents_per_group: maximum number of agents in a group
+    :param max_num_waypoints: maximum number of waypoints
+    :return: arrays of positions, velocities and groups
+    """
     positions = []
     velocities = []
     groups = []
     agents = 0
     for group in range(num_groups):
         agents_per_group = np.random.randint(min_agents_per_group, max_agents_per_group)
-        group_positions, group_velocities = simulate_group_trajectory(agents_per_group=agents_per_group,
-                                                                      num_steps=num_steps,
-                                                                      group_velocity=group_velocity,
-                                                                      max_num_waypoints=max_num_waypoints,
-                                                                      x_range=x_range,
-                                                                      y_range=y_range)
+        group_positions, group_velocities = simulate_group_trajectories(agents_per_group=agents_per_group,
+                                                                        num_steps=num_steps,
+                                                                        initial_velocity=initial_velocity,
+                                                                        max_num_waypoints=max_num_waypoints,
+                                                                        x_range=x_range,
+                                                                        y_range=y_range)
         positions.append(group_positions)
         velocities.append(group_velocities)
         groups.append(list(range(agents, agents + len(group_positions))))
@@ -138,7 +157,14 @@ def create_simulation(num_steps, group_velocity, x_range, y_range, num_groups, m
     return positions, velocities, groups
 
 
-def create_simulation_dataframe(data, frames_per_group, dataset_frames):
+def get_simulation_dataframe(data, frames_per_group, dataset_frames):
+    """
+    Get dataframe of simulation.
+    :param data: simulation data
+    :param frames_per_group: number of data frames for each group
+    :param dataset_frames: total number of data frames for simulation
+    :return: dataframe of simulation
+    """
     agent_dfs = []
 
     last_start_frame = dataset_frames - frames_per_group
@@ -163,10 +189,21 @@ def create_simulation_dataframe(data, frames_per_group, dataset_frames):
     return df
 
 
-def get_simulation_dataframe(frames_per_group, initial_velocity, num_groups, min_agents_per_group, max_agents_per_group,
-                             max_num_waypoints, dataset_frames):
+def get_simulation_data(frames_per_group, initial_velocity, num_groups, min_agents_per_group, max_agents_per_group,
+                        max_num_waypoints, dataset_frames):
+    """
+    Create simulation and get data based on parameters.
+    :param frames_per_group: number of data frames for each group
+    :param initial_velocity: starting velocity of group
+    :param num_groups: number of groups to be generated
+    :param min_agents_per_group: minimum number of agents in a group
+    :param max_agents_per_group: maximum number of agents in a group
+    :param max_num_waypoints: maximum number of waypoints
+    :param dataset_frames: total number of data frames for simulation
+    :return:
+    """
     positions, velocities, groups = create_simulation(num_steps=frames_per_group,
-                                                      group_velocity=initial_velocity,
+                                                      initial_velocity=initial_velocity,
                                                       num_groups=num_groups,
                                                       min_agents_per_group=min_agents_per_group,
                                                       max_agents_per_group=max_agents_per_group,
@@ -174,9 +211,36 @@ def get_simulation_dataframe(frames_per_group, initial_velocity, num_groups, min
                                                       x_range=(0, 100),
                                                       y_range=(0, 100))
     data = np.concatenate((positions, velocities), axis=2)
-    df = create_simulation_dataframe(data, frames_per_group, dataset_frames)
+    df = get_simulation_dataframe(data, frames_per_group, dataset_frames)
 
     return positions, groups, df
+
+
+def plot_trajectories(positions, groups):
+    """
+
+    :param positions:
+    :param groups:
+    :return:
+    """
+    # Visualize trajectory
+    markers = ['.', ',', 'o', 'v', '^', '<', '>', 's', '+', 'x', 'D', 'd', 'p', '*', 'h', 'H']
+    for group_idx, group in enumerate(groups):
+        marker = np.random.choice(markers)
+        markers.remove(marker)
+        if not markers:
+            markers = ['.', ',', 'o', 'v', '^', '<', '>', 's', '+', 'x', 'D', 'd', 'p', '*', 'h', 'H']
+        for i, agent in enumerate(group):
+            if i == 0:
+                plt.plot(positions[agent, :, 0], positions[agent, :, 1], marker=marker,
+                         label='group {}'.format(group_idx))
+            else:
+                plt.plot(positions[agent, :, 0], positions[agent, :, 1], marker=marker)
+    plt.title('Trajectory Simulation')
+    plt.xlabel('X')
+    plt.ylabel('Y')
+    plt.legend()
+    plt.show()
 
 
 def get_args():
@@ -200,13 +264,13 @@ if __name__ == '__main__':
 
     np.random.seed(args.seed)
 
-    positions, groups, df = get_simulation_dataframe(num_groups=args.groups,
-                                                     dataset_frames=args.dataset_frames,
-                                                     frames_per_group=args.frames_per_group,
-                                                     initial_velocity=args.velocity,
-                                                     min_agents_per_group=args.min_agents_per_group,
-                                                     max_agents_per_group=args.max_agents_per_group,
-                                                     max_num_waypoints=args.max_num_waypoints)
+    positions, groups, df = get_simulation_data(num_groups=args.groups,
+                                                dataset_frames=args.dataset_frames,
+                                                frames_per_group=args.frames_per_group,
+                                                initial_velocity=args.velocity,
+                                                min_agents_per_group=args.min_agents_per_group,
+                                                max_agents_per_group=args.max_agents_per_group,
+                                                max_num_waypoints=args.max_num_waypoints)
 
     if args.plot:
         plot_trajectories(positions, groups)
