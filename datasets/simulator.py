@@ -187,13 +187,6 @@ def get_simulation_dataframe(data, groups, frames_per_group, dataset_frames):
 
     df = pd.concat(agent_dfs, ignore_index=True)
 
-    d_frame = np.diff(pd.unique(df["frame_id"]))
-    fps = d_frame[0] * 1
-    df["timestamp"] = df["frame_id"] / fps
-
-    df.sort_values(by=['agent_id', 'frame_id'], inplace=True)
-    df['measurement'] = df[['pos_x', 'pos_y', 'v_x', 'v_y']].apply(tuple, axis=1)
-
     return df
 
 
@@ -277,7 +270,7 @@ def plot_trajectories(df, groups, title, frames_range=(0, 100)):
 
 def save_data(df, groups):
     os.makedirs(args.save_folder + '/sim_{}'.format(args.seed), exist_ok=True)
-    df.to_csv(args.save_folder + '/sim_{}/data.csv'.format(args.seed))
+    df.to_csv(args.save_folder + '/sim_{}/data.csv'.format(args.seed), index=False)
 
     group_filename = args.save_folder + '/sim_{}/groups.txt'.format(args.seed)
 
