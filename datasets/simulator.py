@@ -228,24 +228,27 @@ def get_simulation_data(frames_per_group, initial_velocity, num_groups, min_agen
     return df, groups
 
 
-def plot_trajectories(df, groups, frames_range=(0, 100)):
+def plot_trajectories(df, groups, title, frames_range=(0, 100)):
     """
     Plot the trajectories for given frames.
     :param df: simulation data
     :param groups: group information
+    :param title: title to be used in plot
     :param frames_range: frames to be considered on the plot
     :return: nothing
     """
     df = df[(df['frame_id'] >= frames_range[0]) & (df['frame_id'] < frames_range[1])]
     agents = df['agent_id'].unique()
 
+    filtered_groups = [group for group in groups if group[0] in agents]
+
     # Get a color palette
-    color_palette = plt.get_cmap('tab10')
+    color_palette = plt.get_cmap('Set3')
     # Generate a list of colors
-    colors = [color_palette(i) for i in range(len(groups))]
+    colors = [color_palette(i) for i in range(len(filtered_groups))]
 
     markers = ['.', ',', 'o', 'v', '^', '<', '>', 's', '+', 'x', 'D', 'd', 'p', '*', 'h', 'H']
-    for group_idx, group in enumerate(groups):
+    for group_idx, group in enumerate(filtered_groups):
         marker = np.random.choice(markers)
         markers.remove(marker)
         if not markers:
@@ -255,13 +258,17 @@ def plot_trajectories(df, groups, frames_range=(0, 100)):
             if agent in agents:
                 if first:
                     plt.plot(list(df[df['agent_id'] == agent]['pos_x']), list(df[df['agent_id'] == agent]['pos_y']),
-                             color=colors[group_idx], marker=marker, label='group {}'.format(group_idx))
+                             color=colors[group_idx], marker=marker,
+                             # markersize=5, markevery=2,
+                             label='group {}'.format(group_idx))
                     first = False
                 else:
                     plt.plot(list(df[df['agent_id'] == agent]['pos_x']), list(df[df['agent_id'] == agent]['pos_y']),
-                             color=colors[group_idx], marker=marker)
+                             color=colors[group_idx], marker=marker,
+                             # markersize=5, markevery=2
+                             )
 
-    plt.title('Trajectory Simulation')
+    plt.title(title)
     plt.xlabel('X')
     plt.ylabel('Y')
     plt.legend()
@@ -283,7 +290,7 @@ def get_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--seed', type=int, default=3)
-    parser.add_argument('--groups', type=int, default=10)
+    parser.add_argument('--groups', type=int, default=20)
     parser.add_argument('--velocity', type=float, default=0.1)
     parser.add_argument('--frames_per_group', type=int, default=100)
     parser.add_argument('--dataset_frames', type=int, default=1000)
@@ -311,4 +318,8 @@ if __name__ == '__main__':
     save_data(df, groups)
 
     if args.plot:
-        plot_trajectories(df, groups, frames_range=(0, args.dataset_frames))
+        plots = 4
+        frames = int(args.dataset_frames / plots)
+        for i in range(plots):
+            plot_trajectories(df, groups, frames_range=(i * frames, (i + 1) * frames),
+                              title='Simulation {}, Frames {}-{}'.format(args.seed, i * frames, (i + 1) * frames))
