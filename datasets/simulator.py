@@ -169,6 +169,7 @@ def get_simulation_dataframe(data, groups, frames_per_group, dataset_frames):
     """
     agent_dfs = []
 
+    # TODO spread start frames of groups
     last_start_frame = dataset_frames - frames_per_group
     start_frame_values = [0, last_start_frame] + list(range(0, last_start_frame + 1, int(frames_per_group / 2)))
 
