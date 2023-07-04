@@ -158,24 +158,24 @@ def create_simulation(num_steps, initial_velocity, x_range, y_range, num_groups,
     return positions, velocities, groups
 
 
-def get_simulation_dataframe(data, groups, frames_per_group, dataset_frames):
+def get_simulation_dataframe(data, groups, frames_per_group):
     """
     Get dataframe of simulation.
     :param data: simulation data
     :param groups: group information
     :param frames_per_group: number of data frames for each group
-    :param dataset_frames: total number of data frames for simulation
     :return: dataframe of simulation
     """
     agent_dfs = []
 
-    # TODO spread start frames of groups
-    last_start_frame = dataset_frames - frames_per_group
-    start_frame_values = [0, last_start_frame] + list(range(0, last_start_frame + 1, int(frames_per_group / 2)))
+    groups_per_start_frame = 2
+    start_frame_values = [int(i * (frames_per_group / 2)) for i in range(int(len(groups) / groups_per_start_frame))]
+    start_frame_values = [start_frame for start_frame in start_frame_values for _ in range(groups_per_start_frame)]
 
     start_frames = {}
     for group in groups:
         start_frame = np.random.choice(start_frame_values)
+        start_frame_values.remove(start_frame)
         for agent in group:
             start_frames[agent] = start_frame
 
@@ -192,7 +192,7 @@ def get_simulation_dataframe(data, groups, frames_per_group, dataset_frames):
 
 
 def get_simulation_data(frames_per_group, initial_velocity, num_groups, min_agents_per_group, max_agents_per_group,
-                        max_num_waypoints, dataset_frames, seed):
+                        max_num_waypoints, seed):
     """
     Create simulation and get data based on parameters.
     :param frames_per_group: number of data frames for each group
@@ -201,7 +201,6 @@ def get_simulation_data(frames_per_group, initial_velocity, num_groups, min_agen
     :param min_agents_per_group: minimum number of agents in a group
     :param max_agents_per_group: maximum number of agents in a group
     :param max_num_waypoints: maximum number of waypoints
-    :param dataset_frames: total number of data frames for simulation
     :param seed: random seed to be used
     :return: dataframe + groups
     """
@@ -217,7 +216,7 @@ def get_simulation_data(frames_per_group, initial_velocity, num_groups, min_agen
                                                       x_range=(0, 100),
                                                       y_range=(0, 100))
     data = np.concatenate((positions, velocities), axis=2)
-    df = get_simulation_dataframe(data, groups, frames_per_group, dataset_frames)
+    df = get_simulation_dataframe(data, groups, frames_per_group)
 
     return df, groups
 
@@ -234,7 +233,7 @@ def plot_trajectories(df, groups, title, frames_range=(0, 100)):
     df = df[(df['frame_id'] >= frames_range[0]) & (df['frame_id'] < frames_range[1])]
     agents = df['agent_id'].unique()
 
-    filtered_groups = [group for group in groups if group[0] in agents]
+    filtered_groups = [(group_idx, group) for group_idx, group in enumerate(groups) if group[0] in agents]
 
     # Get a color palette
     color_palette = plt.get_cmap('Set3')
@@ -242,7 +241,8 @@ def plot_trajectories(df, groups, title, frames_range=(0, 100)):
     colors = [color_palette(i) for i in range(len(filtered_groups))]
 
     markers = ['.', ',', 'o', 'v', '^', '<', '>', 's', '+', 'x', 'D', 'd', 'p', '*', 'h', 'H']
-    for group_idx, group in enumerate(filtered_groups):
+    color_idx = 0
+    for group_idx, group in filtered_groups:
         marker = np.random.choice(markers)
         markers.remove(marker)
         if not markers:
@@ -252,15 +252,16 @@ def plot_trajectories(df, groups, title, frames_range=(0, 100)):
             if agent in agents:
                 if first:
                     plt.plot(list(df[df['agent_id'] == agent]['pos_x']), list(df[df['agent_id'] == agent]['pos_y']),
-                             color=colors[group_idx], marker=marker,
-                             # markersize=5, markevery=2,
+                             color=colors[color_idx], marker=marker, markevery=2,
+                             # markersize=5,
                              label='group {}'.format(group_idx))
                     first = False
                 else:
                     plt.plot(list(df[df['agent_id'] == agent]['pos_x']), list(df[df['agent_id'] == agent]['pos_y']),
-                             color=colors[group_idx], marker=marker,
-                             # markersize=5, markevery=2
+                             color=colors[color_idx], marker=marker, markevery=3
+                             # markersize=5,
                              )
+        color_idx += 1
 
     plt.title(title)
     plt.xlabel('X')
@@ -287,7 +288,6 @@ def get_args():
     parser.add_argument('--groups', type=int, default=20)
     parser.add_argument('--velocity', type=float, default=0.1)
     parser.add_argument('--frames_per_group', type=int, default=100)
-    parser.add_argument('--dataset_frames', type=int, default=1000)
     parser.add_argument('--max_num_waypoints', type=int, default=3)
     parser.add_argument('--min_agents_per_group', type=int, default=2)
     parser.add_argument('--max_agents_per_group', type=int, default=6)
@@ -301,7 +301,6 @@ if __name__ == '__main__':
     args = get_args()
 
     df, groups = get_simulation_data(num_groups=args.groups,
-                                     dataset_frames=args.dataset_frames,
                                      frames_per_group=args.frames_per_group,
                                      initial_velocity=args.velocity,
                                      min_agents_per_group=args.min_agents_per_group,
@@ -312,8 +311,8 @@ if __name__ == '__main__':
     save_data(df, groups)
 
     if args.plot:
-        plots = 4
-        frames = int(args.dataset_frames / plots)
+        plots = 5
+        frames = int((df['frame_id'].max() + 1) / plots)
         for i in range(plots):
             plot_trajectories(df, groups, frames_range=(i * frames, (i + 1) * frames),
                               title='Simulation {}, Frames {}-{}'.format(args.seed, i * frames, (i + 1) * frames))
