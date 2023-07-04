@@ -668,7 +668,7 @@ def get_sample_params(frames_num, agents_num):
                 'zara01': 1,
                 'zara02': 3,
                 'students03': 5,
-                'sim_3': 2
+                'sim_3': 3
             }
             min_samples = {
                 'eth': 10,
@@ -720,7 +720,7 @@ def get_sample_params(frames_num, agents_num):
                 'zara01': 1,
                 'zara02': 3,
                 'students03': 5,
-                'sim_3': 2
+                'sim_3': 3
             }
             min_samples = {
                 'eth': 10,
@@ -768,11 +768,11 @@ if __name__ == '__main__':
 
     # create datasets report
     datasets_dict = {
-        'eth': dataset_data('./ETH/seq_eth'),
-        'hotel': dataset_data('./ETH/seq_hotel'),
-        'zara01': dataset_data('./UCY/zara01'),
-        'zara02': dataset_data('./UCY/zara02'),
-        'students03': dataset_data('./UCY/students03'),
+        # 'eth': dataset_data('./ETH/seq_eth'),
+        # 'hotel': dataset_data('./ETH/seq_hotel'),
+        # 'zara01': dataset_data('./UCY/zara01'),
+        # 'zara02': dataset_data('./UCY/zara02'),
+        # 'students03': dataset_data('./UCY/students03'),
         'sim_3': dataset_data('./simulation/sim_3', sim=True)
     }
     if args.report:
@@ -780,11 +780,11 @@ if __name__ == '__main__':
 
     # create datasets group size histogram
     groups_dict = {
-        'eth': read_groups('./ETH/seq_eth'),
-        'hotel': read_groups('./ETH/seq_hotel'),
-        'zara01': read_groups('./UCY/zara01'),
-        'zara02': read_groups('./UCY/zara02'),
-        'students03': read_groups('./UCY/students03'),
+        # 'eth': read_groups('./ETH/seq_eth'),
+        # 'hotel': read_groups('./ETH/seq_hotel'),
+        # 'zara01': read_groups('./UCY/zara01'),
+        # 'zara02': read_groups('./UCY/zara02'),
+        # 'students03': read_groups('./UCY/students03'),
         'sim_3': read_groups('./simulation/sim_3')
     }
     if args.plot:
