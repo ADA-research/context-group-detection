@@ -270,11 +270,11 @@ def plot_trajectories(df, groups, title, frames_range=(0, 100)):
     plt.show()
 
 
-def save_data(df, groups):
-    os.makedirs(args.save_folder + '/sim_{}'.format(args.seed), exist_ok=True)
-    df.to_csv(args.save_folder + '/sim_{}/data.csv'.format(args.seed), index=False)
+def save_data(save_folder, df, groups, name):
+    os.makedirs(save_folder + '/sim_{}'.format(name), exist_ok=True)
+    df.to_csv(save_folder + '/sim_{}/data.csv'.format(name), index=False)
 
-    group_filename = args.save_folder + '/sim_{}/groups.txt'.format(args.seed)
+    group_filename = save_folder + '/sim_{}/groups.txt'.format(name)
 
     with open(group_filename, 'w') as file:
         for group in groups:
@@ -284,6 +284,7 @@ def save_data(df, groups):
 def get_args():
     parser = argparse.ArgumentParser()
 
+    parser.add_argument('--name', type=int, default=1)
     parser.add_argument('--seed', type=int, default=3)
     parser.add_argument('--groups', type=int, default=20)
     parser.add_argument('--velocity', type=float, default=0.1)
@@ -308,7 +309,7 @@ if __name__ == '__main__':
                                      max_num_waypoints=args.max_num_waypoints,
                                      seed=args.seed)
 
-    save_data(df, groups)
+    save_data(args.save_folder, df, groups, args.name)
 
     if args.plot:
         plots = 5
