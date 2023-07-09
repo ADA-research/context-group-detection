@@ -243,12 +243,11 @@ def generate_dataset(num_sims, length, sample_freq):
     return locations, velocities, interactions, group_assignments, group_relationships
 
 
-def get_simulation_dataframe(locations, velocities, sim_length):
+def get_simulation_dataframe(locations, velocities):
     """
     Get dataframe of simulation.
     :param locations: location data
     :param velocities: velocity data
-    :param sim_length: length of trajectories
     :return: dataframe of simulation
     """
     data = np.concatenate((locations.transpose(0, 3, 1, 2), velocities.transpose(0, 3, 1, 2)), axis=3)
@@ -370,7 +369,7 @@ if __name__ == '__main__':
     # TODO convert and save data
     #  data to dataframe (DONE)
     #  group assignments to groups (for each sim?)
-    df = get_simulation_dataframe(locations, velocities, args.length)
+    df = get_simulation_dataframe(locations, velocities)
     groups = get_group_list(group_assignments)
 
     data = {
