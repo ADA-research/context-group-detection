@@ -4,6 +4,7 @@ import time
 
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 
 
 def groups_initialize(n, ga_values_factor=3):
@@ -13,6 +14,7 @@ def groups_initialize(n, ga_values_factor=3):
     :param ga_values_factor:
     :return:
     """
+    # TODO handle group sizes
     # an array denoting groups corresponding to each individual
     group_initial = np.random.choice(np.arange(n), size=(n,))
     # a dictionary denoting groups corresponding to each individual
@@ -138,8 +140,6 @@ class SpringSim(object):
 
         # Initialize groups
         ga, ga_dict, ga_matrix, ga_values, gr = groups_initialize(n, ga_values_factor)
-        # Initialize group assignment ages
-        ga_ages = np.zeros_like(ga_matrix)
         # Initialize Interaction matrix
         edges = groups_to_interactions(gr, K, b)
 
@@ -251,56 +251,62 @@ def get_simulation_dataframe(locations, velocities, sim_length):
     :param sim_length: length of trajectories
     :return: dataframe of simulation
     """
-    # TODO change
-    # data = np.concatenate((locations, velocities), axis=2)
-    return None
-    # agent_dfs = []
-    #
-    # groups_per_start_frame = 2
-    # start_frame_values = [int(i * (frames_per_group / 2)) for i in range(int(len(groups) / groups_per_start_frame))]
-    # start_frame_values = [start_frame for start_frame in start_frame_values for _ in range(groups_per_start_frame)]
-    #
-    # start_frames = {}
-    # for group in groups:
-    #     start_frame = np.random.choice(start_frame_values)
-    #     start_frame_values.remove(start_frame)
-    #     for agent in group:
-    #         start_frames[agent] = start_frame
-    #
-    # for agent in range(data.shape[0]):
-    #     start_frame = start_frames[agent]
-    #     agent_df = pd.DataFrame(data[agent].reshape(-1, 4), columns=['pos_x', 'pos_y', 'v_x', 'v_y'])
-    #     agent_df['agent_id'] = agent
-    #     agent_df['frame_id'] = [i + start_frame for i, _ in enumerate(agent_df['agent_id'])]
-    #     agent_dfs.append(agent_df)
-    #
-    # df = pd.concat(agent_dfs, ignore_index=True)
-    #
-    # return df
+    data = np.concatenate((locations.transpose(0, 3, 1, 2), velocities.transpose(0, 3, 1, 2)), axis=3)
+
+    agent_dfs = []
+
+    for sim in range(data.shape[0]):
+        sim_data = data[sim]
+        for agent in range(sim_data.shape[0]):
+            agent_df = pd.DataFrame(sim_data[agent].reshape(-1, 4), columns=['pos_x', 'pos_y', 'v_x', 'v_y'])
+            agent_df['agent_id'] = agent
+            agent_df['frame_id'] = [i for i, _ in enumerate(agent_df['agent_id'])]
+            agent_df['sim'] = sim
+            agent_dfs.append(agent_df)
+
+    df = pd.concat(agent_dfs, ignore_index=True)
+
+    return df
 
 
 def get_group_list(ga):
-    group_dict = {}
+    sims = ga.shape[0]
+    group_list = []
+    for sim in range(sims):
+        sim_ga = ga[sim]
+        group_dict = {}
 
-    for agent, group in enumerate(ga):
-        if group in group_dict:
-            group_dict[group].append(agent)
-        else:
-            group_dict[group] = [agent]
+        for agent, group in enumerate(sim_ga):
+            if group in group_dict:
+                group_dict[group].append(agent)
+            else:
+                group_dict[group] = [agent]
 
-    group_list = list(group_dict.values())
+        group_list.append(list(group_dict.values()))
     return group_list
 
 
-def save_data(save_folder, df, groups, number):
-    os.makedirs(save_folder + '/sim_{}'.format(number), exist_ok=True)
-    df.to_csv(save_folder + '/sim_{}/data.csv'.format(number), index=False)
+def save_data(save_folder, df, groups, number, data):
+    save_folder_path = save_folder + '/sim_{}'.format(number)
 
-    group_filename = save_folder + '/sim_{}/groups.txt'.format(number)
+    os.makedirs(save_folder_path, exist_ok=True)
+    df.to_csv('{}/data.csv'.format(save_folder_path), index=False)
+
+    group_filename = '{}/groups.txt'.format(save_folder_path)
 
     with open(group_filename, 'w') as file:
-        for group in groups:
-            file.write(' '.join(str(agent_id) for agent_id in group) + '\n')
+        sims = len(groups)
+        for sim in range(sims):
+            sim_groups = groups[sim]
+            for group in sim_groups:
+                file.write(' '.join(str(agent_id) for agent_id in group) + '\n')
+            file.write('-\n')
+
+    np.save('{}/loc_all_sim{}.npy'.format(save_folder_path, suffix), data['loc'])
+    np.save('{}/vel_all_sim{}.npy'.format(save_folder_path, suffix), data['vel'])
+    np.save('{}/inter_all_sim{}.npy'.format(save_folder_path, suffix), data['inter'])
+    np.save('{}/ga_sim{}.npy'.format(save_folder_path, suffix), data['ga'])
+    np.save('{}/gr_sim{}.npy'.format(save_folder_path, suffix), data['gr'])
 
 
 def plot(sim, loc, vel, inter, ga):
@@ -340,7 +346,6 @@ def get_args():
     parser.add_argument("--K", type=float, default=3.0, help="K")
     parser.add_argument("--b", type=float, default=0.05, help="b")
 
-    parser.add_argument('--name', type=int, default=1)
     parser.add_argument('--groups', type=int, default=20)
     parser.add_argument('--save_folder', type=str, default='.')
     parser.add_argument('--plot', action="store_true", default=True)
@@ -354,9 +359,6 @@ if __name__ == '__main__':
 
     sim = SpringSim(n_balls=args.n_balls, ga_values_factor=args.ga_values_factor, K=args.K, b=args.b)
 
-    suffix = '_group_static_{}_{}_{}'.format(args.n_balls, args.K, args.b * 100)
-    print(suffix)
-
     np.random.seed(args.seed)
 
     print("Generating {} simulations".format(args.num_sim))
@@ -366,17 +368,20 @@ if __name__ == '__main__':
         args.sample_freq)
 
     # TODO convert and save data
-    #  data to dataframe
+    #  data to dataframe (DONE)
     #  group assignments to groups (for each sim?)
     df = get_simulation_dataframe(locations, velocities, args.length)
-    groups = get_group_list(group_assignments[0])
-    # save_data(args.save_folder, df, groups, args.name)
+    groups = get_group_list(group_assignments)
 
-    np.save('loc_all_sim' + suffix + '.npy', locations)
-    np.save('vel_all_sim' + suffix + '.npy', velocities)
-    np.save("inter_all_sim" + suffix + '.npy', interactions)
-    np.save("ga_sim" + suffix + '.npy', group_assignments)
-    np.save("gr_sim" + suffix + '.npy', group_relationships)
+    data = {
+        'loc': locations,
+        'vel': velocities,
+        'inter': interactions,
+        'ga': group_assignments,
+        'gr': group_relationships
+    }
+    suffix = '{}_{}_{}'.format(args.n_balls, args.K, args.b * 100)
+    save_data(args.save_folder, df, groups, suffix, data)
 
     if args.plot:
         plot(sim, locations[0], velocities[0], interactions[0], group_assignments[0])
