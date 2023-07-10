@@ -16,6 +16,7 @@ models/config
 models/results
 models/DANTE/models
 models/WavenetNRI/data
+models/WavenetNRI/baselines
 scripts
 
 # ignored files
