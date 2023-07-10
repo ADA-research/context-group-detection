@@ -36,13 +36,15 @@ parser.add_argument("--encoder", type=str, default="wavenet",
                     help="Type of encoder model.")
 parser.add_argument("--no-factor", action="store_true", default=False,
                     help="Disables factor graph model.")
-parser.add_argument("--suffix", type=str, default="_static_10_3_3",
+parser.add_argument("--dataset_folder", type=str, default="../../datasets/simulation/sim_10_3_5",
+                    help="Suffix for training data ")
+parser.add_argument("--suffix", type=str, default="10_3_5",
                     help="Suffix for training data ")
 parser.add_argument("--use-motion", action="store_true", default=False,
                     help="use increments")
 parser.add_argument("--encoder-dropout", type=float, default=0.3,
                     help="Dropout rate (1-keep probability).")
-parser.add_argument("--save-folder", type=str, default="logs/nrisu",
+parser.add_argument("--save-folder", type=str, default="./logs/nrisu",
                     help="Where to save the trained model, leave empty to not save anything.")
 parser.add_argument("--load-folder", type=str, default='',
                     help="Where to load the trained model.")
@@ -80,10 +82,12 @@ if args.save_folder:
     exp_counter = 0
     now = datetime.datetime.now()
     timestamp = now.isoformat()
-    save_folder = "{}/su_{}_{}_{}".format(args.save_folder, args.encoder, args.suffix, timestamp)
+    save_folder = "{}/su_{}_{}".format(args.save_folder, args.encoder, args.suffix)
+    # save_folder = "{}/su_{}_{}_{}".format(args.save_folder, args.encoder, args.suffix, timestamp)
     if args.use_motion:
         save_folder += "_use_motion"
-    os.mkdir(save_folder)
+    if not os.path.exists(save_folder):
+        os.makedirs(save_folder)
     meta_file = os.path.join(save_folder, "metadata.pkl")
     encoder_file = os.path.join(save_folder, "nri_encoder.pt")
 
@@ -96,7 +100,7 @@ else:
           "Testing (within this script) will throw an error.")
 
 train_loader, valid_loader, test_loader, loc_max, loc_min, vel_max, vel_min = load_spring_sim(
-    args.batch_size, args.suffix)
+    args.batch_size, args.suffix, args.dataset_folder)
 
 print("Number of training examples: ", len(train_loader.dataset))
 print("Number of validation examples: ", len(valid_loader.dataset))

@@ -7,20 +7,20 @@ import numpy as np
 import pandas as pd
 
 
-def groups_initialize(n, ga_values_factor=3):
+def groups_initialize(n, ga_values_factor, n_groups):
     """
     Initialize groups
     :param n: number of atoms
     :param ga_values_factor:
+    :param n_groups: number of groups
     :return:
     """
-    # TODO handle group sizes
     # an array denoting groups corresponding to each individual
-    group_initial = np.random.choice(np.arange(n), size=(n,))
+    group_initial = np.random.choice(np.arange(n_groups), size=(n,))
     # a dictionary denoting groups corresponding to each individual
     ga_dict = dict({i: g for i, g in enumerate(group_initial)})
     # group assignment matrix: ga_matrix[i,k]=1 denotes node i belongs to kth group
-    ga_matrix = np.zeros((n, n))
+    ga_matrix = np.zeros((n, n_groups))
     ga_matrix[list(ga_dict.keys()), list(ga_dict.values())] = 1
     ga_values = ga_values_factor * ga_matrix.copy()
     # group relation matrix: gr_matrix[i,j]=1 denotes i and j are in one group
@@ -56,7 +56,7 @@ class SpringSim(object):
     """
 
     def __init__(self, n_balls=5, box_size=10., loc_std=0.5, vel_norm=0.5, interaction_strength=0.1, noise_var=0.,
-                 ga_values_factor=3, K=3, b=0.001):
+                 ga_values_factor=3, K=3, b=0.001, n_groups=2):
         self.n_balls = n_balls
         self.box_size = box_size
         self.loc_std = loc_std
@@ -69,6 +69,7 @@ class SpringSim(object):
         self.ga_values_factor = ga_values_factor
         self.K = K
         self.b = b
+        self.n_groups = n_groups
 
     def _energy(self, loc, vel, edges):
         # disables division by zero warning, since I fix it with fill_diagonal
@@ -133,13 +134,14 @@ class SpringSim(object):
         n = self.n_balls
         K = self.K
         b = self.b
+        n_groups = self.n_groups
         ga_values_factor = self.ga_values_factor
         assert (T % sample_freq == 0)
         T_save = int(T / sample_freq - 1)
         counter = 0
 
         # Initialize groups
-        ga, ga_dict, ga_matrix, ga_values, gr = groups_initialize(n, ga_values_factor)
+        ga, ga_dict, ga_matrix, ga_values, gr = groups_initialize(n, ga_values_factor, n_groups)
         # Initialize Interaction matrix
         edges = groups_to_interactions(gr, K, b)
 
@@ -205,9 +207,10 @@ class SpringSim(object):
             return loc, vel, inter, ga, gr
 
 
-def generate_dataset(num_sims, length, sample_freq):
+def generate_dataset(simulation, num_sims, length, sample_freq):
     """
     Generate dataset of simulations.
+    :param simulation: SpringSim object
     :param num_sims: number of simulations to generate
     :param length: length of simulation
     :param sample_freq: sample frequency of simulation
@@ -224,7 +227,7 @@ def generate_dataset(num_sims, length, sample_freq):
     for i in range(num_sims):
         t = time.time()
         # return vectors of one simulation
-        loc, vel, inter, ga, gr = sim.sample_trajectory(T=length, sample_freq=sample_freq)
+        loc, vel, inter, ga, gr = simulation.sample_trajectory(T=length, sample_freq=sample_freq)
         if i % 100 == 0:
             print("Iter: {}, Simulation time: {}".format(i, time.time() - t))
 
@@ -285,8 +288,8 @@ def get_group_list(ga):
     return group_list
 
 
-def save_data(save_folder, df, groups, number, data):
-    save_folder_path = save_folder + '/sim_{}'.format(number)
+def save_data(save_folder, df, groups, name, data):
+    save_folder_path = save_folder + '/sim_{}'.format(name)
 
     os.makedirs(save_folder_path, exist_ok=True)
     df.to_csv('{}/data.csv'.format(save_folder_path), index=False)
@@ -301,11 +304,11 @@ def save_data(save_folder, df, groups, number, data):
                 file.write(' '.join(str(agent_id) for agent_id in group) + '\n')
             file.write('-\n')
 
-    np.save('{}/loc_all_sim{}.npy'.format(save_folder_path, suffix), data['loc'])
-    np.save('{}/vel_all_sim{}.npy'.format(save_folder_path, suffix), data['vel'])
-    np.save('{}/inter_all_sim{}.npy'.format(save_folder_path, suffix), data['inter'])
-    np.save('{}/ga_sim{}.npy'.format(save_folder_path, suffix), data['ga'])
-    np.save('{}/gr_sim{}.npy'.format(save_folder_path, suffix), data['gr'])
+    np.save('{}/loc_sim_{}.npy'.format(save_folder_path, suffix), data['loc'])
+    np.save('{}/vel_sim_{}.npy'.format(save_folder_path, suffix), data['vel'])
+    np.save('{}/inter_sim_{}.npy'.format(save_folder_path, suffix), data['inter'])
+    np.save('{}/ga_sim_{}.npy'.format(save_folder_path, suffix), data['ga'])
+    np.save('{}/gr_sim_{}.npy'.format(save_folder_path, suffix), data['gr'])
 
 
 def plot(sim, loc, vel, inter, ga):
@@ -345,7 +348,7 @@ def get_args():
     parser.add_argument("--K", type=float, default=3.0, help="K")
     parser.add_argument("--b", type=float, default=0.05, help="b")
 
-    parser.add_argument('--groups', type=int, default=20)
+    parser.add_argument('--groups', type=int, default=3)
     parser.add_argument('--save_folder', type=str, default='.')
     parser.add_argument('--plot', action="store_true", default=True)
 
@@ -356,19 +359,18 @@ if __name__ == '__main__':
     args = get_args()
     print(args)
 
-    sim = SpringSim(n_balls=args.n_balls, ga_values_factor=args.ga_values_factor, K=args.K, b=args.b)
+    simulation = SpringSim(n_balls=args.n_balls, ga_values_factor=args.ga_values_factor, K=args.K, b=args.b,
+                           n_groups=args.groups)
 
     np.random.seed(args.seed)
 
     print("Generating {} simulations".format(args.num_sim))
     locations, velocities, interactions, group_assignments, group_relationships = generate_dataset(
+        simulation,
         args.num_sim,
         args.length,
         args.sample_freq)
 
-    # TODO convert and save data
-    #  data to dataframe (DONE)
-    #  group assignments to groups (for each sim?)
     df = get_simulation_dataframe(locations, velocities)
     groups = get_group_list(group_assignments)
 
@@ -379,8 +381,9 @@ if __name__ == '__main__':
         'ga': group_assignments,
         'gr': group_relationships
     }
-    suffix = '{}_{}_{}'.format(args.n_balls, args.K, args.b * 100)
+    suffix = '{}_{}_{}'.format(args.n_balls, int(args.K), int(args.b * 100))
     save_data(args.save_folder, df, groups, suffix, data)
 
     if args.plot:
-        plot(sim, locations[0], velocities[0], interactions[0], group_assignments[0])
+        for sim in range(args.num_sim):
+            plot(simulation, locations[sim], velocities[sim], interactions[sim], group_assignments[sim])

@@ -86,7 +86,7 @@ def load_spring_sim(batch_size=1 , suffix="_static_5", folder="data/simulation/s
  """
 
 
-def load_spring_sim(batch_size=1, suffix='', label_rate=0.02, save_folder="data/simulation/spring_simulation",
+def load_spring_sim(batch_size=1, suffix='', dataset_folder='', label_rate=0.02, save_folder="data/simulation/spring_simulation",
                     load_folder=None, normalize=True):
     if load_folder is not None:
         # load saved data
@@ -103,9 +103,9 @@ def load_spring_sim(batch_size=1, suffix='', label_rate=0.02, save_folder="data/
         return train_data_loader, valid_data_loader, test_data_loader, \
             datainfo[0], datainfo[1], datainfo[2], datainfo[3]
 
-    loc_all = np.load('data/simulation/spring_simulation/loc_sampled_all_sim_group' + suffix + '.npy')
-    vel_all = np.load('data/simulation/spring_simulation/vel_sampled_all_sim_group' + suffix + '.npy')
-    edges_all = np.load('data/simulation/spring_simulation/gr_sim_group' + suffix + '.npy')
+    loc_all = np.load('{}/loc_sim_{}.npy'.format(dataset_folder, suffix))
+    vel_all = np.load('{}/vel_sim_{}.npy'.format(dataset_folder, suffix))
+    edges_all = np.load('{}/gr_sim_{}.npy'.format(dataset_folder, suffix))
 
     num_sims = loc_all.shape[0]
     indices = np.arange(num_sims)
