@@ -268,7 +268,7 @@ def test_gmitre():
             if group_prob.sum() == 0:
                 pred_gIDs = np.arange(args.num_atoms)
             else:
-                pred_gIDs = louvain.fit_transform(group_prob)
+                pred_gIDs = louvain.fit_predict(group_prob)
 
             predicted_gr.append(pred_gIDs)
 
@@ -302,7 +302,7 @@ if __name__ == '__main__':
     parser.add_argument("--seed", type=int, default=42, help="Random seed.")
     parser.add_argument("--no-seed", action="store_true", default=False,
                         help="don't use seed.")
-    parser.add_argument("--epochs", type=int, default=100,
+    parser.add_argument("--epochs", type=int, default=200,
                         help="Number of epochs to train.")
     parser.add_argument("--batch-size", type=int, default=128,
                         help="Number of samples per batch.")

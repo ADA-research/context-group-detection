@@ -309,7 +309,7 @@ def test_gmitre():
             if group_prob.sum() == 0:
                 pred_gIDs = np.arange(n_atoms)
             else:
-                pred_gIDs = louvain.fit_transform(group_prob)
+                pred_gIDs = louvain.fit_predict(group_prob)
 
             predicted_gr.append(pred_gIDs)
 
@@ -412,7 +412,8 @@ if __name__ == '__main__':
         timestamp = now.isoformat()
         # save_folder = "{}/{}_{}_{}/".format(args.save_folder,args.encoder, timestamp, args.suffix+args.split)
         save_folder = "{}/{}_{}/".format(args.save_folder, args.encoder, args.suffix + args.split)
-        os.makedirs(save_folder)
+        if not os.path.exists(save_folder):
+            os.makedirs(save_folder)
         meta_file = os.path.join(save_folder, "metadata.pkl")
         encoder_file = os.path.join(save_folder, "nri_encoder.pt")
 
