@@ -209,10 +209,10 @@ def load_spring_sim(batch_size=1, suffix='', dataset_folder='', label_rate=0.02,
     valid_data_loader = DataLoader(valid_data, batch_size=batch_size)
     test_data_loader = DataLoader(test_data, batch_size=1)
 
-    train_loader_path = os.path.join(save_folder, "train_data_loader" + suffix + ".pth")
-    valid_loader_path = os.path.join(save_folder, "valid_data_loader" + suffix + ".pth")
-    test_loader_path = os.path.join(save_folder, "test_data_loader" + suffix + ".pth")
-    datainfo_path = os.path.join(save_folder, datainfo_file)
+    train_loader_path = '{}/train_data_loader_{}.pth'.format(dataset_folder, suffix)
+    valid_loader_path = '{}/valid_data_loader_{}.pth'.format(dataset_folder, suffix)
+    test_loader_path = '{}/test_data_loader_{}.pth'.format(dataset_folder, suffix)
+    datainfo_path = os.path.join(dataset_folder, datainfo_file)
 
     # save dataloader and datainfo array
     torch.save(train_data_loader, train_loader_path)

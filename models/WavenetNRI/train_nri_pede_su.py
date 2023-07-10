@@ -12,173 +12,12 @@ import pickle
 import time
 
 import torch.optim as optim
-from scipy.sparse import csr_matrix
 from sknetwork.clustering import Louvain
 from sknetwork.topology import get_connected_components
 from torch.optim import lr_scheduler
 
 from data_utils import *
 from models_NRI import *
-
-parser = argparse.ArgumentParser()
-parser.add_argument("--no-cuda", action="store_true", default=False,
-                    help="Disables CUDA training.")
-parser.add_argument("--seed", type=int, default=42, help="Random seed.")
-parser.add_argument("--no-seed", action="store_true", default=False,
-                    help="don't use seed.")
-parser.add_argument("--epochs", type=int, default=200,
-                    help="Number of epochs to train.")
-parser.add_argument("--batch-size", type=int, default=128,
-                    help="Number of samples per batch.")
-parser.add_argument("--lr", type=float, default=0.005,
-                    help="Initial learning rate.")
-parser.add_argument("--encoder-hidden", type=int, default=128,
-                    help="Number of hidden units.")
-parser.add_argument("--encoder", type=str, default="wavenet",
-                    help="Type of encoder model.")
-parser.add_argument("--no-factor", action="store_true", default=False,
-                    help="Disables factor graph model.")
-parser.add_argument("--suffix", type=str, default="zara01",
-                    help="Suffix for training data ")
-parser.add_argument("--split", type=str, default="split00",
-                    help="Split of the dataset.")
-parser.add_argument("--use-motion", action="store_true", default=False,
-                    help="use increments")
-parser.add_argument("--encoder-dropout", type=float, default=0.3,
-                    help="Dropout rate (1-keep probability).")
-parser.add_argument("--save-folder", type=str, default="logs/nripedsu",
-                    help="Where to save the trained model, leave empty to not save anything.")
-parser.add_argument("--load-folder", type=str, default='',
-                    help="Where to load the trained model.")
-parser.add_argument("--edge-types", type=int, default=2,
-                    help="The number of edge types to infer.")
-parser.add_argument("--dims", type=int, default=2,
-                    help="The number of feature dimensions.")
-parser.add_argument("--kernel-size", type=int, default=5,
-                    help="Kernel size of WavenetNRI Encoder")
-
-parser.add_argument("--depth", type=int, default=1,
-                    help="depth of Wavenet CNN res blocks.")
-
-parser.add_argument("--use-focal", action="store_true", default=False,
-                    help="use focal loss.")
-
-parser.add_argument("--timesteps", type=int, default=15,
-                    help="The number of time steps per sample.")
-parser.add_argument("--lr-decay", type=int, default=100,
-                    help="After how epochs to decay LR factor of gamma.")
-parser.add_argument("--gamma", type=float, default=0.5,
-                    help="LR decay factor.")
-
-parser.add_argument("--group-weight", type=float, default=0.5,
-                    help="group weight.")
-parser.add_argument("--ng-weight", type=float, default=0.5,
-                    help="Non-group weight.")
-
-parser.add_argument("--grecall-weight", type=float, default=0.65,
-                    help="group recall.")
-
-args = parser.parse_args()
-args.cuda = not args.no_cuda and torch.cuda.is_available()
-args.factor = not args.no_factor
-print(args)
-
-if not args.no_seed:
-    np.random.seed(args.seed)
-    torch.manual_seed(args.seed)
-    if args.cuda:
-        torch.cuda.manual_seed(args.seed)
-
-log = None
-# Save model and meta-data
-if args.save_folder:
-    exp_counter = 0
-    now = datetime.datetime.now()
-    timestamp = now.isoformat()
-    # save_folder = "{}/{}_{}_{}/".format(args.save_folder,args.encoder, timestamp, args.suffix+args.split)
-    save_folder = "{}/{}_{}/".format(args.save_folder, args.encoder, args.suffix + args.split)
-    os.makedirs(save_folder)
-    meta_file = os.path.join(save_folder, "metadata.pkl")
-    encoder_file = os.path.join(save_folder, "nri_encoder.pt")
-
-    log_file = os.path.join(save_folder, "log.txt")
-    log = open(log_file, 'w')
-    pickle.dump({"args": args}, open(meta_file, 'wb'))
-
-else:
-    print("WARNING: No save_folder provided!" +
-          "Testing (within this script) will throw an error.")
-
-# Load data
-data_folder = os.path.join("data/", args.suffix)
-data_folder = os.path.join(data_folder, args.split)
-
-with open(os.path.join(data_folder, "tensors_train.pkl"), 'rb') as f:
-    examples_train = pickle.load(f)
-with open(os.path.join(data_folder, "labels_train.pkl"), 'rb') as f:
-    labels_train = pickle.load(f)
-with open(os.path.join(data_folder, "tensors_valid.pkl"), 'rb') as f:
-    examples_valid = pickle.load(f)
-with open(os.path.join(data_folder, "labels_valid.pkl"), 'rb') as f:
-    labels_valid = pickle.load(f)
-with open(os.path.join(data_folder, "tensors_test.pkl"), 'rb') as f:
-    examples_test = pickle.load(f)
-with open(os.path.join(data_folder, "labels_test.pkl"), 'rb') as f:
-    labels_test = pickle.load(f)
-
-if args.encoder == "mlp":
-    encoder = MLPEncoder(args.timesteps * args.dims, args.encoder_hidden,
-                         args.edge_types, args.encoder_dropout, args.factor)
-
-elif args.encoder == "cnn":
-    encoder = CNNEncoder(args.dims, args.encoder_hidden, args.edge_types,
-                         args.encoder_dropout, args.factor, use_motion=args.use_motion)
-
-elif args.encoder == "cnnsym":
-    encoder = CNNEncoderSym(args.dims, args.encoder_hidden, args.edge_types,
-                            do_prob=args.encoder_dropout, factor=args.factor,
-                            use_motion=args.use_motion)
-
-elif args.encoder == "rescnn":
-    encoder = ResCausalCNNEncoder(args.dims, args.encoder_hidden, args.edge_types,
-                                  do_prob=args.encoder_dropout, factor=args.factor,
-                                  use_motion=args.use_motion)
-
-elif args.encoder == "wavenet":
-    encoder = WavenetEncoder(args.dims, args.encoder_hidden, args.edge_types,
-                             kernel_size=args.kernel_size, depth=args.depth,
-                             do_prob=args.encoder_dropout, factor=args.factor,
-                             use_motion=args.use_motion)
-
-elif args.encoder == "wavenetraw":
-    encoder = WavenetEncoderRaw(args.dims, args.encoder_hidden, args.edge_types,
-                                do_prob=args.encoder_dropout, factor=args.factor,
-                                use_motion=False)
-
-elif args.encoder == "waveneteuc":
-    encoder = WavenetEncoderEuc(args.dims, args.encoder_hidden, args.edge_types,
-                                do_prob=args.encoder_dropout, factor=args.factor,
-                                use_motion=args.use_motion)
-
-elif args.encoder == "wavenetsym":
-    encoder = WavenetEncoderSym(args.dims, args.encoder_hidden, args.edge_types,
-                                do_prob=args.encoder_dropout, factor=args.factor,
-                                use_motion=args.use_motion)
-
-cross_entropy_weight = torch.tensor([args.ng_weight, args.group_weight])
-
-if args.load_folder:
-    encoder_file = os.path.join(args.load_folder, "nri_encoder.pt")
-    encoder.load_state_dict(torch.load(encoder_file))
-    args.save_folder = False
-
-if args.cuda:
-    encoder.cuda()
-    cross_entropy_weight = cross_entropy_weight.cuda()
-
-# optimizer = optim.Adam(list(encoder.parameters()),lr=args.lr)
-optimizer = optim.SGD(list(encoder.parameters()), lr=args.lr, momentum=0.9)
-scheduler = lr_scheduler.StepLR(optimizer, step_size=args.lr_decay, gamma=args.gamma)
 
 
 def train(epoch, best_val_recall):
@@ -470,7 +309,6 @@ def test_gmitre():
             if group_prob.sum() == 0:
                 pred_gIDs = np.arange(n_atoms)
             else:
-                group_prob = csr_matrix(group_prob)
                 pred_gIDs = louvain.fit_transform(group_prob)
 
             predicted_gr.append(pred_gIDs)
@@ -495,21 +333,183 @@ def test_gmitre():
           file=log)
 
 
-# Train model
+if __name__ == '__main__':
 
-t_total = time.time()
-best_val_recall = 0.
-best_epoch = 0
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--no-cuda", action="store_true", default=False,
+                        help="Disables CUDA training.")
+    parser.add_argument("--seed", type=int, default=42, help="Random seed.")
+    parser.add_argument("--no-seed", action="store_true", default=False,
+                        help="don't use seed.")
+    parser.add_argument("--epochs", type=int, default=200,
+                        help="Number of epochs to train.")
+    parser.add_argument("--batch-size", type=int, default=128,
+                        help="Number of samples per batch.")
+    parser.add_argument("--lr", type=float, default=0.005,
+                        help="Initial learning rate.")
+    parser.add_argument("--encoder-hidden", type=int, default=128,
+                        help="Number of hidden units.")
+    parser.add_argument("--encoder", type=str, default="wavenet",
+                        help="Type of encoder model.")
+    parser.add_argument("--no-factor", action="store_true", default=False,
+                        help="Disables factor graph model.")
+    parser.add_argument("--suffix", type=str, default="zara01",
+                        help="Suffix for training data ")
+    parser.add_argument("--split", type=str, default="split00",
+                        help="Split of the dataset.")
+    parser.add_argument("--use-motion", action="store_true", default=False,
+                        help="use increments")
+    parser.add_argument("--encoder-dropout", type=float, default=0.3,
+                        help="Dropout rate (1-keep probability).")
+    parser.add_argument("--save-folder", type=str, default="logs/nripedsu",
+                        help="Where to save the trained model, leave empty to not save anything.")
+    parser.add_argument("--load-folder", type=str, default='',
+                        help="Where to load the trained model.")
+    parser.add_argument("--edge-types", type=int, default=2,
+                        help="The number of edge types to infer.")
+    parser.add_argument("--dims", type=int, default=2,
+                        help="The number of feature dimensions.")
+    parser.add_argument("--kernel-size", type=int, default=5,
+                        help="Kernel size of WavenetNRI Encoder")
 
-for epoch in range(args.epochs):
-    val_recall = train(epoch, best_val_recall)
-    if val_recall > best_val_recall:
-        best_val_recall = val_recall
-        best_epoch = epoch
+    parser.add_argument("--depth", type=int, default=1,
+                        help="depth of Wavenet CNN res blocks.")
 
-print("Optimization Finished!")
-print("Best Epoch: {:04d}".format(best_epoch))
+    parser.add_argument("--use-focal", action="store_true", default=False,
+                        help="use focal loss.")
 
-test()
+    parser.add_argument("--timesteps", type=int, default=15,
+                        help="The number of time steps per sample.")
+    parser.add_argument("--lr-decay", type=int, default=100,
+                        help="After how epochs to decay LR factor of gamma.")
+    parser.add_argument("--gamma", type=float, default=0.5,
+                        help="LR decay factor.")
 
-test_gmitre()
+    parser.add_argument("--group-weight", type=float, default=0.5,
+                        help="group weight.")
+    parser.add_argument("--ng-weight", type=float, default=0.5,
+                        help="Non-group weight.")
+
+    parser.add_argument("--grecall-weight", type=float, default=0.65,
+                        help="group recall.")
+
+    args = parser.parse_args()
+    args.cuda = not args.no_cuda and torch.cuda.is_available()
+    args.factor = not args.no_factor
+    print(args)
+
+    if not args.no_seed:
+        np.random.seed(args.seed)
+        torch.manual_seed(args.seed)
+        if args.cuda:
+            torch.cuda.manual_seed(args.seed)
+
+    log = None
+    # Save model and meta-data
+    if args.save_folder:
+        exp_counter = 0
+        now = datetime.datetime.now()
+        timestamp = now.isoformat()
+        # save_folder = "{}/{}_{}_{}/".format(args.save_folder,args.encoder, timestamp, args.suffix+args.split)
+        save_folder = "{}/{}_{}/".format(args.save_folder, args.encoder, args.suffix + args.split)
+        os.makedirs(save_folder)
+        meta_file = os.path.join(save_folder, "metadata.pkl")
+        encoder_file = os.path.join(save_folder, "nri_encoder.pt")
+
+        log_file = os.path.join(save_folder, "log.txt")
+        log = open(log_file, 'w')
+        pickle.dump({"args": args}, open(meta_file, 'wb'))
+
+    else:
+        print("WARNING: No save_folder provided!" +
+              "Testing (within this script) will throw an error.")
+
+    # Load data
+    data_folder = os.path.join("data/", args.suffix)
+    data_folder = os.path.join(data_folder, args.split)
+
+    with open(os.path.join(data_folder, "tensors_train.pkl"), 'rb') as f:
+        examples_train = pickle.load(f)
+    with open(os.path.join(data_folder, "labels_train.pkl"), 'rb') as f:
+        labels_train = pickle.load(f)
+    with open(os.path.join(data_folder, "tensors_valid.pkl"), 'rb') as f:
+        examples_valid = pickle.load(f)
+    with open(os.path.join(data_folder, "labels_valid.pkl"), 'rb') as f:
+        labels_valid = pickle.load(f)
+    with open(os.path.join(data_folder, "tensors_test.pkl"), 'rb') as f:
+        examples_test = pickle.load(f)
+    with open(os.path.join(data_folder, "labels_test.pkl"), 'rb') as f:
+        labels_test = pickle.load(f)
+
+    if args.encoder == "mlp":
+        encoder = MLPEncoder(args.timesteps * args.dims, args.encoder_hidden,
+                             args.edge_types, args.encoder_dropout, args.factor)
+
+    elif args.encoder == "cnn":
+        encoder = CNNEncoder(args.dims, args.encoder_hidden, args.edge_types,
+                             args.encoder_dropout, args.factor, use_motion=args.use_motion)
+
+    elif args.encoder == "cnnsym":
+        encoder = CNNEncoderSym(args.dims, args.encoder_hidden, args.edge_types,
+                                do_prob=args.encoder_dropout, factor=args.factor,
+                                use_motion=args.use_motion)
+
+    elif args.encoder == "rescnn":
+        encoder = ResCausalCNNEncoder(args.dims, args.encoder_hidden, args.edge_types,
+                                      do_prob=args.encoder_dropout, factor=args.factor,
+                                      use_motion=args.use_motion)
+
+    elif args.encoder == "wavenet":
+        encoder = WavenetEncoder(args.dims, args.encoder_hidden, args.edge_types,
+                                 kernel_size=args.kernel_size, depth=args.depth,
+                                 do_prob=args.encoder_dropout, factor=args.factor,
+                                 use_motion=args.use_motion)
+
+    elif args.encoder == "wavenetraw":
+        encoder = WavenetEncoderRaw(args.dims, args.encoder_hidden, args.edge_types,
+                                    do_prob=args.encoder_dropout, factor=args.factor,
+                                    use_motion=False)
+
+    elif args.encoder == "waveneteuc":
+        encoder = WavenetEncoderEuc(args.dims, args.encoder_hidden, args.edge_types,
+                                    do_prob=args.encoder_dropout, factor=args.factor,
+                                    use_motion=args.use_motion)
+
+    elif args.encoder == "wavenetsym":
+        encoder = WavenetEncoderSym(args.dims, args.encoder_hidden, args.edge_types,
+                                    do_prob=args.encoder_dropout, factor=args.factor,
+                                    use_motion=args.use_motion)
+
+    cross_entropy_weight = torch.tensor([args.ng_weight, args.group_weight])
+
+    if args.load_folder:
+        encoder_file = os.path.join(args.load_folder, "nri_encoder.pt")
+        encoder.load_state_dict(torch.load(encoder_file))
+        args.save_folder = False
+
+    if args.cuda:
+        encoder.cuda()
+        cross_entropy_weight = cross_entropy_weight.cuda()
+
+    # optimizer = optim.Adam(list(encoder.parameters()),lr=args.lr)
+    optimizer = optim.SGD(list(encoder.parameters()), lr=args.lr, momentum=0.9)
+    scheduler = lr_scheduler.StepLR(optimizer, step_size=args.lr_decay, gamma=args.gamma)
+
+    # Train model
+
+    t_total = time.time()
+    best_val_recall = 0.
+    best_epoch = 0
+
+    for epoch in range(args.epochs):
+        val_recall = train(epoch, best_val_recall)
+        if val_recall > best_val_recall:
+            best_val_recall = val_recall
+            best_epoch = epoch
+
+    print("Optimization Finished!")
+    print("Best Epoch: {:04d}".format(best_epoch))
+
+    test()
+
+    test_gmitre()
