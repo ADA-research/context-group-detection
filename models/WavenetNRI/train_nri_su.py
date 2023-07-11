@@ -317,7 +317,7 @@ if __name__ == '__main__':
     parser.add_argument("--no-factor", action="store_true", default=False,
                         help="Disables factor graph model.")
     parser.add_argument("--dataset_folder", type=str, default="../../datasets/simulation/sim_10_3_5",
-                        help="Suffix for training data ")
+                        help="Where to find saved data to load")
     parser.add_argument("--suffix", type=str, default="10_3_5",
                         help="Suffix for training data ")
     parser.add_argument("--use-motion", action="store_true", default=False,
