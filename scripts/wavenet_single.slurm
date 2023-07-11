@@ -30,8 +30,9 @@ while getopts "m:c:f:e:s:" flag; do
   esac
 done
 
-module load TensorFlow/2.11.0-foss-2022a-CUDA-11.7.0
+module load PyTorch/1.12.1-foss-2022a-CUDA-11.7.0
 module load PyYAML/6.0-GCCcore-11.3.0
+pip install scikit-network
 
 export PYTHONPATH="${PYTHONPATH}:${HOME}/context-group-detection/"
 
