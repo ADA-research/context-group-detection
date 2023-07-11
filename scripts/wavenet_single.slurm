@@ -42,7 +42,7 @@ echo "Running ${model}"
 echo "Using config file at: ${config}, fold: ${fold}, epochs: ${epochs}, seed: ${seed}"
 
 echo "Script starting"
-cd "${HOME}/context-group-detection/models/WavenetNRI" || exit
+cd "${HOME}/data1/context-group-detection/models/WavenetNRI/" || exit
 python ${model}.py -c ${config} --split ${fold} --epochs ${epochs} --seed ${seed}
 
 echo "Script finished"
