@@ -41,7 +41,7 @@ done
 module load TensorFlow/2.11.0-foss-2022a-CUDA-11.7.0
 module load PyYAML/6.0-GCCcore-11.3.0
 
-export PYTHONPATH="${PYTHONPATH}:${HOME}/context-group-detection/"
+export PYTHONPATH="${PYTHONPATH}:${HOME}/data1/context-group-detection/"
 
 echo "User: ${SLURM_JOB_USER}, hostname: ${HOSTNAME}, job_id: ${SLURM_JOB_ID}"
 echo "Current working directory: $(pwd)"
@@ -60,7 +60,7 @@ if [ ${frames} -ne 1 ]; then
 fi
 
 echo "Script starting"
-cd "${HOME}/context-group-detection/models" || exit
+cd "${HOME}/data1/context-group-detection/models" || exit
 python ${model}.py -c ${config} -f ${fold} -e ${epochs} -d ${dir_name} --seed ${seed} -a ${agents} ${frames_flag} ${nc_flag}
 
 echo "Script finished"
