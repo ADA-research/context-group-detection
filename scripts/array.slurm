@@ -13,7 +13,6 @@
 config="./config/model.yml"
 model="model"
 fold=0
-seed=14
 epochs=1
 dir_name=""
 agents=10
@@ -21,14 +20,13 @@ frames=1
 nc=false
 
 # Read flags and their corresponding values
-while getopts "m:c:f:e:d:s:a:t:n" flag; do
+while getopts "m:c:f:e:d:a:t:n" flag; do
   case ${flag} in
   m) model="${OPTARG}" ;;
   c) config="${OPTARG}" ;;
   f) fold="${OPTARG}" ;;
   e) epochs="${OPTARG}" ;;
   d) dir_name="${OPTARG}" ;;
-  s) seed="${OPTARG}" ;;
   a) agents="${OPTARG}" ;;
   t) frames="${OPTARG}" ;;
   n) nc=true ;;
