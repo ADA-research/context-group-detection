@@ -17,7 +17,7 @@ from sknetwork.topology import get_connected_components
 from torch.optim import lr_scheduler
 
 from data_utils import *
-from models.utils import read_yaml
+from utils import read_yaml
 from models_NRI import *
 
 

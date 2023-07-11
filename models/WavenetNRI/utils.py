@@ -1,6 +1,12 @@
 import numpy as np
 import torch
 import torch.nn as nn
+import yaml
+
+
+def read_yaml(file_path):
+    with open(file_path, "r") as f:
+        return yaml.safe_load(f)
 
 
 def create_edgeNode_relation(num_nodes, self_loops=False):
