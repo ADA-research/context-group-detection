@@ -353,9 +353,11 @@ if __name__ == '__main__':
                         help="Type of encoder model.")
     parser.add_argument("--no-factor", action="store_true", default=False,
                         help="Disables factor graph model.")
+    parser.add_argument("--dataset_folder", type=str, default="../../datasets/reformatted/zara01_shifted_10_nri",
+                        help="Where to find saved data to load")
     parser.add_argument("--suffix", type=str, default="zara01",
                         help="Suffix for training data ")
-    parser.add_argument("--split", type=str, default="split00",
+    parser.add_argument("--split", type=str, default="0",
                         help="Split of the dataset.")
     parser.add_argument("--use-motion", action="store_true", default=False,
                         help="use increments")
@@ -426,8 +428,7 @@ if __name__ == '__main__':
               "Testing (within this script) will throw an error.")
 
     # Load data
-    data_folder = os.path.join("data/", args.suffix)
-    data_folder = os.path.join(data_folder, args.split)
+    data_folder = '{}/fold_{}'.format(args.dataset_folder, args.split)
 
     with open(os.path.join(data_folder, "tensors_train.pkl"), 'rb') as f:
         examples_train = pickle.load(f)
