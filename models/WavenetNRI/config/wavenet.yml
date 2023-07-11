@@ -1,3 +1,4 @@
 ---
-dataset_folder: ../../datasets/reformatted/zara01_shifted_10_nri
-save_folder: logs/nripedsu
+suffix: '10_3_5'
+dataset_folder: ../../datasets/simulation/sim_10_3_5
+save_folder: logs/nrisu

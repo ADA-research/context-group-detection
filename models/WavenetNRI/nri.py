@@ -139,7 +139,7 @@ def train(epoch, best_val_F1):
           "gr_val: {:.10f}".format(np.mean(gr_val)),
           "ngr_val: {:.10f}".format(np.mean(ngr_val)),
           "F1_val: {:.10f}".format(np.mean(F1_val)))
-    if args.save_folder and np.mean(F1_val) > best_val_F1:
+    if config['save_folder'] and np.mean(F1_val) > best_val_F1:
         # torch.save(encoder.state_dict(), encoder_file)
         torch.save(encoder, encoder_file)
         print("Best model so far, saving...")
@@ -316,16 +316,16 @@ if __name__ == '__main__':
                         help="Type of encoder model.")
     parser.add_argument("--no-factor", action="store_true", default=False,
                         help="Disables factor graph model.")
-    parser.add_argument("--dataset_folder", type=str, default="../../datasets/simulation/sim_10_3_5",
-                        help="Where to find saved data to load")
-    parser.add_argument("--suffix", type=str, default="10_3_5",
-                        help="Suffix for training data ")
+    # parser.add_argument("--dataset_folder", type=str, default="../../datasets/simulation/sim_10_3_5",
+    #                     help="Where to find saved data to load")
+    # parser.add_argument("--suffix", type=str, default="10_3_5",
+    #                     help="Suffix for training data ")
     parser.add_argument("--use-motion", action="store_true", default=False,
                         help="use increments")
     parser.add_argument("--encoder-dropout", type=float, default=0.3,
                         help="Dropout rate (1-keep probability).")
-    parser.add_argument("--save-folder", type=str, default="./logs/nrisu",
-                        help="Where to save the trained model, leave empty to not save anything.")
+    # parser.add_argument("--save-folder", type=str, default="./logs/nrisu",
+    #                     help="Where to save the trained model, leave empty to not save anything.")
     parser.add_argument("--load-folder", type=str, default='',
                         help="Where to load the trained model.")
     parser.add_argument("--edge-types", type=int, default=2,
@@ -344,11 +344,13 @@ if __name__ == '__main__':
                         help="Non-group weight")
     parser.add_argument("--gweight-auto", action="store_true", default=False,
                         help="automatically determine group/non-group weights.")
+    parser.add_argument('-c', '--config', type=str, default="./config/wavenet.yml")
 
     args = parser.parse_args()
     args.cuda = not args.no_cuda and torch.cuda.is_available()
     args.factor = not args.no_factor
     print(args)
+    config = read_yaml(args.config)
 
     if not args.no_seed:
         np.random.seed(args.seed)
@@ -358,20 +360,19 @@ if __name__ == '__main__':
 
     log = None
     # Save model and meta-data. Always saves in a new folder
-    if args.save_folder:
+    if config['save_folder']:
         exp_counter = 0
         now = datetime.datetime.now()
         timestamp = now.isoformat()
-        save_folder = "{}/su_{}_{}".format(args.save_folder, args.encoder, args.suffix)
-        # save_folder = "{}/su_{}_{}_{}".format(args.save_folder, args.encoder, args.suffix, timestamp)
+        save_folder = "{}/su_{}_{}".format(config['save_folder'], args.encoder, config['suffix'])
         if args.use_motion:
             save_folder += "_use_motion"
         if not os.path.exists(save_folder):
             os.makedirs(save_folder)
-        meta_file = os.path.join(save_folder, "metadata.pkl")
-        encoder_file = os.path.join(save_folder, "nri_encoder.pt")
+        meta_file = '{}/{}'.format(save_folder, "metadata.pkl")
+        encoder_file = '{}/{}'.format(save_folder, "nri_encoder.pt")
 
-        log_file = os.path.join(save_folder, "log.txt")
+        log_file = '{}/{}'.format(save_folder, "log.txt")
         log = open(log_file, 'w')
         pickle.dump({"args": args}, open(meta_file, 'wb'))
 
@@ -380,7 +381,7 @@ if __name__ == '__main__':
               "Testing (within this script) will throw an error.")
 
     train_loader, valid_loader, test_loader, loc_max, loc_min, vel_max, vel_min = load_spring_sim(
-        args.batch_size, args.suffix, args.dataset_folder)
+        args.batch_size, config['suffix'], config['dataset_folder'])
 
     print("Number of training examples: ", len(train_loader.dataset))
     print("Number of validation examples: ", len(valid_loader.dataset))
@@ -431,9 +432,9 @@ if __name__ == '__main__':
                                     use_motion=args.use_motion)
 
     if args.load_folder:
-        encoder_file = os.path.join(args.load_folder, "nri_encoder.pt")
+        encoder_file = '{}/{}'.format(args.load_folder, "nri_encoder.pt")
         encoder.load_state_dict(torch.load(encoder_file))
-        args.save_folder = False
+        config['save_folder'] = False
 
     triu_indices = get_triu_offdiag_indices(args.num_atoms)
     tril_indices = get_tril_offdiag_indices(args.num_atoms)

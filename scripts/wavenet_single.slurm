@@ -9,7 +9,7 @@
 #SBATCH --mem-per-gpu=5G
 
 # Default values
-config="./config/wavenet.yml"
+config="./config/wavenet_pede.yml"
 model="nri_pede"
 fold=0
 seed=14
