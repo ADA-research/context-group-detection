@@ -130,7 +130,6 @@ def get_args():
     parser.add_argument('-p', '--plot', action="store_true", default=True)
     parser.add_argument('-s', '--shift', action="store_true", default=True)
     parser.add_argument('-r', '--report', action="store_true", default=False)
-    parser.add_argument('-r', '--context', action="store_true", default=True)
 
     return parser.parse_args()
 
@@ -146,14 +145,14 @@ if __name__ == '__main__':
 
     # create datasets report
     datasets_dict = {
-        'sim': dataset_data('./simulation/sim_10_3_5', args.samples_freq)
+        'sim_1': dataset_data('./simulation/sim_10_3_5', args.samples_freq)
     }
     if args.report:
         report('datasets.xlsx', datasets_dict)
 
     # create datasets group size histogram
     groups_dict = {
-        'sim': read_multi_groups('./simulation/sim_10_3_5')
+        'sim_1': read_multi_groups('./simulation/sim_10_3_5')
     }
     if args.plot:
         groups_size_hist(groups_dict, './group_size_plot.png')
