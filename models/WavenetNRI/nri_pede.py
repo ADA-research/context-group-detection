@@ -17,6 +17,7 @@ from sknetwork.topology import get_connected_components
 from torch.optim import lr_scheduler
 
 from data_utils import *
+from models.utils import read_yaml
 from models_NRI import *
 
 
@@ -171,7 +172,7 @@ def train(epoch, best_val_recall):
           "ngr_val: {:.10f}".format(np.mean(ngr_val)),
           "F1_val: {:.10f}".format(np.mean(F1_val)),
           "recall_val: {:.10f}".format(np.mean(recall_val)))
-    if args.save_folder and np.mean(recall_val) > best_val_recall:
+    if config['save_folder'] and np.mean(recall_val) > best_val_recall:
         torch.save(encoder, encoder_file)
         print("Best model so far, saving...")
         print("Epoch: {:04d}".format(epoch),
@@ -353,8 +354,8 @@ if __name__ == '__main__':
                         help="Type of encoder model.")
     parser.add_argument("--no-factor", action="store_true", default=False,
                         help="Disables factor graph model.")
-    parser.add_argument("--dataset_folder", type=str, default="../../datasets/reformatted/zara01_shifted_10_nri",
-                        help="Where to find saved data to load")
+    # parser.add_argument("--dataset_folder", type=str, default="../../datasets/reformatted/zara01_shifted_10_nri",
+    #                     help="Where to find saved data to load")
     parser.add_argument("--suffix", type=str, default="zara01",
                         help="Suffix for training data ")
     parser.add_argument("--split", type=str, default="0",
@@ -363,8 +364,8 @@ if __name__ == '__main__':
                         help="use increments")
     parser.add_argument("--encoder-dropout", type=float, default=0.3,
                         help="Dropout rate (1-keep probability).")
-    parser.add_argument("--save-folder", type=str, default="logs/nripedsu",
-                        help="Where to save the trained model, leave empty to not save anything.")
+    # parser.add_argument("--save-folder", type=str, default="logs/nripedsu",
+    #                     help="Where to save the trained model, leave empty to not save anything.")
     parser.add_argument("--load-folder", type=str, default='',
                         help="Where to load the trained model.")
     parser.add_argument("--edge-types", type=int, default=2,
@@ -394,11 +395,13 @@ if __name__ == '__main__':
 
     parser.add_argument("--grecall-weight", type=float, default=0.65,
                         help="group recall.")
+    parser.add_argument('-c', '--config', type=str, default="./config/wavenet.yml")
 
     args = parser.parse_args()
     args.cuda = not args.no_cuda and torch.cuda.is_available()
     args.factor = not args.no_factor
     print(args)
+    config = read_yaml(args.config)
 
     if not args.no_seed:
         np.random.seed(args.seed)
@@ -408,12 +411,12 @@ if __name__ == '__main__':
 
     log = None
     # Save model and meta-data
-    if args.save_folder:
+    if config['save_folder']:
         exp_counter = 0
         now = datetime.datetime.now()
         timestamp = now.isoformat()
         # save_folder = "{}/{}_{}_{}/".format(args.save_folder,args.encoder, timestamp, args.suffix+args.split)
-        save_folder = "{}/{}_{}/".format(args.save_folder, args.encoder, args.suffix + args.split)
+        save_folder = "{}/{}_{}/".format(config['save_folder'], args.encoder, args.suffix + args.split)
         if not os.path.exists(save_folder):
             os.makedirs(save_folder)
         meta_file = os.path.join(save_folder, "metadata.pkl")
@@ -428,7 +431,7 @@ if __name__ == '__main__':
               "Testing (within this script) will throw an error.")
 
     # Load data
-    data_folder = '{}/fold_{}'.format(args.dataset_folder, args.split)
+    data_folder = '{}/fold_{}'.format(config['dataset_folder'], args.split)
 
     with open(os.path.join(data_folder, "tensors_train.pkl"), 'rb') as f:
         examples_train = pickle.load(f)
@@ -487,7 +490,7 @@ if __name__ == '__main__':
     if args.load_folder:
         encoder_file = os.path.join(args.load_folder, "nri_encoder.pt")
         encoder.load_state_dict(torch.load(encoder_file))
-        args.save_folder = False
+        config['save_folder'] = False
 
     if args.cuda:
         encoder.cuda()
