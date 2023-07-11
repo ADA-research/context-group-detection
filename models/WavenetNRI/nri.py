@@ -364,7 +364,7 @@ if __name__ == '__main__':
         exp_counter = 0
         now = datetime.datetime.now()
         timestamp = now.isoformat()
-        save_folder = "{}/su_{}_{}".format(config['save_folder'], args.encoder, config['suffix'])
+        save_folder = "{}/su_{}_{}/{}".format(config['save_folder'], args.encoder, config['suffix'], args.seed)
         if args.use_motion:
             save_folder += "_use_motion"
         if not os.path.exists(save_folder):
