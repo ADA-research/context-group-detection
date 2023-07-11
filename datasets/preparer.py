@@ -5,16 +5,17 @@ import pickle
 import random
 from collections import Counter
 from datetime import datetime
-from itertools import combinations
+from itertools import combinations, permutations
 
 import numpy as np
 import pandas as pd
 import seaborn as sns
+import torch
 import xlsxwriter
 from matplotlib import pyplot as plt
 from sklearn.model_selection import train_test_split
 
-from datasets.loader import read_obsmat, read_groups, read_sim
+from datasets.loader import read_obsmat, read_groups
 
 
 def report(name, data):
@@ -76,17 +77,13 @@ def groups_size_hist(groups_dict, save_loc):
     plt.show()
 
 
-def dataset_data(dataset_path, sim=False):
+def dataset_data(dataset_path):
     """
     Get data for specified dataset.
     :param dataset_path: string of where to find dataset
-    :param sim: True if used for simulation dataset, False otherwise
     :return: dictionary with data
     """
-    if sim:
-        df = read_sim(dataset_path)
-    else:
-        df = read_obsmat(dataset_path)
+    df = read_obsmat(dataset_path)
     groups = read_groups(dataset_path)
 
     agents_num = df.agent_id.unique().size
@@ -118,6 +115,18 @@ def get_group_pairs(groups):
     pairs = []
     for group in groups:
         pairs.extend(list(combinations(group, 2)))
+    return pairs
+
+
+def get_no_context_group_pairs(groups):
+    """
+    Get pairs of agents that are in same group.
+    :param groups: list of groups
+    :return: list of pairs of agents
+    """
+    pairs = []
+    for group in groups:
+        pairs.extend(list(permutations(group, 2)))
     return pairs
 
 
@@ -216,11 +225,10 @@ def get_scene_groups(agents, groups):
     return comb_groups_filtered
 
 
-def get_scene_data(dataframe, agents_minimum, consecutive_frames, difference_between_frames, groups, step):
+def get_scene_data(dataframe, consecutive_frames, difference_between_frames, groups, step, sim=False):
     """
     Get scenes based on given parameters.
     :param dataframe: dataframe to be filtered
-    :param agents_minimum: minimum number of agents for frame not to be removed
     :param consecutive_frames: minimum number of frames for agent not to be removed
     :param difference_between_frames: difference between frames to be continuous
     :param groups: groups to check which groups exist in every scene
@@ -242,13 +250,15 @@ def get_scene_data(dataframe, agents_minimum, consecutive_frames, difference_bet
     for frames in frame_id_combinations:
         agent_list = [set(agents_by_frame[agents_by_frame['frame_id'] == frame]['agents'].iloc[0]) for frame in frames]
         common_agents = set.intersection(*agent_list)
+        if sim:
+            scene_id = dataframe[dataframe['frame_id'] == frames[0]]['sim'].iloc[0]
         # ignore scenes with not enough common agents
         if len(common_agents) >= 2:
             scene_dict = {
                 'frames': frames,
                 'common_agents': common_agents,
                 'total_agents': set.union(*agent_list),
-                'groups': get_scene_groups(common_agents, groups)
+                'groups': groups[scene_id] if sim else get_scene_groups(common_agents, groups)
             }
             scenes.append(scene_dict)
 
@@ -419,7 +429,7 @@ def gather_data(context_data, data, groups, labels, pair_agents, pair_data, scen
     scenes_frames.append((scene_frame_ids, pair_agents))
 
 
-def dataset_reformat(dataframe, groups, group_pairs, scene_data, agents_minimum, min_pair_samples,
+def dataset_reformat(dataframe, groups, group_pairs, scene_data, agents_num, min_pair_samples,
                      max_pair_samples, shift=False):
     """
     Gather data from all possible scenes based on given parameters.
@@ -427,7 +437,7 @@ def dataset_reformat(dataframe, groups, group_pairs, scene_data, agents_minimum,
     :param groups: list of groups
     :param group_pairs: pairs of agents in the same group
     :param scene_data: valid continuous frame combinations
-    :param agents_minimum: minimum agents (pair + context) in a scene
+    :param agents_num: minimum agents (pair + context) in a scene
     :param min_pair_samples: minimum samples to get from a scene for each pair
     :param max_pair_samples: maximum samples to get from a scene for each pair
     :param shift: True if to transform context according to pair coordinates, otherwise False
@@ -450,15 +460,15 @@ def dataset_reformat(dataframe, groups, group_pairs, scene_data, agents_minimum,
             non_pair_data = get_agent_data_for_frames(dataframe, non_pair_agents, scene_frame_ids)
             if shift and len(non_pair_data) > 0:
                 non_pair_data = shift_data(pair_data, non_pair_data, len(scene_frame_ids))
-            if len(non_pair_data) <= agents_minimum - 2:
+            if len(non_pair_data) <= agents_num - 2:
                 context_data = non_pair_data[:]
-                fake_context = agents_minimum - 2 - len(non_pair_data)
+                fake_context = agents_num - 2 - len(non_pair_data)
                 context_data = fill_data(pair_data, context_data, fake_context)
                 gather_data(context_data, data, groups, labels, pair_agents, pair_data, scene_frame_ids, scenes_frames)
             else:
                 for i in range(pair_samples):
                     # random sampling
-                    context_data = random.sample(non_pair_data, agents_minimum - 2)
+                    context_data = random.sample(non_pair_data, agents_num - 2)
                     # getting the closest agents
                     # context_data = context_sample(pair_data, non_pair_data, agents_minimum - 2)
                     gather_data(
@@ -581,6 +591,69 @@ def save_folds(save_folder, dataset, frames_num, agents_num, data, labels, frame
         dump('{}/val.p'.format(path), val)
 
 
+def get_labels(agents, pairs):
+    agent_permutations = list(permutations(agents, 2))
+    labels = [1 if perm in pairs else 0 for perm in agent_permutations]
+    return labels
+
+
+def get_no_context_data(dataframe, scene_data):
+    data = []
+    labels = []
+    scenes_frames = []
+    for scene in scene_data:
+        scene_frame_ids = scene['frames']
+        scene_groups = scene['groups']
+        group_pairs = get_no_context_group_pairs(scene_groups)
+        scene_agents = scene['common_agents']
+
+        agent_data = get_agent_data_for_frames(dataframe, scene_agents, scene_frame_ids)
+        data.append(np.asarray(agent_data)[:, :, :2])
+        labels.append(np.asarray(get_labels(scene_agents, group_pairs)))
+        scenes_frames.append(scene_frame_ids)
+
+    return np.asarray(data, dtype=object), np.asarray(labels, dtype=object), scenes_frames
+
+
+def load_pickle_file(file):
+    with open(file, 'rb') as f:
+        return pickle.load(f)
+
+
+def get_folds_info(save_folder, dataset, frames_num, agents_num):
+    info = []
+    path = '{}/{}_{}_{}'.format(save_folder, dataset, frames_num, agents_num)
+
+    for fold in os.listdir(path):
+        fold_path = '{}/{}'.format(path, fold)
+        train = load_pickle_file('{}/train.p'.format(fold_path))
+        test = load_pickle_file('{}/test.p'.format(fold_path))
+        val = load_pickle_file('{}/val.p'.format(fold_path))
+
+        info.append((list(train[2][:, 0]), list(test[2][:, 0]), list(val[2][:, 0])))
+
+    return info
+
+
+def save_no_context_folds(save_folder, dataset, frames_num, data, labels, frames, folds_info):
+    for i, (frame_ids_train, frame_ids_test, frame_ids_val) in enumerate(folds_info):
+        idx_train = [i for i, frame_id in enumerate(frames) if frame_id in frame_ids_train]
+        idx_test = [i for i, frame_id in enumerate(frames) if frame_id in frame_ids_test]
+        idx_val = [i for i, frame_id in enumerate(frames) if frame_id in frame_ids_val]
+        train = ([torch.tensor(i) for i in data[idx_train]], [torch.tensor(i) for i in labels[idx_train]])
+        test = ([torch.tensor(i) for i in data[idx_test]], [torch.tensor(i) for i in labels[idx_test]])
+        val = ([torch.tensor(i) for i in data[idx_val]], [torch.tensor(i) for i in labels[idx_val]])
+
+        path = '{}/{}_{}_nri/fold_{}'.format(save_folder, dataset, frames_num, i)
+        os.makedirs(path, exist_ok=True)
+        dump('{}/tensors_train.pkl'.format(path), train[0])
+        dump('{}/labels_train.pkl'.format(path), train[1])
+        dump('{}/tensors_test.pkl'.format(path), test[0])
+        dump('{}/labels_test.pkl'.format(path), test[1])
+        dump('{}/tensors_valid.pkl'.format(path), val[0])
+        dump('{}/labels_valid.pkl'.format(path), val[1])
+
+
 def get_sample_params(frames_num, agents_num):
     if frames_num == 1:
         multi_frame = False
@@ -590,24 +663,21 @@ def get_sample_params(frames_num, agents_num):
                 'hotel': 2,
                 'zara01': 2,
                 'zara02': 3,
-                'students03': 6,
-                'sim_3': 3
+                'students03': 6
             }
             min_samples = {
                 'eth': 5,
                 'hotel': 10,
                 'zara01': 10,
                 'zara02': 5,
-                'students03': 2,
-                'sim_3': 10
+                'students03': 2
             }
             max_samples = {
                 'eth': 100,
                 'hotel': 100,
                 'zara01': 100,
                 'zara02': 100,
-                'students03': 10,
-                'sim_3': 1000
+                'students03': 10
             }
         elif agents_num == 10:
             steps = {
@@ -615,24 +685,21 @@ def get_sample_params(frames_num, agents_num):
                 'hotel': 2,
                 'zara01': 1,
                 'zara02': 3,
-                'students03': 5,
-                'sim_3': 3
+                'students03': 5
             }
             min_samples = {
                 'eth': 5,
                 'hotel': 10,
                 'zara01': 10,
                 'zara02': 5,
-                'students03': 2,
-                'sim_3': 10
+                'students03': 2
             }
             max_samples = {
                 'eth': 1000,
                 'hotel': 1000,
                 'zara01': 1000,
                 'zara02': 1000,
-                'students03': 5,
-                'sim_3': 1000
+                'students03': 5
             }
     elif frames_num == 5:
         multi_frame = True
@@ -642,24 +709,21 @@ def get_sample_params(frames_num, agents_num):
                 'hotel': 2,
                 'zara01': 2,
                 'zara02': 5,
-                'students03': 6,
-                'sim_3': 3
+                'students03': 6
             }
             min_samples = {
                 'eth': 10,
                 'hotel': 15,
                 'zara01': 15,
                 'zara02': 10,
-                'students03': 2,
-                'sim_3': 10
+                'students03': 2
             }
             max_samples = {
                 'eth': 1000,
                 'hotel': 1000,
                 'zara01': 1000,
                 'zara02': 1000,
-                'students03': 10,
-                'sim_3': 1000
+                'students03': 10
             }
         elif agents_num == 10:
             steps = {
@@ -667,24 +731,21 @@ def get_sample_params(frames_num, agents_num):
                 'hotel': 1,
                 'zara01': 1,
                 'zara02': 3,
-                'students03': 5,
-                'sim_3': 3
+                'students03': 5
             }
             min_samples = {
                 'eth': 10,
                 'hotel': 15,
                 'zara01': 15,
                 'zara02': 10,
-                'students03': 2,
-                'sim_3': 10
+                'students03': 2
             }
             max_samples = {
                 'eth': 1000,
                 'hotel': 1000,
                 'zara01': 1000,
                 'zara02': 1000,
-                'students03': 10,
-                'sim_3': 1000
+                'students03': 10
             }
     elif frames_num == 10:
         multi_frame = True
@@ -694,24 +755,21 @@ def get_sample_params(frames_num, agents_num):
                 'hotel': 1,
                 'zara01': 1,
                 'zara02': 4,
-                'students03': 5,
-                'sim_3': 3
+                'students03': 5
             }
             min_samples = {
                 'eth': 10,
                 'hotel': 15,
                 'zara01': 10,
                 'zara02': 10,
-                'students03': 2,
-                'sim_3': 10
+                'students03': 2
             }
             max_samples = {
                 'eth': 1000,
                 'hotel': 1000,
                 'zara01': 1000,
                 'zara02': 1000,
-                'students03': 10,
-                'sim_3': 1000
+                'students03': 10
             }
         elif agents_num == 10:
             steps = {
@@ -719,24 +777,21 @@ def get_sample_params(frames_num, agents_num):
                 'hotel': 1,
                 'zara01': 1,
                 'zara02': 3,
-                'students03': 5,
-                'sim_3': 3
+                'students03': 5
             }
             min_samples = {
                 'eth': 10,
                 'hotel': 50,
                 'zara01': 20,
                 'zara02': 10,
-                'students03': 2,
-                'sim_3': 10
+                'students03': 2
             }
             max_samples = {
                 'eth': 1000,
                 'hotel': 1000,
                 'zara01': 1000,
                 'zara02': 1000,
-                'students03': 10,
-                'sim_3': 1000
+                'students03': 10
             }
     return multi_frame, min_samples, max_samples, steps
 
@@ -753,6 +808,7 @@ def get_args():
     parser.add_argument('-p', '--plot', action="store_true", default=False)
     parser.add_argument('-s', '--shift', action="store_true", default=True)
     parser.add_argument('-r', '--report', action="store_true", default=False)
+    parser.add_argument('-c', '--content', action="store_true", default=False)
 
     return parser.parse_args()
 
@@ -768,24 +824,22 @@ if __name__ == '__main__':
 
     # create datasets report
     datasets_dict = {
-        # 'eth': dataset_data('./ETH/seq_eth'),
-        # 'hotel': dataset_data('./ETH/seq_hotel'),
-        # 'zara01': dataset_data('./UCY/zara01'),
-        # 'zara02': dataset_data('./UCY/zara02'),
-        # 'students03': dataset_data('./UCY/students03'),
-        'sim_3': dataset_data('./simulation/sim_3', sim=True)
+        'eth': dataset_data('./ETH/seq_eth'),
+        'hotel': dataset_data('./ETH/seq_hotel'),
+        'zara01': dataset_data('./UCY/zara01'),
+        'zara02': dataset_data('./UCY/zara02'),
+        'students03': dataset_data('./UCY/students03')
     }
     if args.report:
         report('datasets.xlsx', datasets_dict)
 
     # create datasets group size histogram
     groups_dict = {
-        # 'eth': read_groups('./ETH/seq_eth'),
-        # 'hotel': read_groups('./ETH/seq_hotel'),
-        # 'zara01': read_groups('./UCY/zara01'),
-        # 'zara02': read_groups('./UCY/zara02'),
-        # 'students03': read_groups('./UCY/students03'),
-        'sim_3': read_groups('./simulation/sim_3')
+        'eth': read_groups('./ETH/seq_eth'),
+        'hotel': read_groups('./ETH/seq_hotel'),
+        'zara01': read_groups('./UCY/zara01'),
+        'zara02': read_groups('./UCY/zara02'),
+        'students03': read_groups('./UCY/students03')
     }
     if args.plot:
         groups_size_hist(groups_dict, './group_size_plot.png')
@@ -805,25 +859,36 @@ if __name__ == '__main__':
         #                                                      agents_threshold=args.agents_num)
 
         # get scene data
-        scenes = get_scene_data(dataframe=df, agents_minimum=args.agents_num,
-                                consecutive_frames=args.frames_num, difference_between_frames=difference,
+        scenes = get_scene_data(dataframe=df, consecutive_frames=args.frames_num, difference_between_frames=difference,
                                 groups=groups, step=steps[dataset])
 
-        # format dataset to be used by proposed approach
-        data, labels, frames, filtered_groups = dataset_reformat(dataframe=df, groups=groups, group_pairs=group_pairs,
-                                                                 scene_data=scenes, agents_minimum=args.agents_num,
-                                                                 min_pair_samples=min_samples[dataset],
-                                                                 max_pair_samples=max_samples[dataset],
-                                                                 shift=args.shift)
+        if args.content:
+            # format dataset to be used by proposed approach
+            data, labels, frames, filtered_groups = dataset_reformat(dataframe=df, groups=groups,
+                                                                     group_pairs=group_pairs,
+                                                                     scene_data=scenes, agents_num=args.agents_num,
+                                                                     min_pair_samples=min_samples[dataset],
+                                                                     max_pair_samples=max_samples[dataset],
+                                                                     shift=args.shift)
 
-        dataset = '{}_shifted'.format(dataset) if args.shift else dataset
-        # save dataset in folds
-        save_folds(args.save_folder, dataset, args.frames_num, args.agents_num, data, labels, frames, filtered_groups,
-                   multi_frame)
+            dataset = '{}_shifted'.format(dataset) if args.shift else dataset
+            # save dataset in folds
+            save_folds(args.save_folder, dataset, args.frames_num, args.agents_num, data, labels, frames,
+                       filtered_groups, multi_frame)
+        else:
+            # TODO implementation for wavenetnri
+            #  move to preparer
+            no_context_data, no_context_labels, no_context_frames = get_no_context_data(dataframe=df, scene_data=scenes)
+            dataset = '{}_shifted'.format(dataset) if args.shift else dataset
+            folds_info = get_folds_info(args.save_folder, dataset, args.frames_num, args.agents_num)
+            save_no_context_folds(args.save_folder, dataset, args.frames_num, no_context_data, no_context_labels,
+                                  no_context_frames, folds_info)
+            # data_tensor = torch.from_numpy(no_context_data)
+            # labels_tensor = torch.from_numpy(no_context_data)
 
         end = datetime.now()
         print('Dataset: {}, finished in: {}'.format(dataset, end - dataset_start))
-        print('\tdata size: {}'.format(len(data)))
+        # print('\tdata size: {}'.format(len(data)))
         dataset_start = end
 
     end = datetime.now()
