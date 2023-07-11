@@ -876,8 +876,6 @@ if __name__ == '__main__':
             save_folds(args.save_folder, dataset, args.frames_num, args.agents_num, data, labels, frames,
                        filtered_groups, multi_frame)
         else:
-            # TODO implementation for wavenetnri
-            #  move to preparer
             no_context_data, no_context_labels, no_context_frames = get_no_context_data(dataframe=df, scene_data=scenes)
             dataset = '{}_shifted'.format(dataset) if args.shift else dataset
             folds_info = get_folds_info(args.save_folder, dataset, args.frames_num, args.agents_num)
