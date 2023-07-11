@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 
 
-def read_sim(directory):
+def read_sim(directory, sample_frequency):
     """
     Reads a data.csv file from the given directory and converts it to a dataframe
     :param directory: name of the directory
@@ -15,6 +15,8 @@ def read_sim(directory):
     d_frame = np.diff(pd.unique(df["frame_id"]))
     fps = d_frame[0] * 1
     df["timestamp"] = df["frame_id"] / fps
+
+    df['frame_id'] += df['sim'] * sample_frequency
 
     df.sort_values(by=['agent_id', 'frame_id'], inplace=True)
     df['measurement'] = df[['pos_x', 'pos_y', 'v_x', 'v_y']].apply(tuple, axis=1)
@@ -68,32 +70,52 @@ def merge_groups_with_common_agents(agents_in_multiple_groups, groups):
     return groups
 
 
-def read_groups(directory, sim=False):
+def read_groups(directory):
     """
     Reads a groups.txt file from the given directory and
     converts it to pairs of pedestrians in the same group
     :param directory: name of the directory
-    :param sim: True if used for simulation dataset, False otherwise
     :return: pairs
     """
 
     with open(directory + '/groups.txt') as f:
         groups = [[int(x) for x in line.split()] for line in f if not line.isspace()]
 
-    if not sim:
-        # merge groups with common agents
-        count_dict = Counter([agent for group in groups for agent in group])
-        agents_in_multiple_groups = [key for key, value in count_dict.items() if value > 1]
-        if len(agents_in_multiple_groups) > 0:
-            groups_with_duplicate_agents_indices = \
-                set(i for i, group in enumerate(groups) for agent in agents_in_multiple_groups if agent in group)
-            groups_without_duplicate_agents = \
-                [group for i, group in enumerate(groups) if i not in groups_with_duplicate_agents_indices]
-            groups_with_duplicate_agents = \
-                [group for i, group in enumerate(groups) if i in groups_with_duplicate_agents_indices]
-            groups = \
-                groups_without_duplicate_agents + merge_groups_with_common_agents(agents_in_multiple_groups,
-                                                                                  groups_with_duplicate_agents)
+    # merge groups with common agents
+    count_dict = Counter([agent for group in groups for agent in group])
+    agents_in_multiple_groups = [key for key, value in count_dict.items() if value > 1]
+    if len(agents_in_multiple_groups) > 0:
+        groups_with_duplicate_agents_indices = \
+            set(i for i, group in enumerate(groups) for agent in agents_in_multiple_groups if agent in group)
+        groups_without_duplicate_agents = \
+            [group for i, group in enumerate(groups) if i not in groups_with_duplicate_agents_indices]
+        groups_with_duplicate_agents = \
+            [group for i, group in enumerate(groups) if i in groups_with_duplicate_agents_indices]
+        groups = \
+            groups_without_duplicate_agents + merge_groups_with_common_agents(agents_in_multiple_groups,
+                                                                              groups_with_duplicate_agents)
+
+    return groups
+
+
+def read_multi_groups(directory):
+    """
+    Reads a groups.txt file from the given directory and
+    converts it to pairs of pedestrians in the same group
+    :param directory: name of the directory
+    :return: pairs
+    """
+
+    groups = []
+    scene_groups = []
+    with open(directory + '/groups.txt') as f:
+        for line in f:
+            if not line.isspace():
+                if line == '-\n':
+                    groups.append(scene_groups)
+                    scene_groups = []
+                    continue
+                scene_groups.append([int(x) for x in line.split()])
 
     return groups
 
