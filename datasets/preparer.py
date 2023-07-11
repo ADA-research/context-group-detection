@@ -808,7 +808,7 @@ def get_args():
     parser.add_argument('-p', '--plot', action="store_true", default=False)
     parser.add_argument('-s', '--shift', action="store_true", default=True)
     parser.add_argument('-r', '--report', action="store_true", default=False)
-    parser.add_argument('-c', '--content', action="store_true", default=False)
+    parser.add_argument('-c', '--context', action="store_true", default=False)
 
     return parser.parse_args()
 
@@ -862,7 +862,7 @@ if __name__ == '__main__':
         scenes = get_scene_data(dataframe=df, consecutive_frames=args.frames_num, difference_between_frames=difference,
                                 groups=groups, step=steps[dataset])
 
-        if args.content:
+        if args.context:
             # format dataset to be used by proposed approach
             data, labels, frames, filtered_groups = dataset_reformat(dataframe=df, groups=groups,
                                                                      group_pairs=group_pairs,
