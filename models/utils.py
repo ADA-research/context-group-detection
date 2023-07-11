@@ -11,7 +11,7 @@ from keras.models import Model
 from keras.optimizers import Adam
 from keras.regularizers import l2
 
-from datasets.preparer import read_obsmat, read_sim
+from datasets.loader import read_obsmat, read_sim
 from models.DANTE.F1_calc import F1_calc, F1_calc_clone
 
 
@@ -132,7 +132,7 @@ class ValLoss(Callback):
             if "_shifted" in dataset_name:
                 dataset_name = dataset_name.replace("_shifted", "")
             if "sim_" in dataset_name:
-                self.positions = read_sim(dataset_path)
+                self.positions = read_sim(dataset_path, 50)
                 self.groups = val_data[3]
             elif dataset_name in ["eth", "hotel", "zara01", "zara02", "students03"]:
                 self.positions = read_obsmat(dataset_path)
