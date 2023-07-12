@@ -265,60 +265,46 @@ def get_scene_data(dataframe, consecutive_frames, difference_between_frames, gro
     return scenes
 
 
-def get_pairs_sample_rates(pairs, group_pairs, min_pair_samples, max_pair_samples):
+def get_sample_rates(scenes, group_pairs, factor=1, target_size=100000):
     """
-    Set sample rate for pairs in same and different groups in order to have balanced samples.
-    :param pairs: list of pairs in scene
-    :param group_pairs: list of pairs in same group
-    :param min_pair_samples: minimum number of samples to get from a pair in a scene
-    :param max_pair_samples: maximum number of samples to get from a pair in a scene
-    :return: list of pairs sample rates
+    Calculate sample rates for same/different group pairs.
+    :param scenes: list of scene data
+    :param group_pairs: list of group pairs
+    :param factor: factor to multiply sample rate to reach desired target size.
+    :param target_size: size of dataset to be created
+    :return:
     """
     same = []
     different = []
-    for pair in pairs:
-        if pair in group_pairs:
-            same.append(pair)
-        else:
-            different.append(pair)
+    for scene in scenes:
+        pairs = list(combinations(scene['common_agents'], 2))
+        for pair in pairs:
+            if pair in group_pairs:
+                same.append(pair)
+            else:
+                different.append(pair)
 
     same_pairs_num = len(same)
     different_pairs_num = len(different)
 
-    if same_pairs_num > different_pairs_num:
-        same_pairs_sampling_rate = min_pair_samples
-        if different_pairs_num == 0:
-            different_pairs_sampling_rate = 0
-        else:
-            different_pairs_sampling_rate = min(
-                int(min_pair_samples * same_pairs_num / different_pairs_num), max_pair_samples)
-    else:
-        different_pairs_sampling_rate = min_pair_samples
-        if same_pairs_num == 0:
-            same_pairs_sampling_rate = 0
-        else:
-            same_pairs_sampling_rate = min(
-                int(min_pair_samples * different_pairs_num / same_pairs_num) if same_pairs_num > 0 else 0,
-                max_pair_samples)
+    desired_proportion = target_size / 2
 
-    pairs_sample_rates = []
-    for pair in pairs:
-        if pair in same:
-            pairs_sample_rates.append(same_pairs_sampling_rate)
-        else:
-            pairs_sample_rates.append(different_pairs_sampling_rate)
+    same_pairs_rate = int((desired_proportion / same_pairs_num) * factor)
+    different_pairs_rate = int((desired_proportion / different_pairs_num) * factor)
 
-    return pairs_sample_rates
+    return {
+        'same': same_pairs_rate if same_pairs_rate != 0 else 1,
+        'different': different_pairs_rate if different_pairs_rate != 0 else 1
+    }
 
 
-def dataset_size_calculator(group_pairs, scene_data, agents_minimum, min_pair_samples, max_pair_samples):
+def dataset_size_calculator(group_pairs, scene_data, agents_num, sample_rates):
     """
     Gather data from all possible scenes based on given parameters.
     :param group_pairs: pairs of agents in the same group
     :param scene_data: valid scenes
-    :param agents_minimum: minimum agents (pair + context) in a scene
-    :param min_pair_samples: minimum samples to get from a scene for each pair
-    :param max_pair_samples: maximum samples to get from a scene for each pair
+    :param agents_num: minimum agents (pair + context) in a scene
+    :param sample_rates: sample rates for same/different pairs
     :return: dataset
     """
     samples, same_pairs, different_pairs = 0, 0, 0
@@ -326,13 +312,15 @@ def dataset_size_calculator(group_pairs, scene_data, agents_minimum, min_pair_sa
         scene_agents = scene['common_agents']
 
         pairs = list(combinations(scene_agents, 2))
-        pairs_samples = get_pairs_sample_rates(pairs, group_pairs, min_pair_samples, max_pair_samples)
-        for pair_agents, pair_samples in zip(pairs, pairs_samples):
+        for pair_agents in pairs:
             non_pair_agents = scene_agents - set(pair_agents)
-            if len(non_pair_agents) <= agents_minimum - 2:
+            if len(non_pair_agents) <= agents_num - 2:
                 samples += 1
             else:
-                samples += pair_samples
+                if pair_agents in group_pairs:
+                    samples += sample_rates['same']
+                else:
+                    samples += sample_rates['different']
     return samples
 
 
@@ -429,8 +417,7 @@ def gather_data(context_data, data, groups, labels, pair_agents, pair_data, scen
     scenes_frames.append((scene_frame_ids, pair_agents))
 
 
-def dataset_reformat(dataframe, groups, group_pairs, scene_data, agents_num, min_pair_samples,
-                     max_pair_samples, shift=False):
+def dataset_reformat(dataframe, groups, group_pairs, scene_data, agents_num, sample_rates, shift=False):
     """
     Gather data from all possible scenes based on given parameters.
     :param dataframe: dataframe to retrieve data
@@ -438,8 +425,7 @@ def dataset_reformat(dataframe, groups, group_pairs, scene_data, agents_num, min
     :param group_pairs: pairs of agents in the same group
     :param scene_data: valid continuous frame combinations
     :param agents_num: minimum agents (pair + context) in a scene
-    :param min_pair_samples: minimum samples to get from a scene for each pair
-    :param max_pair_samples: maximum samples to get from a scene for each pair
+    :param sample_rates: samples to get from a scene for each pair
     :param shift: True if to transform context according to pair coordinates, otherwise False
     :return: dataset
     """
@@ -453,8 +439,7 @@ def dataset_reformat(dataframe, groups, group_pairs, scene_data, agents_num, min
         scene_agents = scene['common_agents']
 
         pairs = list(combinations(scene_agents, 2))
-        pairs_samples = get_pairs_sample_rates(pairs, group_pairs, min_pair_samples, max_pair_samples)
-        for pair_agents, pair_samples in zip(pairs, pairs_samples):
+        for pair_agents in pairs:
             non_pair_agents = scene_agents - set(pair_agents)
             pair_data = get_agent_data_for_frames(dataframe, pair_agents, scene_frame_ids)
             non_pair_data = get_agent_data_for_frames(dataframe, non_pair_agents, scene_frame_ids)
@@ -466,6 +451,10 @@ def dataset_reformat(dataframe, groups, group_pairs, scene_data, agents_num, min
                 context_data = fill_data(pair_data, context_data, fake_context)
                 gather_data(context_data, data, groups, labels, pair_agents, pair_data, scene_frame_ids, scenes_frames)
             else:
+                if pair_agents in group_pairs:
+                    pair_samples = sample_rates['same']
+                else:
+                    pair_samples = sample_rates['different']
                 for i in range(pair_samples):
                     # random sampling
                     context_data = random.sample(non_pair_data, agents_num - 2)
@@ -655,145 +644,86 @@ def save_no_context_folds(save_folder, dataset, frames_num, data, labels, frames
 
 
 def get_sample_params(frames_num, agents_num):
+    steps = {
+        'eth': 1,
+        'hotel': 1,
+        'zara01': 1,
+        'zara02': 1,
+        'students03': 5
+    }
     if frames_num == 1:
         multi_frame = False
         if agents_num == 6:
-            steps = {
+            factor = {
                 'eth': 2,
                 'hotel': 2,
                 'zara01': 2,
-                'zara02': 3,
-                'students03': 6
-            }
-            min_samples = {
-                'eth': 5,
-                'hotel': 10,
-                'zara01': 10,
-                'zara02': 5,
-                'students03': 2
-            }
-            max_samples = {
-                'eth': 100,
-                'hotel': 100,
-                'zara01': 100,
-                'zara02': 100,
-                'students03': 10
+                'zara02': 2,
+                'students03': 1
             }
         elif agents_num == 10:
-            steps = {
-                'eth': 2,
-                'hotel': 2,
-                'zara01': 1,
-                'zara02': 3,
-                'students03': 5
-            }
-            min_samples = {
-                'eth': 5,
-                'hotel': 10,
-                'zara01': 10,
-                'zara02': 5,
-                'students03': 2
-            }
-            max_samples = {
-                'eth': 1000,
-                'hotel': 1000,
-                'zara01': 1000,
-                'zara02': 1000,
-                'students03': 5
+            factor = {
+                'eth': 3,
+                'hotel': 3,
+                'zara01': 4,
+                'zara02': 2,
+                'students03': 1
             }
     elif frames_num == 5:
         multi_frame = True
         if agents_num == 6:
-            steps = {
-                'eth': 3,
+            factor = {
+                'eth': 2,
                 'hotel': 2,
                 'zara01': 2,
-                'zara02': 5,
-                'students03': 6
-            }
-            min_samples = {
-                'eth': 10,
-                'hotel': 15,
-                'zara01': 15,
-                'zara02': 10,
-                'students03': 2
-            }
-            max_samples = {
-                'eth': 1000,
-                'hotel': 1000,
-                'zara01': 1000,
-                'zara02': 1000,
-                'students03': 10
+                'zara02': 2,
+                'students03': 1
             }
         elif agents_num == 10:
-            steps = {
-                'eth': 2,
-                'hotel': 1,
-                'zara01': 1,
-                'zara02': 3,
-                'students03': 5
-            }
-            min_samples = {
-                'eth': 10,
-                'hotel': 15,
-                'zara01': 15,
-                'zara02': 10,
-                'students03': 2
-            }
-            max_samples = {
-                'eth': 1000,
-                'hotel': 1000,
-                'zara01': 1000,
-                'zara02': 1000,
-                'students03': 10
+            factor = {
+                'eth': 3,
+                'hotel': 4,
+                'zara01': 5,
+                'zara02': 2,
+                'students03': 1
             }
     elif frames_num == 10:
         multi_frame = True
         if agents_num == 6:
-            steps = {
+            factor = {
                 'eth': 2,
-                'hotel': 1,
-                'zara01': 1,
-                'zara02': 4,
-                'students03': 5
-            }
-            min_samples = {
-                'eth': 10,
-                'hotel': 15,
-                'zara01': 10,
-                'zara02': 10,
-                'students03': 2
-            }
-            max_samples = {
-                'eth': 1000,
-                'hotel': 1000,
-                'zara01': 1000,
-                'zara02': 1000,
-                'students03': 10
+                'hotel': 2,
+                'zara01': 2,
+                'zara02': 2,
+                'students03': 1
             }
         elif agents_num == 10:
-            steps = {
-                'eth': 1,
-                'hotel': 1,
-                'zara01': 1,
-                'zara02': 3,
-                'students03': 5
+            factor = {
+                'eth': 3,
+                'hotel': 8,
+                'zara01': 5,
+                'zara02': 2,
+                'students03': 1
             }
-            min_samples = {
-                'eth': 10,
-                'hotel': 50,
-                'zara01': 20,
-                'zara02': 10,
-                'students03': 2
-            }
-            max_samples = {
-                'eth': 1000,
-                'hotel': 1000,
-                'zara01': 1000,
-                'zara02': 1000,
-                'students03': 10
-            }
-    return multi_frame, min_samples, max_samples, steps
+        elif frames_num == 15:
+            multi_frame = True
+            if agents_num == 6:
+                factor = {
+                    'eth': 2,
+                    'hotel': 3,
+                    'zara01': 3,
+                    'zara02': 2,
+                    'students03': 1
+                }
+            elif agents_num == 10:
+                factor = {
+                    'eth': 4,
+                    'hotel': 0,  # it has only 3657 samples, so it doesn't work
+                    'zara01': 5,
+                    'zara02': 3,
+                    'students03': 1
+                }
+    return multi_frame, steps, factor
 
 
 def get_args():
@@ -801,14 +731,13 @@ def get_args():
 
     parser.add_argument('--seed', type=int, default=14)
     parser.add_argument('-f', '--frames_num', type=int, default=10)
-    parser.add_argument('-a', '--agents_num', type=int, default=10)
+    parser.add_argument('-a', '--agents_num', type=int, default=6)
     parser.add_argument('-ts', '--target_size', type=int, default=100000)
-    parser.add_argument('-d', '--dataset', type=str, default='eth')
     parser.add_argument('-sf', '--save_folder', type=str, default='./reformatted')
     parser.add_argument('-p', '--plot', action="store_true", default=False)
     parser.add_argument('-s', '--shift', action="store_true", default=True)
     parser.add_argument('-r', '--report', action="store_true", default=False)
-    parser.add_argument('-c', '--context', action="store_true", default=False)
+    parser.add_argument('-c', '--context', action="store_true", default=True)
 
     return parser.parse_args()
 
@@ -844,7 +773,8 @@ if __name__ == '__main__':
     if args.plot:
         groups_size_hist(groups_dict, './group_size_plot.png')
 
-    multi_frame, min_samples, max_samples, steps = get_sample_params(args.frames_num, args.agents_num)
+    multi_frame, steps, factor = get_sample_params(args.frames_num, args.agents_num)
+
     for dataset in datasets_dict.keys():
         dataset_start = datetime.now()
         print('Dataset: {}, started at: {}'.format(dataset, dataset_start))
@@ -854,39 +784,35 @@ if __name__ == '__main__':
         group_pairs = get_group_pairs(groups)
         difference = datasets_dict[dataset]['difference']
 
-        # remove frames with low number of frames or agents
-        # df = remove_agents_and_frames_with_insufficient_data(dataframe=df, frames_threshold=args.frames_num,
-        #                                                      agents_threshold=args.agents_num)
-
         # get scene data
         scenes = get_scene_data(dataframe=df, consecutive_frames=args.frames_num, difference_between_frames=difference,
                                 groups=groups, step=steps[dataset])
+
+        sample_rates = get_sample_rates(scenes, group_pairs, factor=factor[dataset])
 
         if args.context:
             # format dataset to be used by proposed approach
             data, labels, frames, filtered_groups = dataset_reformat(dataframe=df, groups=groups,
                                                                      group_pairs=group_pairs,
                                                                      scene_data=scenes, agents_num=args.agents_num,
-                                                                     min_pair_samples=min_samples[dataset],
-                                                                     max_pair_samples=max_samples[dataset],
+                                                                     sample_rates=sample_rates,
                                                                      shift=args.shift)
 
             dataset = '{}_shifted'.format(dataset) if args.shift else dataset
             # save dataset in folds
             save_folds(args.save_folder, dataset, args.frames_num, args.agents_num, data, labels, frames,
                        filtered_groups, multi_frame)
+            print('\tdata size: {}'.format(len(data)))
         else:
             no_context_data, no_context_labels, no_context_frames = get_no_context_data(dataframe=df, scene_data=scenes)
             dataset = '{}_shifted'.format(dataset) if args.shift else dataset
             folds_info = get_folds_info(args.save_folder, dataset, args.frames_num, args.agents_num)
             save_no_context_folds(args.save_folder, dataset, args.frames_num, no_context_data, no_context_labels,
                                   no_context_frames, folds_info)
-            # data_tensor = torch.from_numpy(no_context_data)
-            # labels_tensor = torch.from_numpy(no_context_data)
+            print('\tdata size: {}'.format(len(no_context_data)))
 
         end = datetime.now()
         print('Dataset: {}, finished in: {}'.format(dataset, end - dataset_start))
-        # print('\tdata size: {}'.format(len(data)))
         dataset_start = end
 
     end = datetime.now()
