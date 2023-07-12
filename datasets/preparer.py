@@ -586,7 +586,7 @@ def get_labels(agents, pairs):
     return labels
 
 
-def get_no_context_data(dataframe, scene_data):
+def get_nri_data(dataframe, scene_data):
     data = []
     labels = []
     scenes_frames = []
@@ -624,7 +624,7 @@ def get_folds_info(save_folder, dataset, frames_num, agents_num):
     return info
 
 
-def save_no_context_folds(save_folder, dataset, frames_num, data, labels, frames, folds_info):
+def save_nri_folds(save_folder, dataset, frames_num, data, labels, frames, folds_info):
     for i, (frame_ids_train, frame_ids_test, frame_ids_val) in enumerate(folds_info):
         idx_train = [i for i, frame_id in enumerate(frames) if frame_id in frame_ids_train]
         idx_test = [i for i, frame_id in enumerate(frames) if frame_id in frame_ids_test]
@@ -729,13 +729,13 @@ def get_args():
 
     parser.add_argument('--seed', type=int, default=14)
     parser.add_argument('-f', '--frames_num', type=int, default=15)
-    parser.add_argument('-a', '--agents_num', type=int, default=6)
+    parser.add_argument('-a', '--agents_num', type=int, default=10)
     parser.add_argument('-ts', '--target_size', type=int, default=100000)
     parser.add_argument('-sf', '--save_folder', type=str, default='./reformatted')
     parser.add_argument('-p', '--plot', action="store_true", default=False)
     parser.add_argument('-s', '--shift', action="store_true", default=True)
     parser.add_argument('-r', '--report', action="store_true", default=False)
-    parser.add_argument('-c', '--context', action="store_true", default=True)
+    parser.add_argument('--nri', action="store_true", default=True)
 
     return parser.parse_args()
 
@@ -788,7 +788,7 @@ if __name__ == '__main__':
 
         sample_rates = get_sample_rates(scenes, group_pairs, factor=factor[dataset])
 
-        if args.context:
+        if not args.nri:
             # format dataset to be used by proposed approach
             data, labels, frames, filtered_groups = dataset_reformat(dataframe=df, groups=groups,
                                                                      group_pairs=group_pairs,
@@ -802,12 +802,11 @@ if __name__ == '__main__':
                        filtered_groups, multi_frame)
             print('\tdata size: {}'.format(len(data)))
         else:
-            no_context_data, no_context_labels, no_context_frames = get_no_context_data(dataframe=df, scene_data=scenes)
+            nri_data, nri_labels, nri_frames = get_nri_data(dataframe=df, scene_data=scenes)
             dataset = '{}_shifted'.format(dataset) if args.shift else dataset
             folds_info = get_folds_info(args.save_folder, dataset, args.frames_num, args.agents_num)
-            save_no_context_folds(args.save_folder, dataset, args.frames_num, no_context_data, no_context_labels,
-                                  no_context_frames, folds_info)
-            print('\tdata size: {}'.format(len(no_context_data)))
+            save_nri_folds(args.save_folder, dataset, args.frames_num, nri_data, nri_labels, nri_frames, folds_info)
+            print('\tdata size: {}'.format(len(nri_data)))
 
         end = datetime.now()
         print('Dataset: {}, finished in: {}'.format(dataset, end - dataset_start))
