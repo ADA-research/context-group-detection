@@ -651,6 +651,7 @@ def get_sample_params(frames_num, agents_num):
         'zara02': 1,
         'students03': 5
     }
+    multi_frame = True
     if frames_num == 1:
         multi_frame = False
         if agents_num == 6:
@@ -670,7 +671,6 @@ def get_sample_params(frames_num, agents_num):
                 'students03': 1
             }
     elif frames_num == 5:
-        multi_frame = True
         if agents_num == 6:
             factor = {
                 'eth': 2,
@@ -688,7 +688,6 @@ def get_sample_params(frames_num, agents_num):
                 'students03': 1
             }
     elif frames_num == 10:
-        multi_frame = True
         if agents_num == 6:
             factor = {
                 'eth': 2,
@@ -705,24 +704,23 @@ def get_sample_params(frames_num, agents_num):
                 'zara02': 2,
                 'students03': 1
             }
-        elif frames_num == 15:
-            multi_frame = True
-            if agents_num == 6:
-                factor = {
-                    'eth': 2,
-                    'hotel': 3,
-                    'zara01': 3,
-                    'zara02': 2,
-                    'students03': 1
-                }
-            elif agents_num == 10:
-                factor = {
-                    'eth': 4,
-                    'hotel': 0,  # it has only 3657 samples, so it doesn't work
-                    'zara01': 5,
-                    'zara02': 3,
-                    'students03': 1
-                }
+    elif frames_num == 15:
+        if agents_num == 6:
+            factor = {
+                'eth': 2,
+                'hotel': 3,
+                'zara01': 3,
+                'zara02': 2,
+                'students03': 1
+            }
+        elif agents_num == 10:
+            factor = {
+                'eth': 4,
+                'hotel': 0,  # it has only 3657 samples, so it doesn't work
+                'zara01': 5,
+                'zara02': 3,
+                'students03': 1
+            }
     return multi_frame, steps, factor
 
 
@@ -730,7 +728,7 @@ def get_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--seed', type=int, default=14)
-    parser.add_argument('-f', '--frames_num', type=int, default=10)
+    parser.add_argument('-f', '--frames_num', type=int, default=15)
     parser.add_argument('-a', '--agents_num', type=int, default=6)
     parser.add_argument('-ts', '--target_size', type=int, default=100000)
     parser.add_argument('-sf', '--save_folder', type=str, default='./reformatted')
