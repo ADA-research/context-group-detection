@@ -3,7 +3,7 @@
 #SBATCH --job-name=train_wave
 #SBATCH --output=%x_%j.out
 #SBATCH --mail-user="thomasmaliappis@gmail.com"
-#SBATCH --mail-type"END"
+#SBATCH --mail-type="END"
 #SBATCH --time=03:00:00
 #SBATCH --partition=gpu-short
 #SBATCH --gres=gpu:1
