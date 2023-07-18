@@ -50,7 +50,7 @@ def group_sizes_info(data, key):
     return groups_df
 
 
-def groups_size_hist(groups_df, save_loc):
+def groups_size_hist(groups_df, save_loc, fold):
     """
     Produces a plot of counts of group lengths per dataset
     :param groups_df: dataframe of groups of dataset
@@ -60,7 +60,10 @@ def groups_size_hist(groups_df, save_loc):
     # bar plot using seaborn
     sns.set_theme(style="whitegrid")
     sns.catplot(data=groups_df, kind='count', x='size', hue='dataset')
-    plt.suptitle('Group sizes per dataset')
+    dataset = args.dataset.replace('_shifted', '')
+    plt.suptitle('Group sizes of {} dataset\'s fold {}\nusing {}-frame scenes and {} agents'.format(
+        dataset, fold, args.frames_num, args.agents_num))
+    plt.tight_layout()
     plt.ylabel('Count')
     plt.xlabel('Group size')
     plt.savefig(save_loc)
@@ -70,7 +73,7 @@ def groups_size_hist(groups_df, save_loc):
 def get_args():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('-f', '--frames_num', type=int, default=10)
+    parser.add_argument('-f', '--frames_num', type=int, default=1)
     parser.add_argument('-a', '--agents_num', type=int, default=10)
     parser.add_argument('-d', '--dataset', type=str, default='students03_shifted')
 
@@ -84,7 +87,7 @@ if __name__ == '__main__':
 
     for fold in os.listdir(dataset_path):
         fold_path = dataset_path + '/' + fold
-
+        fold_number = int(fold[-1])
         train, test, val = load_data(fold_path)
 
         info = {
@@ -101,4 +104,4 @@ if __name__ == '__main__':
 
         groups_df = pd.concat([train_group_sizes_info, test_group_sizes_info, val_group_sizes_info])
 
-        groups_size_hist(groups_df, '{}/group_size_plot.png'.format(fold_path))
+        groups_size_hist(groups_df, '{}/group_size_plot.png'.format(fold_path), fold_number)
