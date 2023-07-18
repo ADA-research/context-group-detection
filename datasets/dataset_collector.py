@@ -70,11 +70,8 @@ def groups_size_hist(groups_df, save_loc):
 def get_args():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--fold', type=int, default=0)
-    parser.add_argument('--seed', type=int, default=14)
     parser.add_argument('-f', '--frames_num', type=int, default=10)
     parser.add_argument('-a', '--agents_num', type=int, default=10)
-    parser.add_argument('-ts', '--target_size', type=int, default=100000)
     parser.add_argument('-d', '--dataset', type=str, default='students03_shifted')
 
     return parser.parse_args()
