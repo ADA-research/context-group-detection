@@ -19,13 +19,29 @@ def collect_info(data):
     else:
         unique_frame_ids = np.unique(frame_ids)
 
+    frame_pairs = [frame[1] for frame in data[2]]
+    agents = np.unique(frame_pairs)
+
+    scene_agents = {}
+    for frames, agents in data[2]:
+        frames_tuple = tuple(frames)  # Convert the list of frames to a tuple for dictionary key
+
+        if frames_tuple not in scene_agents:
+            scene_agents[frames_tuple] = set()  # Initialize an empty set for unique agents
+
+        scene_agents[frames_tuple].update(agents)
+
+    counts = [len(agents) for frames, agents in scene_agents.items()]
+
     info = {
         'gs': group_samples,
         'ngs': non_group_samples,
-        'frames': len(unique_frame_ids)
+        'frames': len(unique_frame_ids),
+        'agents': len(agents),
+        'agents avg': round(sum(counts) / len(counts), 1)
     }
 
-    return info
+    return info, counts
 
 
 def write_info(results, file_path):
@@ -35,6 +51,29 @@ def write_info(results, file_path):
     df.to_csv(file_name)
 
 
+def agent_counts_plot(counts, sets, save_loc):
+    num_agents = []
+    scene_sets = []
+    for set_counts, set_name in zip(counts, sets):
+        for count in set_counts:
+            num_agents.append(count)
+            scene_sets.append(set_name)
+
+    data = pd.DataFrame({'Number of Agents': num_agents, 'Set': scene_sets})
+
+    sns.set(style='whitegrid')
+
+    sns.boxenplot(data=data, x='Number of Agents', order=sets)
+
+    plt.xlabel('# Agents')
+
+    dataset = args.dataset.replace('_shifted', '')
+    plt.suptitle('Number of agents in scenes of {} dataset\nusing {}-frame scenes and {} agents'.format(
+        dataset, args.frames_num, args.agents_num))
+    plt.savefig(save_loc)
+    plt.show()
+
+
 def group_sizes_info(data, key):
     groups = []
     for scene_frames, scene_groups in data[3]:
@@ -42,7 +81,6 @@ def group_sizes_info(data, key):
             if group not in groups:
                 groups.append(group)
     group_sizes = [len(group) for group in groups]
-    # counter = Counter(group_sizes)
 
     groups_df = pd.DataFrame(group_sizes, columns=['size'])
     groups_df['dataset'] = key
@@ -55,10 +93,11 @@ def groups_size_hist(groups_df, save_loc, fold):
     Produces a plot of counts of group lengths per dataset
     :param groups_df: dataframe of groups of dataset
     :param save_loc: path to location to save the histogram
+    :param fold: number of fold for which to generate the histogram
     :return: nothing
     """
     # bar plot using seaborn
-    sns.set_theme(style="whitegrid")
+    sns.set(style='whitegrid')
     sns.catplot(data=groups_df, kind='count', x='size', hue='dataset')
     dataset = args.dataset.replace('_shifted', '')
     plt.suptitle('Group sizes of {} dataset\'s fold {}\nusing {}-frame scenes and {} agents'.format(
@@ -73,9 +112,9 @@ def groups_size_hist(groups_df, save_loc, fold):
 def get_args():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('-f', '--frames_num', type=int, default=1)
+    parser.add_argument('-f', '--frames_num', type=int, default=10)
     parser.add_argument('-a', '--agents_num', type=int, default=10)
-    parser.add_argument('-d', '--dataset', type=str, default='students03_shifted')
+    parser.add_argument('-d', '--dataset', type=str, default='eth_shifted')
 
     return parser.parse_args()
 
@@ -87,21 +126,30 @@ if __name__ == '__main__':
 
     for fold in os.listdir(dataset_path):
         fold_path = dataset_path + '/' + fold
-        fold_number = int(fold[-1])
-        train, test, val = load_data(fold_path)
+        if os.path.isdir(fold_path):
+            fold_number = int(fold[-1])
+            train, test, val = load_data(fold_path)
 
-        info = {
-            'train': collect_info(train),
-            'test': collect_info(test),
-            'val': collect_info(val)
-        }
+            train_info, train_counts = collect_info(train)
+            test_info, test_counts = collect_info(test)
+            val_info, val_counts = collect_info(val)
 
-        write_info(info, fold_path)
+            info = {
+                'train': train_info,
+                'test': test_info,
+                'val': val_info
+            }
 
-        train_group_sizes_info = group_sizes_info(train, 'train')
-        test_group_sizes_info = group_sizes_info(test, 'test')
-        val_group_sizes_info = group_sizes_info(val, 'val')
+            write_info(info, fold_path)
 
-        groups_df = pd.concat([train_group_sizes_info, test_group_sizes_info, val_group_sizes_info])
+            train_group_sizes_info = group_sizes_info(train, 'train')
+            test_group_sizes_info = group_sizes_info(test, 'test')
+            val_group_sizes_info = group_sizes_info(val, 'val')
 
-        groups_size_hist(groups_df, '{}/group_size_plot.png'.format(fold_path), fold_number)
+            groups_df = pd.concat([train_group_sizes_info, test_group_sizes_info, val_group_sizes_info])
+
+            groups_size_hist(groups_df, '{}/group_size_plot.png'.format(fold_path), fold_number)
+
+    counts = [train_counts, test_counts, val_counts]
+    sets = ['train', 'test', 'val']
+    agent_counts_plot(counts, sets, '{}/agent_counts_plot.png'.format(dataset_path))
