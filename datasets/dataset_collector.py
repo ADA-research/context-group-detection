@@ -1,4 +1,5 @@
 import argparse
+import os
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -52,7 +53,7 @@ def group_sizes_info(data, key):
 def groups_size_hist(groups_df, save_loc):
     """
     Produces a plot of counts of group lengths per dataset
-    :param groups_dict: dictionary of group data for each dataset
+    :param groups_df: dataframe of groups of dataset
     :param save_loc: path to location to save the histogram
     :return: nothing
     """
@@ -82,22 +83,25 @@ def get_args():
 if __name__ == '__main__':
     args = get_args()
 
-    dataset_path = './reformatted/{}_{}_{}/fold_{}'.format(args.dataset, args.frames_num, args.agents_num, args.fold)
+    dataset_path = './reformatted/{}_{}_{}'.format(args.dataset, args.frames_num, args.agents_num)
 
-    train, test, val = load_data(dataset_path)
+    for fold in os.listdir(dataset_path):
+        fold_path = dataset_path + '/' + fold
 
-    info = {
-        'train': collect_info(train),
-        'test': collect_info(test),
-        'val': collect_info(val)
-    }
+        train, test, val = load_data(fold_path)
 
-    write_info(info, dataset_path)
+        info = {
+            'train': collect_info(train),
+            'test': collect_info(test),
+            'val': collect_info(val)
+        }
 
-    train_group_sizes_info = group_sizes_info(train, 'train')
-    test_group_sizes_info = group_sizes_info(test, 'test')
-    val_group_sizes_info = group_sizes_info(val, 'val')
+        write_info(info, fold_path)
 
-    groups_df = pd.concat([train_group_sizes_info, test_group_sizes_info, val_group_sizes_info])
+        train_group_sizes_info = group_sizes_info(train, 'train')
+        test_group_sizes_info = group_sizes_info(test, 'test')
+        val_group_sizes_info = group_sizes_info(val, 'val')
 
-    groups_size_hist(groups_df, '{}/group_size_plot.png'.format(dataset_path))
+        groups_df = pd.concat([train_group_sizes_info, test_group_sizes_info, val_group_sizes_info])
+
+        groups_size_hist(groups_df, '{}/group_size_plot.png'.format(fold_path))
