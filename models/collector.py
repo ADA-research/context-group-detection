@@ -2,6 +2,7 @@ import argparse
 import os
 
 import numpy as np
+import pandas as pd
 
 
 def read_results(folder_path):
@@ -85,6 +86,13 @@ def collect_results(results_path, dir_name):
 
 
 def write_results(results, file_path, dir_name):
+    file_name = file_path + '/{}_results.csv'.format(dir_name)
+
+    df = pd.DataFrame.from_dict(results, orient='index').transpose()
+    df['metric'] = ['mean', 'std']
+    df = df.set_index('metric')
+    df.to_csv(file_name)
+
     file_path = file_path + '/{}_results.txt'.format(dir_name)
     with open(file_path, "w") as file:
         file.write('{:<10s} {:<10s} {:<10s} {:<10s} {:<10s}\n'.format('', 'mse', '1 f1', '2/3 f1', 'gmitre f1'))
