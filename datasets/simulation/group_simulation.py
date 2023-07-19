@@ -72,11 +72,26 @@ class SpringSim(object):
         self.n_groups = n_groups
         self.attraction_strength = attraction_strength
 
+    def distance(self, p1, p2):
+        return np.sqrt((p1[0] - p2[0]) ** 2 + (p1[1] - p2[1]) ** 2)
+
+    def is_valid_point(self, point, points_list):
+        for p in points_list:
+            distance = self.distance(p, point)
+            if distance < 2 or distance > 3:
+                return False
+        return True
+
     def get_attraction_points(self, max_attraction_points):
         attraction_points = []
-        for _ in range(max_attraction_points):
-            attraction_point = np.array([np.random.uniform(self.box_size / 2), np.random.uniform(self.box_size / 2)])
-            attraction_points.append(attraction_point)
+        while len(attraction_points) < max_attraction_points:
+            attraction_point = np.array([
+                np.random.uniform(-self.box_size / 4, self.box_size / 4),
+                np.random.uniform(-self.box_size / 4, self.box_size / 4)
+            ])
+            if self.is_valid_point(attraction_point, attraction_points):
+                attraction_points.append(attraction_point)
+
         groups_attractions_points = []
         for group in range(self.n_groups):
             num_attraction_points = np.random.randint(1, max_attraction_points + 1)
@@ -388,7 +403,7 @@ def plot(sim, loc, vel, inter, ga, ap):
 def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--seed", type=int, default=42, help="random seed")
-    parser.add_argument("--num-sim", type=int, default=2, help="number of simulations to perform.")
+    parser.add_argument("--num-sim", type=int, default=1, help="number of simulations to perform.")
     parser.add_argument("--length", type=int, default=5000, help="length of trajectory.")
     parser.add_argument("--sample-freq", type=int, default=100, help="how often to sample the trajectory.")
     parser.add_argument("--n-balls", type=int, default=10, help="number of balls in the simulation.")
@@ -396,7 +411,7 @@ def get_args():
     parser.add_argument("--K", type=float, default=3.0, help="K")
     parser.add_argument("--b", type=float, default=0.02, help="b")
 
-    parser.add_argument('--groups', type=int, default=4)
+    parser.add_argument('--groups', type=int, default=3)
     parser.add_argument('--max_attraction_points', type=int, default=3)
     parser.add_argument('--save_folder', type=str, default='.')
     parser.add_argument('--plot', action="store_true", default=True)
