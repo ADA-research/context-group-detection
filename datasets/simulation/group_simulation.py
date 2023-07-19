@@ -246,13 +246,14 @@ class SpringSim(object):
             return loc, vel, inter, ga, gr, attraction_points
 
 
-def generate_dataset(simulation, num_sims, length, sample_freq):
+def generate_dataset(simulation, num_sims, length, sample_freq, print_rate=100):
     """
     Generate dataset of simulations.
     :param simulation: SpringSim object
     :param num_sims: number of simulations to generate
     :param length: length of simulation
     :param sample_freq: sample frequency of simulation
+    :param print_rate: frequency of printing simulation time
     :return:
     """
     locations = list()  # shape: [num_sims, num_sampledTimesteps, num_features, num_atoms]
@@ -269,7 +270,7 @@ def generate_dataset(simulation, num_sims, length, sample_freq):
         t = time.time()
         # return vectors of one simulation
         loc, vel, inter, ga, gr, ap = simulation.sample_trajectory(T=length, sample_freq=sample_freq)
-        if i % 100 == 0:
+        if i % print_rate == 0:
             print("Iter: {}, Simulation time: {}".format(i, time.time() - t))
 
         locations.append(loc)
@@ -355,19 +356,19 @@ def save_data(save_folder, df, groups, name, data):
 
 
 def plot(sim, loc, vel, inter, ga, ap):
-    plt.set_cmap('Set3')
+    plt.set_cmap('Set2')
 
     # Get a color palette and assign colors to groups
-    color_palette = plt.get_cmap('Set3')
+    color_palette = plt.get_cmap('Set2')
     colors = {group: color_palette(i) for i, group in enumerate(np.unique(ga))}
 
     plt.figure()
     axes = plt.gca()
     # axes.set_xlim([-2., 3.])
     # axes.set_ylim([-3., 3.])
-    axes.set_xlabel('X')
-    axes.set_ylabel('Y')
-    axes.set_title('Trajectories')
+    axes.set_xlabel('X coordinate')
+    axes.set_ylabel('Y coordinate')
+    # axes.set_title('Trajectories')
     # plt.title('Trajectories')
     for i in range(loc.shape[-1]):
         plt.plot(loc[:, 0, i], loc[:, 1, i], color=colors[ga[i]])
@@ -375,7 +376,7 @@ def plot(sim, loc, vel, inter, ga, ap):
         plt.plot(loc[-1, 0, i], loc[-1, 1, i], color=colors[ga[i]], marker='^')
 
     for attraction_point in ap:
-        plt.plot(attraction_point[0], attraction_point[1], marker='x')
+        plt.plot(attraction_point[0], attraction_point[1], color='gray', marker='p', markersize=10)
 
     # plt.figure()
     # energies = [sim._energy(loc[i, :, :], vel[i, :, :], inter) for i in range(loc.shape[0])]
@@ -387,15 +388,15 @@ def plot(sim, loc, vel, inter, ga, ap):
 def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--seed", type=int, default=42, help="random seed")
-    parser.add_argument("--num-sim", type=int, default=1, help="number of simulations to perform.")
+    parser.add_argument("--num-sim", type=int, default=2, help="number of simulations to perform.")
     parser.add_argument("--length", type=int, default=5000, help="length of trajectory.")
     parser.add_argument("--sample-freq", type=int, default=100, help="how often to sample the trajectory.")
     parser.add_argument("--n-balls", type=int, default=10, help="number of balls in the simulation.")
     parser.add_argument("--ga-values-factor", type=int, default=5, help="group assignment value factor")
     parser.add_argument("--K", type=float, default=3.0, help="K")
-    parser.add_argument("--b", type=float, default=0.05, help="b")
+    parser.add_argument("--b", type=float, default=0.02, help="b")
 
-    parser.add_argument('--groups', type=int, default=3)
+    parser.add_argument('--groups', type=int, default=4)
     parser.add_argument('--max_attraction_points', type=int, default=3)
     parser.add_argument('--save_folder', type=str, default='.')
     parser.add_argument('--plot', action="store_true", default=True)
@@ -414,7 +415,7 @@ if __name__ == '__main__':
 
     print("Generating {} simulations".format(args.num_sim))
     locations, velocities, interactions, group_assignments, group_relationships, attraction_points = generate_dataset(
-        simulation, args.num_sim, args.length, args.sample_freq)
+        simulation, args.num_sim, args.length, args.sample_freq, 1)
 
     df = get_simulation_dataframe(locations, velocities)
     groups = get_group_list(group_assignments)
@@ -430,6 +431,6 @@ if __name__ == '__main__':
     save_data(args.save_folder, df, groups, suffix, data)
 
     if args.plot:
-        for sim in range(args.num_sim):
+        for sim in range(1):
             plot(simulation, locations[sim], velocities[sim], interactions[sim], group_assignments[sim],
                  attraction_points[sim])
