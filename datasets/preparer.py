@@ -70,6 +70,7 @@ def groups_size_hist(groups_dict, save_loc):
     # bar plot using seaborn
     sns.set_theme(style="whitegrid")
     sns.catplot(data=groups_df, kind='count', x='size', hue='dataset')
+    plt.tight_layout()
     plt.suptitle('Group sizes per dataset')
     plt.ylabel('Count')
     plt.xlabel('Group size')
@@ -759,6 +760,7 @@ if __name__ == '__main__':
     }
     if args.report:
         report('datasets.xlsx', datasets_dict)
+        exit()
 
     # create datasets group size histogram
     groups_dict = {
@@ -770,6 +772,7 @@ if __name__ == '__main__':
     }
     if args.plot:
         groups_size_hist(groups_dict, './group_size_plot.png')
+        exit()
 
     multi_frame, steps, factor = get_sample_params(args.frames_num, args.agents_num)
 
