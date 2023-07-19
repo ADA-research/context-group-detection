@@ -56,7 +56,7 @@ class SpringSim(object):
     """
 
     def __init__(self, n_balls=5, box_size=10., loc_std=0.5, vel_norm=0.5, interaction_strength=0.1, noise_var=0.,
-                 ga_values_factor=3, K=3, b=0.001, n_groups=2):
+                 ga_values_factor=3, K=3, b=0.001, n_groups=2, attraction_strength=0.05):
         self.n_balls = n_balls
         self.box_size = box_size
         self.loc_std = loc_std
@@ -70,6 +70,20 @@ class SpringSim(object):
         self.K = K
         self.b = b
         self.n_groups = n_groups
+        self.attraction_strength = attraction_strength
+
+    def get_attraction_points(self, max_attraction_points):
+        attraction_points = []
+        for _ in range(max_attraction_points):
+            attraction_point = np.array([np.random.uniform(self.box_size / 2), np.random.uniform(self.box_size / 2)])
+            attraction_points.append(attraction_point)
+        groups_attractions_points = []
+        for group in range(self.n_groups):
+            num_attraction_points = np.random.randint(1, max_attraction_points + 1)
+            group_attractions_points = np.random.choice(np.arange(len(attraction_points)),
+                                                        size=(num_attraction_points,))
+            groups_attractions_points.append([attraction_points[i] for i in group_attractions_points])
+        return attraction_points, groups_attractions_points
 
     def _energy(self, loc, vel, edges):
         # disables division by zero warning, since I fix it with fill_diagonal
@@ -120,7 +134,25 @@ class SpringSim(object):
         dist = A_norm + B_norm - 2 * A.dot(B.transpose())
         return dist
 
-    def sample_trajectory(self, T=10000, sample_freq=100):
+    def get_attraction_forces(self, timestep, duration, loc, group_assignments, groups_attraction_points):
+        attraction_points = np.zeros_like(loc)
+        for i, groups_attraction_points in enumerate(groups_attraction_points):
+            # get current attraction point for group
+            timesteps_per_point = duration / len(groups_attraction_points)
+            current_time_segment = int(timestep / timesteps_per_point)
+            # update attraction points for agents of group
+            group_indices = np.where(group_assignments == i)[0]
+            attraction_points[0, group_indices] = groups_attraction_points[current_time_segment][0]
+            attraction_points[1, group_indices] = groups_attraction_points[current_time_segment][1]
+        # calculate the direction for group agents
+        direction = attraction_points - loc
+        # update force array
+        strength = self.attraction_strength
+        # size = np.linalg.norm(direction, axis=0)
+        force = direction * strength
+        return force
+
+    def sample_trajectory(self, T=10000, sample_freq=100, max_attraction_points=3):
         """
         Interaction edges may change at each timestep
         if dynamic, the group assignment will be re-evaluated at each sampled
@@ -139,6 +171,8 @@ class SpringSim(object):
         assert (T % sample_freq == 0)
         T_save = int(T / sample_freq - 1)
         counter = 0
+
+        attraction_points, groups_attraction_points = self.get_attraction_points(max_attraction_points)
 
         # Initialize groups
         ga, ga_dict, ga_matrix, ga_values, gr = groups_initialize(n, ga_values_factor, n_groups)
@@ -201,10 +235,15 @@ class SpringSim(object):
                 F[F < -self._max_F] = -self._max_F
                 vel_next += self._delta_T * F
 
+                attraction_forces = self.get_attraction_forces(i, T, loc_next, ga, groups_attraction_points)
+                attraction_forces[attraction_forces > self._max_F] = self._max_F
+                attraction_forces[attraction_forces < -self._max_F] = -self._max_F
+                vel_next += self._delta_T * attraction_forces
+
             # Add noise to observations
             loc += np.random.randn(T_save, 2, n) * self.noise_var
             vel += np.random.randn(T_save, 2, n) * self.noise_var
-            return loc, vel, inter, ga, gr
+            return loc, vel, inter, ga, gr, attraction_points
 
 
 def generate_dataset(simulation, num_sims, length, sample_freq):
@@ -224,10 +263,12 @@ def generate_dataset(simulation, num_sims, length, sample_freq):
     # group relationship list
     group_relationships = list()  # shape: [num_sims, (num_sampledTimesteps), num_atoms, num_atoms]
 
+    attraction_points = list()
+
     for i in range(num_sims):
         t = time.time()
         # return vectors of one simulation
-        loc, vel, inter, ga, gr = simulation.sample_trajectory(T=length, sample_freq=sample_freq)
+        loc, vel, inter, ga, gr, ap = simulation.sample_trajectory(T=length, sample_freq=sample_freq)
         if i % 100 == 0:
             print("Iter: {}, Simulation time: {}".format(i, time.time() - t))
 
@@ -236,14 +277,16 @@ def generate_dataset(simulation, num_sims, length, sample_freq):
         interactions.append(inter)
         group_assignments.append(ga)
         group_relationships.append(gr)
+        attraction_points.append(ap)
 
     locations = np.stack(locations)
     velocities = np.stack(velocities)
     interactions = np.stack(interactions)
     group_assignments = np.stack(group_assignments)
     group_relationships = np.stack(group_relationships)
+    attraction_points = np.stack(attraction_points)
 
-    return locations, velocities, interactions, group_assignments, group_relationships
+    return locations, velocities, interactions, group_assignments, group_relationships, attraction_points
 
 
 def get_simulation_dataframe(locations, velocities):
@@ -311,7 +354,7 @@ def save_data(save_folder, df, groups, name, data):
     np.save('{}/gr_sim_{}.npy'.format(save_folder_path, suffix), data['gr'])
 
 
-def plot(sim, loc, vel, inter, ga):
+def plot(sim, loc, vel, inter, ga, ap):
     plt.set_cmap('Set3')
 
     # Get a color palette and assign colors to groups
@@ -329,11 +372,15 @@ def plot(sim, loc, vel, inter, ga):
     for i in range(loc.shape[-1]):
         plt.plot(loc[:, 0, i], loc[:, 1, i], color=colors[ga[i]])
         plt.plot(loc[0, 0, i], loc[0, 1, i], color=colors[ga[i]], marker='o')
+        plt.plot(loc[-1, 0, i], loc[-1, 1, i], color=colors[ga[i]], marker='^')
 
-    plt.figure()
-    energies = [sim._energy(loc[i, :, :], vel[i, :, :], inter) for i in range(loc.shape[0])]
-    plt.plot(energies)
-    plt.title('Energies')
+    for attraction_point in ap:
+        plt.plot(attraction_point[0], attraction_point[1], marker='x')
+
+    # plt.figure()
+    # energies = [sim._energy(loc[i, :, :], vel[i, :, :], inter) for i in range(loc.shape[0])]
+    # plt.plot(energies)
+    # plt.title('Energies')
     plt.show()
 
 
@@ -349,6 +396,7 @@ def get_args():
     parser.add_argument("--b", type=float, default=0.05, help="b")
 
     parser.add_argument('--groups', type=int, default=3)
+    parser.add_argument('--max_attraction_points', type=int, default=3)
     parser.add_argument('--save_folder', type=str, default='.')
     parser.add_argument('--plot', action="store_true", default=True)
 
@@ -359,17 +407,14 @@ if __name__ == '__main__':
     args = get_args()
     print(args)
 
+    np.random.seed(args.seed)
+
     simulation = SpringSim(n_balls=args.n_balls, ga_values_factor=args.ga_values_factor, K=args.K, b=args.b,
                            n_groups=args.groups)
 
-    np.random.seed(args.seed)
-
     print("Generating {} simulations".format(args.num_sim))
-    locations, velocities, interactions, group_assignments, group_relationships = generate_dataset(
-        simulation,
-        args.num_sim,
-        args.length,
-        args.sample_freq)
+    locations, velocities, interactions, group_assignments, group_relationships, attraction_points = generate_dataset(
+        simulation, args.num_sim, args.length, args.sample_freq)
 
     df = get_simulation_dataframe(locations, velocities)
     groups = get_group_list(group_assignments)
@@ -386,4 +431,5 @@ if __name__ == '__main__':
 
     if args.plot:
         for sim in range(args.num_sim):
-            plot(simulation, locations[sim], velocities[sim], interactions[sim], group_assignments[sim])
+            plot(simulation, locations[sim], velocities[sim], interactions[sim], group_assignments[sim],
+                 attraction_points[sim])
