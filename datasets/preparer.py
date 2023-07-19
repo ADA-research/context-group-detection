@@ -735,7 +735,7 @@ def get_args():
     parser.add_argument('-p', '--plot', action="store_true", default=False)
     parser.add_argument('-s', '--shift', action="store_true", default=True)
     parser.add_argument('-r', '--report', action="store_true", default=False)
-    parser.add_argument('--nri', action="store_true", default=True)
+    parser.add_argument('--nri', action="store_true", default=False)
 
     return parser.parse_args()
 
