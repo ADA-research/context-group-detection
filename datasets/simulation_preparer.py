@@ -10,7 +10,7 @@ import xlsxwriter
 from matplotlib import pyplot as plt
 
 from datasets.loader import read_sim, read_multi_groups
-from datasets.preparer import dataset_reformat, save_folds, get_scene_data
+from datasets.preparer import dataset_reformat, save_folds, get_scene_data, get_sample_rates
 
 
 def report(name, data):
@@ -118,6 +118,55 @@ def get_group_pairs(groups):
     return scene_pairs
 
 
+def get_sample_params(frames_num, agents_num):
+    steps = {
+        'eth': 1,
+        'hotel': 1,
+        'zara01': 1,
+        'zara02': 1,
+        'students03': 5
+    }
+    multi_frame = True
+    if frames_num == 1:
+        multi_frame = False
+        if agents_num == 6:
+            factor = {
+                'sim': 4
+            }
+        elif agents_num == 10:
+            factor = {
+                'sim': 4
+            }
+    elif frames_num == 5:
+        if agents_num == 6:
+            factor = {
+                'sim': 4
+            }
+        elif agents_num == 10:
+            factor = {
+                'sim': 4
+            }
+    elif frames_num == 10:
+        if agents_num == 6:
+            factor = {
+                'sim': 4
+            }
+        elif agents_num == 10:
+            factor = {
+                'sim': 4
+            }
+    elif frames_num == 15:
+        if agents_num == 6:
+            factor = {
+                'sim': 4
+            }
+        elif agents_num == 10:
+            factor = {
+                'sim': 4
+            }
+    return multi_frame, steps, factor
+
+
 def get_args():
     parser = argparse.ArgumentParser()
 
@@ -164,6 +213,8 @@ if __name__ == '__main__':
     if args.frames_num == 1:
         multi_frame = False
 
+    multi_frame, steps, factor = get_sample_params(args.frames_num, args.agents_num)
+
     for dataset in datasets_dict.keys():
         dataset_start = datetime.now()
         print('Dataset: {}, started at: {}'.format(dataset, dataset_start))
@@ -177,15 +228,14 @@ if __name__ == '__main__':
         scenes = get_scene_data(dataframe=df, consecutive_frames=args.frames_num, difference_between_frames=difference,
                                 groups=groups, step=1)
 
+        sample_rates = get_sample_rates(scenes, group_pairs, factor=factor[dataset])
+
         # format dataset to be used by proposed approach
-        data, labels, frames, filtered_groups = dataset_reformat(dataframe=df,
+        data, labels, frames, filtered_groups = dataset_reformat(dataframe=df, groups=groups,
                                                                  scene_data=scenes,
-                                                                 groups=groups,
-                                                                 group_pairs=group_pairs,
-                                                                 agents_num=args.agents_num,
-                                                                 shift=args.shift,
-                                                                 min_pair_samples=1,
-                                                                 max_pair_samples=1)
+                                                                 group_pairs=group_pairs, agents_num=args.agents_num,
+                                                                 sample_rates=sample_rates,
+                                                                 shift=args.shift)
         dataset = '{}_shifted'.format(dataset) if args.shift else dataset
         # save dataset in folds
         save_folds(args.save_folder, dataset, args.frames_num, args.agents_num, data, labels, frames,
