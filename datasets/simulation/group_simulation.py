@@ -2,6 +2,7 @@ import argparse
 import os
 import time
 
+import imageio
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -261,7 +262,7 @@ class SpringSim(object):
             return loc, vel, inter, ga, gr, attraction_points
 
 
-def generate_dataset(simulation, num_sims, length, sample_freq, print_rate=100):
+def generate_dataset(simulation, num_sims, length, sample_freq, print_rate=100, max_attraction_points=3):
     """
     Generate dataset of simulations.
     :param simulation: SpringSim object
@@ -269,6 +270,7 @@ def generate_dataset(simulation, num_sims, length, sample_freq, print_rate=100):
     :param length: length of simulation
     :param sample_freq: sample frequency of simulation
     :param print_rate: frequency of printing simulation time
+    :param max_attraction_points: max attraction points included in simulation
     :return:
     """
     locations = list()  # shape: [num_sims, num_sampledTimesteps, num_features, num_atoms]
@@ -284,7 +286,8 @@ def generate_dataset(simulation, num_sims, length, sample_freq, print_rate=100):
     for i in range(num_sims):
         t = time.time()
         # return vectors of one simulation
-        loc, vel, inter, ga, gr, ap = simulation.sample_trajectory(T=length, sample_freq=sample_freq)
+        loc, vel, inter, ga, gr, ap = simulation.sample_trajectory(
+            T=length, sample_freq=sample_freq, max_attraction_points=max_attraction_points)
         if i % print_rate == 0:
             print("Iter: {}, Simulation time: {}".format(i, time.time() - t))
 
@@ -347,9 +350,7 @@ def get_group_list(ga):
     return group_list
 
 
-def save_data(save_folder, df, groups, name, data):
-    save_folder_path = save_folder + '/sim_{}'.format(name)
-
+def save_data(save_folder_path, df, groups, data):
     os.makedirs(save_folder_path, exist_ok=True)
     df.to_csv('{}/data.csv'.format(save_folder_path), index=False)
 
@@ -370,7 +371,7 @@ def save_data(save_folder, df, groups, name, data):
     np.save('{}/gr_sim_{}.npy'.format(save_folder_path, suffix), data['gr'])
 
 
-def plot(sim, loc, vel, inter, ga, ap):
+def plot(sim, loc, vel, inter, ga, ap, t, save_loc, plot=False):
     plt.set_cmap('Set2')
 
     # Get a color palette and assign colors to groups
@@ -378,26 +379,35 @@ def plot(sim, loc, vel, inter, ga, ap):
     colors = {group: color_palette(i) for i, group in enumerate(np.unique(ga))}
 
     plt.figure()
-    axes = plt.gca()
-    # axes.set_xlim([-2., 3.])
-    # axes.set_ylim([-3., 3.])
-    axes.set_xlabel('X coordinate')
-    axes.set_ylabel('Y coordinate')
-    # axes.set_title('Trajectories')
-    # plt.title('Trajectories')
     for i in range(loc.shape[-1]):
-        plt.plot(loc[:, 0, i], loc[:, 1, i], color=colors[ga[i]])
         plt.plot(loc[0, 0, i], loc[0, 1, i], color=colors[ga[i]], marker='o')
-        plt.plot(loc[-1, 0, i], loc[-1, 1, i], color=colors[ga[i]], marker='^')
+        if t != 0:
+            plt.plot(loc[:t + 1, 0, i], loc[:t + 1, 1, i], color=colors[ga[i]])
+            plt.plot(loc[t, 0, i], loc[t, 1, i], color=colors[ga[i]], marker='^')
 
     for attraction_point in ap:
         plt.plot(attraction_point[0], attraction_point[1], color='gray', marker='p', markersize=10)
 
-    # plt.figure()
-    # energies = [sim._energy(loc[i, :, :], vel[i, :, :], inter) for i in range(loc.shape[0])]
-    # plt.plot(energies)
-    # plt.title('Energies')
-    plt.show()
+    plt.ylabel('Y coordinate')
+    plt.xlabel('X coordinate')
+    plt.savefig(save_loc)
+    if plot:
+        plt.show()
+    plt.close()
+
+
+def create_gif(sim, loc, vel, inter, ga, ap, save_folder):
+    frames = []
+    os.makedirs('{}/img'.format(save_folder), exist_ok=True)
+    for t in range(loc.shape[0]):
+        save_loc = '{}/img/img_{}.png'.format(save_folder, t)
+        plot(sim, loc, vel, inter, ga, ap, t, save_loc, False)
+        image = imageio.v2.imread(save_loc)
+        frames.append(image)
+
+    imageio.mimsave('{}/simulation.gif'.format(save_folder),  # output file
+                    frames,  # array of input frames
+                    duration=loc.shape[0] * 2)  # optional: frames per second
 
 
 def get_args():
@@ -430,7 +440,7 @@ if __name__ == '__main__':
 
     print("Generating {} simulations".format(args.num_sim))
     locations, velocities, interactions, group_assignments, group_relationships, attraction_points = generate_dataset(
-        simulation, args.num_sim, args.length, args.sample_freq, 1)
+        simulation, args.num_sim, args.length, args.sample_freq, 1, args.max_attraction_points)
 
     df = get_simulation_dataframe(locations, velocities)
     groups = get_group_list(group_assignments)
@@ -443,9 +453,10 @@ if __name__ == '__main__':
         'gr': group_relationships
     }
     suffix = '{}_{}_{}'.format(args.n_balls, int(args.K), int(args.b * 100))
-    save_data(args.save_folder, df, groups, suffix, data)
+    save_folder_path = args.save_folder + '/sim_{}'.format(suffix)
+    save_data(save_folder_path, df, groups, data)
 
     if args.plot:
         for sim in range(1):
-            plot(simulation, locations[sim], velocities[sim], interactions[sim], group_assignments[sim],
-                 attraction_points[sim])
+            create_gif(simulation, locations[sim], velocities[sim], interactions[sim], group_assignments[sim],
+                       attraction_points[sim], save_folder_path)
