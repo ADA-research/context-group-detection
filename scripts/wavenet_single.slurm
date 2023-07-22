@@ -11,7 +11,7 @@
 # Default values
 config="./config/wavenet_pede.yml"
 model="nri_pede"
-fold=0
+fold=-1
 seed=14
 epochs=200
 
@@ -42,8 +42,13 @@ echo "Current working directory: $(pwd)"
 echo "Running ${model}"
 echo "Using config file at: ${config}, fold: ${fold}, epochs: ${epochs}, seed: ${seed}"
 
+fold_flag=""
+if [ ${fold} != -1 ]; then
+  fold_flag="--split ${fold}"
+fi
+
 echo "Script starting"
 cd "${HOME}/data1/context-group-detection/models/WavenetNRI/" || exit
-python ${model}.py -c ${config} --split ${fold} --epochs ${epochs} --seed ${seed}
+python ${model}.py -c ${config} ${fold_flag} --epochs ${epochs} --seed ${seed}
 
 echo "Script finished"
