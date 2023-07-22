@@ -10,7 +10,7 @@ import xlsxwriter
 from matplotlib import pyplot as plt
 
 from datasets.loader import read_sim, read_multi_groups
-from datasets.preparer import dataset_reformat, save_folds, get_scene_data, get_sample_rates
+from datasets.preparer import dataset_reformat, save_folds, get_scene_data
 
 
 def report(name, data):
@@ -116,52 +116,81 @@ def get_group_pairs(groups):
         scene_pairs.append(pairs)
     return scene_pairs
 
+def get_sample_rates(scenes, group_pairs, factor=1, target_size=100000):
+    """
+    Calculate sample rates for same/different group pairs.
+    :param scenes: list of scene data
+    :param group_pairs: list of group pairs
+    :param factor: factor to multiply sample rate to reach desired target size.
+    :param target_size: size of dataset to be created
+    :return:
+    """
+    same = []
+    different = []
+    for scene in scenes:
+        scene_id = scene['scene_id']
+        pairs = list(combinations(scene['common_agents'], 2))
+        for pair in pairs:
+            if pair in group_pairs[scene_id]:
+                same.append(pair)
+            else:
+                different.append(pair)
+
+    same_pairs_num = len(same)
+    different_pairs_num = len(different)
+
+    desired_proportion = target_size / 2
+
+    same_pairs_rate = int((desired_proportion / same_pairs_num) * factor)
+    different_pairs_rate = int((desired_proportion / different_pairs_num) * factor)
+
+    return {
+        'same': same_pairs_rate if same_pairs_rate != 0 else 1,
+        'different': different_pairs_rate if different_pairs_rate != 0 else 1
+    }
+
 
 def get_sample_params(frames_num, agents_num):
     steps = {
-        'eth': 1,
-        'hotel': 1,
-        'zara01': 1,
-        'zara02': 1,
-        'students03': 5
+        'sim_1': 1
     }
     multi_frame = True
     if frames_num == 1:
         multi_frame = False
         if agents_num == 6:
             factor = {
-                'sim': 4
+                'sim_1': 1
             }
         elif agents_num == 10:
             factor = {
-                'sim': 4
+                'sim_1': 1
             }
     elif frames_num == 5:
         if agents_num == 6:
             factor = {
-                'sim': 4
+                'sim_1': 1
             }
         elif agents_num == 10:
             factor = {
-                'sim': 4
+                'sim_1': 1
             }
     elif frames_num == 10:
         if agents_num == 6:
             factor = {
-                'sim': 4
+                'sim_1': 1
             }
         elif agents_num == 10:
             factor = {
-                'sim': 4
+                'sim_1': 1
             }
     elif frames_num == 15:
         if agents_num == 6:
             factor = {
-                'sim': 4
+                'sim_1': 1
             }
         elif agents_num == 10:
             factor = {
-                'sim': 4
+                'sim_1': 1
             }
     return multi_frame, steps, factor
 
@@ -172,7 +201,7 @@ def get_args():
     parser.add_argument('--seed', type=int, default=14)
     parser.add_argument('--samples_freq', type=int, default=50)
     parser.add_argument('-f', '--frames_num', type=int, default=10)
-    parser.add_argument('-a', '--agents_num', type=int, default=10)
+    parser.add_argument('-a', '--agents_num', type=int, default=6)
     parser.add_argument('-ts', '--target_size', type=int, default=100000)
     parser.add_argument('-d', '--dataset', type=str, default='eth')
     parser.add_argument('-sf', '--save_folder', type=str, default='./reformatted')
@@ -194,7 +223,7 @@ if __name__ == '__main__':
 
     # create datasets report
     datasets_dict = {
-        'sim_1': dataset_data('./simulation/sim_10_3_5', args.samples_freq)
+        'sim_1': dataset_data('./simulation/sim_10_3_2', args.samples_freq)
     }
     if args.report:
         report('datasets.xlsx', datasets_dict)
@@ -202,7 +231,7 @@ if __name__ == '__main__':
 
     # create datasets group size histogram
     groups_dict = {
-        'sim_1': read_multi_groups('./simulation/sim_10_3_5')
+        'sim_1': read_multi_groups('./simulation/sim_10_3_2')
     }
     if args.plot:
         groups_size_hist(groups_dict, './group_size_plot.png')
@@ -225,7 +254,7 @@ if __name__ == '__main__':
         group_pairs = get_group_pairs(groups)
 
         scenes = get_scene_data(dataframe=df, consecutive_frames=args.frames_num, difference_between_frames=difference,
-                                groups=groups, step=1)
+                                groups=groups, step=1, sim=True)
 
         sample_rates = get_sample_rates(scenes, group_pairs, factor=factor[dataset])
 
