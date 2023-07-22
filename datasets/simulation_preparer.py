@@ -200,7 +200,7 @@ def get_args():
 
     parser.add_argument('--seed', type=int, default=14)
     parser.add_argument('--samples_freq', type=int, default=50)
-    parser.add_argument('-f', '--frames_num', type=int, default=10)
+    parser.add_argument('-f', '--frames_num', type=int, default=15)
     parser.add_argument('-a', '--agents_num', type=int, default=6)
     parser.add_argument('-ts', '--target_size', type=int, default=100000)
     parser.add_argument('-d', '--dataset', type=str, default='eth')
@@ -267,7 +267,7 @@ if __name__ == '__main__':
         dataset = '{}_shifted'.format(dataset) if args.shift else dataset
         # save dataset in folds
         save_folds(args.save_folder, dataset, args.frames_num, args.agents_num, data, labels, frames,
-                   filtered_groups, multi_frame)
+                   filtered_groups, multi_frame, sim=True)
 
         end = datetime.now()
         print('Dataset: {}, finished in: {}'.format(dataset, end - dataset_start))
