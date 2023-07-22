@@ -238,6 +238,7 @@ def get_scene_data(dataframe, consecutive_frames, difference_between_frames, gro
         # ignore scenes with not enough common agents
         if len(common_agents) >= 2:
             scene_dict = {
+                'scene_id': scene_id if sim else None,
                 'frames': frames,
                 'common_agents': common_agents,
                 'total_agents': set.union(*agent_list),
