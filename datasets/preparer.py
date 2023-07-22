@@ -537,7 +537,7 @@ def dump(path, data):
 
 
 def save_folds(save_folder, dataset, frames_num, agents_num, data, labels, frames, groups, multi_frame, folds_num=5,
-               features=4):
+               features=4, sim=False):
     if not multi_frame:
         data = data.reshape((len(data), 1, agents_num, features))
 
@@ -562,6 +562,8 @@ def save_folds(save_folder, dataset, frames_num, agents_num, data, labels, frame
         dump('{}/train.p'.format(path), train)
         dump('{}/test.p'.format(path), test)
         dump('{}/val.p'.format(path), val)
+        if sim:
+            break
 
 
 def get_labels(agents, pairs):
