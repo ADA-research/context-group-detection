@@ -3,7 +3,6 @@ tensorflow
 keras
 pandas
 seaborn
-xlsxwriter
 scikit-learn
 torch
 imageio
