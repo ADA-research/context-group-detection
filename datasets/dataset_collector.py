@@ -20,7 +20,7 @@ def collect_info(data):
         unique_frame_ids = np.unique(frame_ids)
 
     frame_pairs = [frame[1] for frame in data[2]]
-    agents = np.unique(frame_pairs)
+    unique_agents = np.unique(frame_pairs)
 
     scene_agents = {}
     for frames, agents in data[2]:
@@ -37,7 +37,7 @@ def collect_info(data):
         'gs': group_samples,
         'ngs': non_group_samples,
         'frames': len(unique_frame_ids),
-        'agents': len(agents),
+        'agents': len(unique_agents),
         'agents avg': round(sum(counts) / len(counts), 1)
     }
 
@@ -74,7 +74,7 @@ def agent_counts_plot(counts, sets, save_loc):
     plt.show()
 
 
-def group_sizes_info(data, key):
+def group_sizes_info(data, key=None):
     groups = []
     for scene_frames, scene_groups in data[3]:
         for group in scene_groups:
@@ -83,25 +83,23 @@ def group_sizes_info(data, key):
     group_sizes = [len(group) for group in groups]
 
     groups_df = pd.DataFrame(group_sizes, columns=['size'])
-    groups_df['dataset'] = key
+    if key is not None:
+        groups_df['dataset'] = key
 
     return groups_df
 
 
-def groups_size_hist(groups_df, save_loc, fold):
+def groups_size_hist(groups_df, save_loc):
     """
     Produces a plot of counts of group lengths per dataset
     :param groups_df: dataframe of groups of dataset
     :param save_loc: path to location to save the histogram
-    :param fold: number of fold for which to generate the histogram
     :return: nothing
     """
-    # bar plot using seaborn
     sns.set(style='whitegrid')
-    sns.catplot(data=groups_df, kind='count', x='size', hue='dataset')
+    sns.catplot(data=groups_df, kind='count', x='size')
     dataset = args.dataset.replace('_shifted', '')
-    plt.suptitle('Group sizes of {} dataset\'s fold {}\nusing {}-frame scenes and {} agents'.format(
-        dataset, fold, args.frames_num, args.agents_num))
+    plt.suptitle('Group sizes of {} dataset\nusing {}-frame scenes'.format(dataset, args.frames_num))
     plt.tight_layout()
     plt.ylabel('Count')
     plt.xlabel('Group size')
@@ -114,7 +112,7 @@ def get_args():
 
     parser.add_argument('-f', '--frames_num', type=int, default=10)
     parser.add_argument('-a', '--agents_num', type=int, default=10)
-    parser.add_argument('-d', '--dataset', type=str, default='eth_shifted')
+    parser.add_argument('-d', '--dataset', type=str, default='zara02_shifted')
 
     return parser.parse_args()
 
@@ -123,6 +121,8 @@ if __name__ == '__main__':
     args = get_args()
 
     dataset_path = './reformatted/{}_{}_{}'.format(args.dataset, args.frames_num, args.agents_num)
+    dataset_name = args.dataset.replace('_shifted', '')
+    dataset_name = '{}_{}_{}'.format(dataset_name, args.frames_num, args.agents_num)
 
     for fold in os.listdir(dataset_path):
         fold_path = dataset_path + '/' + fold
@@ -142,14 +142,15 @@ if __name__ == '__main__':
 
             write_info(info, fold_path)
 
-            train_group_sizes_info = group_sizes_info(train, 'train')
-            test_group_sizes_info = group_sizes_info(test, 'test')
-            val_group_sizes_info = group_sizes_info(val, 'val')
+            train_group_sizes_info = group_sizes_info(train)
+            test_group_sizes_info = group_sizes_info(test)
+            val_group_sizes_info = group_sizes_info(val)
 
             groups_df = pd.concat([train_group_sizes_info, test_group_sizes_info, val_group_sizes_info])
 
-            groups_size_hist(groups_df, '{}/group_size_plot.png'.format(fold_path), fold_number)
+            groups_size_hist(groups_df, '{}/group_size_plot_{}.png'.format(dataset_path, dataset_name))
 
-    counts = [train_counts, test_counts, val_counts]
-    sets = ['train', 'test', 'val']
-    agent_counts_plot(counts, sets, '{}/agent_counts_plot.png'.format(dataset_path))
+            counts = [train_counts, test_counts, val_counts]
+            sets = ['train', 'test', 'val']
+            agent_counts_plot(counts, sets, '{}/agent_counts_plot_{}.png'.format(dataset_path, dataset_name))
+            break
