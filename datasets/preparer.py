@@ -11,7 +11,6 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 import torch
-import xlsxwriter
 from matplotlib import pyplot as plt
 from sklearn.model_selection import train_test_split
 
@@ -20,35 +19,18 @@ from datasets.loader import read_obsmat, read_groups
 
 def report(name, data):
     """
-    Generate excel report file with dataset data.
-    :param name: string for Excel file name
+    Generate csv report file with dataset data.
+    :param name: file name
     :param data: dictionary of data for every dataset
     :return: nothing
     """
-    workbook = xlsxwriter.Workbook(name)
-    worksheet = workbook.add_worksheet('Datasets')
-    header_row = 0
-    header_column = 0
-    worksheet.write(header_row, header_column, 'Dataset')
-    worksheet.write(header_row, header_column + 1, 'Agents #')
-    worksheet.write(header_row, header_column + 2, 'Frames #')
-    worksheet.write(header_row, header_column + 3, 'Groups #')
-    worksheet.write(header_row, header_column + 4, 'Duration')
-    # worksheet.write(header_row, header_column + 4, 'Agents # in multiple groups')
-    # worksheet.write(header_row, header_column + 5, 'Single agent groups #')
-
-    row = header_row + 1
-    for key in data.keys():
-        worksheet.write(row, 0, key)
-        worksheet.write(row, 1, data[key]['agents'])
-        worksheet.write(row, 2, data[key]['frames'])
-        worksheet.write(row, 3, len(data[key]['groups']))
-        worksheet.write(row, 4, data[key]['duration'])
-        # worksheet.write(row, 4, data[key]['multigroup agents'])
-        # worksheet.write(row, 5, data[key]['single agent groups'])
-        row += 1
-
-    workbook.close()
+    with open(name, 'w') as file:
+        file.write('{},{},{},{},{}\n'.format('Dataset', 'Agents #', 'Frames #', 'Groups #', 'Duration'))
+        for key in data.keys():
+            file.write(
+                '{},{},{},{},{}\n'.format(
+                    key, data[key]['agents'], data[key]['frames'], len(data[key]['groups']),
+                    round(data[key]['duration'], 2)))
 
 
 def groups_size_hist(groups_dict, save_loc):
@@ -759,7 +741,7 @@ if __name__ == '__main__':
         'students03': dataset_data('./UCY/students03')
     }
     if args.report:
-        report('datasets.xlsx', datasets_dict)
+        report('datasets.csv', datasets_dict)
         exit()
 
     # create datasets group size histogram
