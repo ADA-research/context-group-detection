@@ -79,7 +79,6 @@ def dataset_data(dataset_path, sample_frequency):
     :param dataset_path: string of where to find dataset
     :return: dictionary with data
     """
-    # TODO possibly use sim column to differentiate frames
     df = read_sim(dataset_path, sample_frequency)
     groups = read_multi_groups(dataset_path)
 
