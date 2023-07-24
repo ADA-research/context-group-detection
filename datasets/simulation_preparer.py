@@ -6,44 +6,11 @@ from itertools import combinations
 import numpy as np
 import pandas as pd
 import seaborn as sns
-import xlsxwriter
 from matplotlib import pyplot as plt
 
 from datasets.loader import read_sim, read_multi_groups
-from datasets.preparer import dataset_reformat, save_folds, get_scene_data
-
-
-def report(name, data):
-    """
-    Generate excel report file with dataset data.
-    :param name: string for Excel file name
-    :param data: dictionary of data for every dataset
-    :return: nothing
-    """
-    workbook = xlsxwriter.Workbook(name)
-    worksheet = workbook.add_worksheet('Datasets')
-    header_row = 0
-    header_column = 0
-    worksheet.write(header_row, header_column, 'Dataset')
-    worksheet.write(header_row, header_column + 1, 'Agents #')
-    worksheet.write(header_row, header_column + 2, 'Frames #')
-    worksheet.write(header_row, header_column + 3, 'Groups #')
-    worksheet.write(header_row, header_column + 4, 'Duration')
-    # worksheet.write(header_row, header_column + 4, 'Agents # in multiple groups')
-    # worksheet.write(header_row, header_column + 5, 'Single agent groups #')
-
-    row = header_row + 1
-    for key in data.keys():
-        worksheet.write(row, 0, key)
-        worksheet.write(row, 1, data[key]['agents'])
-        worksheet.write(row, 2, data[key]['frames'])
-        worksheet.write(row, 3, len(data[key]['groups']))
-        worksheet.write(row, 4, data[key]['duration'])
-        # worksheet.write(row, 4, data[key]['multigroup agents'])
-        # worksheet.write(row, 5, data[key]['single agent groups'])
-        row += 1
-
-    workbook.close()
+from datasets.preparer import dataset_reformat, save_folds, get_scene_data, get_nri_data, get_folds_info, \
+    save_nri_folds, report
 
 
 def groups_size_hist(groups_dict, save_loc):
@@ -115,6 +82,7 @@ def get_group_pairs(groups):
             pairs.extend(list(combinations(group, 2)))
         scene_pairs.append(pairs)
     return scene_pairs
+
 
 def get_sample_rates(scenes, group_pairs, factor=1, target_size=100000):
     """
@@ -208,6 +176,7 @@ def get_args():
     parser.add_argument('-p', '--plot', action="store_true", default=False)
     parser.add_argument('-s', '--shift', action="store_true", default=True)
     parser.add_argument('-r', '--report', action="store_true", default=False)
+    parser.add_argument('--nri', action="store_true", default=False)
 
     return parser.parse_args()
 
@@ -226,7 +195,7 @@ if __name__ == '__main__':
         'sim_1': dataset_data('./simulation/sim_10_3_2', args.samples_freq)
     }
     if args.report:
-        report('datasets.xlsx', datasets_dict)
+        report('simulation_datasets.csv', datasets_dict)
         exit()
 
     # create datasets group size histogram
@@ -258,20 +227,28 @@ if __name__ == '__main__':
 
         sample_rates = get_sample_rates(scenes, group_pairs, factor=factor[dataset])
 
-        # format dataset to be used by proposed approach
-        data, labels, frames, filtered_groups = dataset_reformat(dataframe=df, groups=groups,
-                                                                 scene_data=scenes,
-                                                                 group_pairs=group_pairs, agents_num=args.agents_num,
-                                                                 sample_rates=sample_rates,
-                                                                 shift=args.shift)
-        dataset = '{}_shifted'.format(dataset) if args.shift else dataset
-        # save dataset in folds
-        save_folds(args.save_folder, dataset, args.frames_num, args.agents_num, data, labels, frames,
-                   filtered_groups, multi_frame, sim=True)
+        if not args.nri:
+            # format dataset to be used by proposed approach
+            data, labels, frames, filtered_groups = dataset_reformat(dataframe=df, groups=groups,
+                                                                     scene_data=scenes,
+                                                                     group_pairs=group_pairs,
+                                                                     agents_num=args.agents_num,
+                                                                     sample_rates=sample_rates,
+                                                                     shift=args.shift)
+            dataset = '{}_shifted'.format(dataset) if args.shift else dataset
+            # save dataset in folds
+            save_folds(args.save_folder, dataset, args.frames_num, args.agents_num, data, labels, frames,
+                       filtered_groups, multi_frame, sim=True)
+            print('\tdata size: {}'.format(len(data)))
+        else:
+            nri_data, nri_labels, nri_frames = get_nri_data(dataframe=df, scene_data=scenes)
+            dataset = '{}_shifted'.format(dataset) if args.shift else dataset
+            folds_info = get_folds_info(args.save_folder, dataset, args.frames_num, args.agents_num)
+            save_nri_folds(args.save_folder, dataset, args.frames_num, nri_data, nri_labels, nri_frames, folds_info)
+            print('\tdata size: {}'.format(len(nri_data)))
 
         end = datetime.now()
         print('Dataset: {}, finished in: {}'.format(dataset, end - dataset_start))
-        print('\tdata size: {}'.format(len(data)))
         dataset_start = end
 
     end = datetime.now()
