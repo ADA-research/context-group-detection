@@ -5,6 +5,7 @@ from __future__ import division, print_function
 import argparse
 import datetime
 import pickle
+import sys
 import time
 
 import torch.optim as optim
@@ -14,6 +15,8 @@ from torch.optim import lr_scheduler
 
 from data_utils import *
 from models_NRI import *
+
+sys.path.append('../../')
 from models.DANTE.F1_calc import group_correctness
 from nri_pede import get_groups_from_ids
 
@@ -293,7 +296,7 @@ def test_gmitre():
                 f1_two_thirds = 0
             else:
                 f1_two_thirds = float(2) * precision_two_thirds * recall_two_thirds / (
-                            precision_two_thirds + recall_two_thirds)
+                        precision_two_thirds + recall_two_thirds)
 
             recall_all.append(recall)
             precision_all.append(precision)

@@ -9,6 +9,7 @@ from __future__ import division, print_function
 import argparse
 import datetime
 import pickle
+import sys
 import time
 
 import torch.optim as optim
@@ -17,8 +18,11 @@ from sknetwork.topology import get_connected_components
 from torch.optim import lr_scheduler
 
 from data_utils import *
-from models_NRI import *
+
+sys.path.append('../../')
 from models.DANTE.F1_calc import group_correctness
+from models_NRI import *
+
 
 def train(epoch, best_val_recall):
     t = time.time()
@@ -336,7 +340,7 @@ def test_gmitre():
             predicted_groups = get_groups_from_ids(pred_gIDs)
             true_groups = get_groups_from_ids(gID)
             _, _, _, precision_one, recall_one = group_correctness(predicted_groups, true_groups, 1)
-            _, _, _, precision_two_thirds, recall_two_thirds = group_correctness(predicted_groups, true_groups, 2/3)
+            _, _, _, precision_two_thirds, recall_two_thirds = group_correctness(predicted_groups, true_groups, 2 / 3)
             if precision_one * recall_one == 0:
                 f1_one = 0
             else:
@@ -344,7 +348,8 @@ def test_gmitre():
             if precision_two_thirds * recall_two_thirds == 0:
                 f1_two_thirds = 0
             else:
-                f1_two_thirds = float(2) * precision_two_thirds * recall_two_thirds / (precision_two_thirds + recall_two_thirds)
+                f1_two_thirds = float(2) * precision_two_thirds * recall_two_thirds / (
+                        precision_two_thirds + recall_two_thirds)
 
             recall_all.append(recall)
             precision_all.append(precision)
