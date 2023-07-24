@@ -1,4 +1,4 @@
 ---
-suffix: '10_3_5'
-dataset_folder: ../../datasets/simulation/sim_10_3_5
+suffix: '10_3_2'
+dataset_folder: ../../datasets/simulation/sim_10_3_2
 save_folder: logs/nrisu
