@@ -176,7 +176,6 @@ def get_args():
     parser.add_argument('-p', '--plot', action="store_true", default=False)
     parser.add_argument('-s', '--shift', action="store_true", default=True)
     parser.add_argument('-r', '--report', action="store_true", default=False)
-    parser.add_argument('--nri', action="store_true", default=False)
 
     return parser.parse_args()
 
@@ -227,25 +226,18 @@ if __name__ == '__main__':
 
         sample_rates = get_sample_rates(scenes, group_pairs, factor=factor[dataset])
 
-        if not args.nri:
-            # format dataset to be used by proposed approach
-            data, labels, frames, filtered_groups = dataset_reformat(dataframe=df, groups=groups,
-                                                                     scene_data=scenes,
-                                                                     group_pairs=group_pairs,
-                                                                     agents_num=args.agents_num,
-                                                                     sample_rates=sample_rates,
-                                                                     shift=args.shift)
-            dataset = '{}_shifted'.format(dataset) if args.shift else dataset
-            # save dataset in folds
-            save_folds(args.save_folder, dataset, args.frames_num, args.agents_num, data, labels, frames,
-                       filtered_groups, multi_frame, sim=True)
-            print('\tdata size: {}'.format(len(data)))
-        else:
-            nri_data, nri_labels, nri_frames = get_nri_data(dataframe=df, scene_data=scenes)
-            dataset = '{}_shifted'.format(dataset) if args.shift else dataset
-            folds_info = get_folds_info(args.save_folder, dataset, args.frames_num, args.agents_num)
-            save_nri_folds(args.save_folder, dataset, args.frames_num, nri_data, nri_labels, nri_frames, folds_info)
-            print('\tdata size: {}'.format(len(nri_data)))
+        # format dataset to be used by proposed approach
+        data, labels, frames, filtered_groups = dataset_reformat(dataframe=df, groups=groups,
+                                                                 scene_data=scenes,
+                                                                 group_pairs=group_pairs,
+                                                                 agents_num=args.agents_num,
+                                                                 sample_rates=sample_rates,
+                                                                 shift=args.shift)
+        dataset = '{}_shifted'.format(dataset) if args.shift else dataset
+        # save dataset in folds
+        save_folds(args.save_folder, dataset, args.frames_num, args.agents_num, data, labels, frames,
+                   filtered_groups, multi_frame, sim=True)
+        print('\tdata size: {}'.format(len(data)))
 
         end = datetime.now()
         print('Dataset: {}, finished in: {}'.format(dataset, end - dataset_start))
