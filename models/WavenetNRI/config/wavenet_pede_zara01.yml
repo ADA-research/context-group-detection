@@ -2,3 +2,6 @@
 suffix: zara01_shifted_15
 dataset_folder: ../../datasets/reformatted/zara01_shifted_15_nri
 save_folder: logs/nripedsu
+group_weight: 2.451
+ng_weight: 0.628
+# split='split00'

@@ -2,3 +2,5 @@
 suffix: '10_3_2'
 dataset_folder: ../../datasets/simulation/sim_10_3_2
 save_folder: logs/nrisu
+group_weight: 0.5
+ng_weight: 0.5

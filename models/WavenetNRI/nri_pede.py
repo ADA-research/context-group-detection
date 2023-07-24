@@ -381,11 +381,6 @@ if __name__ == '__main__':
     parser.add_argument("--gamma", type=float, default=0.5,
                         help="LR decay factor.")
 
-    parser.add_argument("--group-weight", type=float, default=0.5,
-                        help="group weight.")
-    parser.add_argument("--ng-weight", type=float, default=0.5,
-                        help="Non-group weight.")
-
     parser.add_argument("--grecall-weight", type=float, default=0.65,
                         help="group recall.")
     parser.add_argument('-c', '--config', type=str, default="./config/wavenet_pede.yml")
@@ -478,7 +473,7 @@ if __name__ == '__main__':
                                     do_prob=args.encoder_dropout, factor=args.factor,
                                     use_motion=args.use_motion)
 
-    cross_entropy_weight = torch.tensor([args.ng_weight, args.group_weight])
+    cross_entropy_weight = torch.tensor([config['ng_weight'], config['group_weight']])
 
     if args.load_folder:
         encoder_file = '{}/{}'.format(args.load_folder, "nri_encoder.pt")
