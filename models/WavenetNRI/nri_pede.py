@@ -347,9 +347,9 @@ if __name__ == '__main__':
                         help="Number of samples per batch.")
     parser.add_argument("--lr", type=float, default=0.005,
                         help="Initial learning rate.")
-    parser.add_argument("--encoder-hidden", type=int, default=256,
+    parser.add_argument("--encoder-hidden", type=int, default=128,
                         help="Number of hidden units.")
-    parser.add_argument("--encoder", type=str, default="wavenet",
+    parser.add_argument("--encoder", type=str, default="wavenetsym",
                         help="Type of encoder model.")
     parser.add_argument("--no-factor", action="store_true", default=False,
                         help="Disables factor graph model.")
