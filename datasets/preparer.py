@@ -647,9 +647,18 @@ def save_nri_folds(save_folder, dataset, frames_num, data, labels, frames, folds
         idx_train = [i for i, frame_id in enumerate(frames) if frame_id in frame_ids_train]
         idx_test = [i for i, frame_id in enumerate(frames) if frame_id in frame_ids_test]
         idx_val = [i for i, frame_id in enumerate(frames) if frame_id in frame_ids_val]
-        train = ([torch.tensor(i) for i in data[idx_train]], [torch.tensor(i) for i in labels[idx_train]])
-        test = ([torch.tensor(i) for i in data[idx_test]], [torch.tensor(i) for i in labels[idx_test]])
-        val = ([torch.tensor(i) for i in data[idx_val]], [torch.tensor(i) for i in labels[idx_val]])
+        train = (
+            [torch.tensor(i.astype(np.float64)) for i in data[idx_train]],
+            [torch.tensor(i.astype(np.float64)) for i in labels[idx_train]]
+        )
+        test = (
+            [torch.tensor(i.astype(np.float64)) for i in data[idx_test]],
+            [torch.tensor(i.astype(np.float64)) for i in labels[idx_test]]
+        )
+        val = (
+            [torch.tensor(i.astype(np.float64)) for i in data[idx_val]],
+            [torch.tensor(i.astype(np.float64)) for i in labels[idx_val]]
+        )
 
         path = '{}/{}_{}_nri/fold_{}'.format(save_folder, dataset, frames_num, i)
         os.makedirs(path, exist_ok=True)
