@@ -180,7 +180,7 @@ def get_args():
     return parser.parse_args()
 
 
-def split_sims(df):
+def split_sims(df, save_folder_path):
     sims = df['sim'].unique()
     num_sims = len(sims)
     np.random.shuffle(sims)
@@ -189,6 +189,8 @@ def split_sims(df):
     train_sims = sims[:train_idx]
     val_sims = sims[train_idx:val_idx]
     test_sims = sims[val_idx:]
+
+    np.save('{}/splits'.format(save_folder_path), [train_sims, test_sims, val_sims])
 
     train_df = df[df['sim'].isin(train_sims)]
     val_df = df[df['sim'].isin(val_sims)]
@@ -223,9 +225,13 @@ if __name__ == '__main__':
     random.seed(args.seed)
     np.random.seed(args.seed)
 
+    paths = {
+        'sim_1': './simulation/sim_10_3_2'
+    }
+
     # create datasets report
     datasets_dict = {
-        'sim_1': dataset_data('./simulation/sim_10_3_2', args.samples_freq)
+        'sim_1': dataset_data(paths['sim_1'], args.samples_freq)
     }
     if args.report:
         report('simulation_datasets.csv', datasets_dict)
@@ -233,7 +239,7 @@ if __name__ == '__main__':
 
     # create datasets group size histogram
     groups_dict = {
-        'sim_1': read_multi_groups('./simulation/sim_10_3_2')
+        'sim_1': read_multi_groups(paths['sim_1'])
     }
     if args.plot:
         groups_size_hist(groups_dict, './group_size_plot.png')
@@ -255,7 +261,7 @@ if __name__ == '__main__':
 
         group_pairs = get_group_pairs(groups)
 
-        for split_df, name, target_size in split_sims(df):
+        for split_df, name, target_size in split_sims(df, paths[dataset]):
             scenes = get_scene_data(dataframe=split_df, consecutive_frames=args.frames_num,
                                     difference_between_frames=difference,
                                     groups=groups, step=1, sim=True)
