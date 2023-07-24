@@ -61,6 +61,7 @@ def read_nri_results(folder_path):
     with open(file_path, "r") as file:
         lines = [line.lstrip().rstrip().split() for line in file.readlines()]
 
+    # TODO needs to be changed to match other results
     results = {
         'epoch': float(lines[-2][1]),
         'accuracy': float(lines[-2][17]),
