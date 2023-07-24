@@ -56,6 +56,21 @@ def read_results(folder_path):
     return results
 
 
+def read_nri_results(folder_path):
+    file_path = folder_path + '/log.txt'
+    with open(file_path, "r") as file:
+        lines = [line.lstrip().rstrip().split() for line in file.readlines()]
+
+    results = {
+        'epoch': float(lines[-2][1]),
+        'accuracy': float(lines[-2][17]),
+        'f1': float(lines[-2][27]),
+        'recall': float(lines[-2][29])
+    }
+
+    return results
+
+
 def get_averages(results):
     mse_vals = [res['best_val']['value'] for res in results]
     f1_1_vals = [res['best_val_f1_1']['value'] for res in results]
@@ -67,6 +82,18 @@ def get_averages(results):
         'f1_1': (np.mean(f1_1_vals), np.std(f1_1_vals)),
         'f1_2/3': (np.mean(f1_2_vals), np.std(f1_2_vals)),
         'f1_gmitre': (np.mean(f1_gmitre_vals), np.std(f1_gmitre_vals))
+    }
+
+
+def get_nri_averages(results):
+    accuracy = [res['accuracy'] for res in results]
+    recall = [res['recall'] for res in results]
+    f1 = [res['f1'] for res in results]
+
+    return {
+        'accuracy': (np.mean(accuracy), np.std(accuracy)),
+        'recall': (np.mean(recall), np.std(recall)),
+        'f1': (np.mean(f1), np.std(f1))
     }
 
 
@@ -83,6 +110,18 @@ def collect_results(results_path, dir_name):
                     results.append(read_results(folder_path))
 
     return get_averages(results)
+
+
+def collect_nri_results(results_path):
+    results = []
+    for fold in os.listdir(results_path):
+        fold_path = results_path + '/' + fold
+        if os.path.isdir(fold_path):
+            for folder in os.listdir(fold_path):
+                folder_path = fold_path + '/' + folder
+                results.append(read_nri_results(folder_path))
+
+    return get_nri_averages(results)
 
 
 def write_results(results, file_path, dir_name):
@@ -102,13 +141,31 @@ def write_results(results, file_path, dir_name):
             'std', results['mse'][1], results['f1_1'][1], results['f1_2/3'][1], results['f1_gmitre'][1]))
 
 
+def write_nri_results(results, file_path):
+    file_name = file_path + '/results.csv'
+
+    df = pd.DataFrame.from_dict(results, orient='index').transpose()
+    df['metric'] = ['mean', 'std']
+    df = df.set_index('metric')
+    df.to_csv(file_name)
+
+    file_path = file_path + '/results.txt'
+    with open(file_path, "w") as file:
+        file.write('{:<10s} {:<10s} {:<10s} {:<10s}\n'.format('', 'accuracy', 'recall', 'f1'))
+        file.write('{:<10s} {:<10.7f} {:<10.7f} {:<10.7f}\n'.format(
+            'mean', results['accuracy'][0], results['recall'][0], results['f1'][0]))
+        file.write('{:<10s} {:<10.7f} {:<10.7f} {:<10.7f}\n'.format(
+            'std', results['accuracy'][1], results['recall'][1], results['f1'][1]))
+
+
 def get_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--dataset', type=str, default="eth_shifted")
     parser.add_argument('-a', '--agents', type=int, default=10)
-    parser.add_argument('-cf', '--frames', type=int, default=1)
+    parser.add_argument('-cf', '--frames', type=int, default=15)
     parser.add_argument('--dir_name', type=str, default="e150")
+    parser.add_argument('--nri', action="store_true", default=True)
 
     return parser.parse_args()
 
@@ -116,7 +173,11 @@ def get_args():
 if __name__ == '__main__':
     args = get_args()
 
-    results_path = './results/{}_{}_{}'.format(args.dataset, args.frames, args.agents)
-
-    results = collect_results(results_path, args.dir_name)
-    write_results(results, results_path, args.dir_name)
+    if args.nri:
+        results_path = './WavenetNRI/logs/nripedsu/wavenetsym_{}_{}'.format(args.dataset, args.frames)
+        results = collect_nri_results(results_path)
+        write_nri_results(results, results_path)
+    else:
+        results_path = './results/{}_{}_{}'.format(args.dataset, args.frames, args.agents)
+        results = collect_results(results_path, args.dir_name)
+        write_results(results, results_path, args.dir_name)
