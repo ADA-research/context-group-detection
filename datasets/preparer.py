@@ -320,6 +320,18 @@ def get_agent_data_for_frames(dataframe, agents, frames):
     return list(data.groupby('agent_id')['measurement'].apply(list).values)
 
 
+def get_agent_normalised_data_for_frames(dataframe, agents, frames):
+    """
+    Returns a list of tuples with location and velocity normalised data for each frame and agent
+    :param dataframe: dataframe to retrieve data
+    :param agents: list of agents for who to retrieve data
+    :param frames: list of frames for which to retrieve data
+    :return: list of lists of data of each agent
+    """
+    data = dataframe[dataframe['frame_id'].isin(frames) & dataframe['agent_id'].isin(agents)]
+    return list(data.groupby('agent_id')['measurement_norm'].apply(list).values)
+
+
 def shift_data(pair_data, context_data, frames):
     new_context_data = [[] for i in range(len(context_data))]
     for i in range(frames):
@@ -572,17 +584,37 @@ def get_labels(agents, pairs):
     return labels
 
 
+def normalise_data(dataframe):
+    for column in ['pos_x', 'pos_y', 'v_x', 'v_y']:
+        # Z-score Normalization
+        mean_value = dataframe[column].mean()
+        std_value = dataframe[column].std()
+
+        # Avoid division by zero
+        if std_value != 0:
+            dataframe[column + '_norm'] = (dataframe[column] - mean_value) / std_value
+        else:
+            dataframe[column + '_norm'] = 0
+
+    df['measurement_norm'] = df[['pos_x_norm', 'pos_y_norm', 'v_x_norm', 'v_y_norm']].apply(tuple, axis=1)
+
+    return dataframe
+
+
 def get_nri_data(dataframe, scene_data):
     data = []
     labels = []
     scenes_frames = []
+
+    dataframe = normalise_data(dataframe)
+
     for scene in scene_data:
         scene_frame_ids = scene['frames']
         scene_groups = scene['groups']
         group_pairs = get_no_context_group_pairs(scene_groups)
         scene_agents = scene['common_agents']
 
-        agent_data = get_agent_data_for_frames(dataframe, scene_agents, scene_frame_ids)
+        agent_data = get_agent_normalised_data_for_frames(dataframe, scene_agents, scene_frame_ids)
         data.append(np.asarray(agent_data)[:, :, :2])
         labels.append(np.asarray(get_labels(scene_agents, group_pairs)))
         scenes_frames.append(scene_frame_ids)
@@ -721,7 +753,7 @@ def get_args():
     parser.add_argument('-p', '--plot', action="store_true", default=False)
     parser.add_argument('-s', '--shift', action="store_true", default=True)
     parser.add_argument('-r', '--report', action="store_true", default=False)
-    parser.add_argument('--nri', action="store_true", default=False)
+    parser.add_argument('--nri', action="store_true", default=True)
 
     return parser.parse_args()
 
