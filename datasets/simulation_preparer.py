@@ -1,4 +1,5 @@
 import argparse
+import os
 import random
 from datetime import datetime
 from itertools import combinations
@@ -9,8 +10,7 @@ import seaborn as sns
 from matplotlib import pyplot as plt
 
 from datasets.loader import read_sim, read_multi_groups
-from datasets.preparer import dataset_reformat, save_folds, get_scene_data, get_nri_data, get_folds_info, \
-    save_nri_folds, report
+from datasets.preparer import dataset_reformat, get_scene_data, report, dump
 
 
 def groups_size_hist(groups_dict, save_loc):
@@ -180,6 +180,40 @@ def get_args():
     return parser.parse_args()
 
 
+def split_sims(df):
+    sims = df['sim'].unique()
+    num_sims = len(sims)
+    np.random.shuffle(sims)
+    train_idx = int(num_sims * 0.6)
+    val_idx = int(num_sims * 0.8)
+    train_sims = sims[:train_idx]
+    val_sims = sims[train_idx:val_idx]
+    test_sims = sims[val_idx:]
+
+    train_df = df[df['sim'].isin(train_sims)]
+    val_df = df[df['sim'].isin(val_sims)]
+    test_df = df[df['sim'].isin(test_sims)]
+
+    return [(train_df, 'train', 100000), (test_df, 'test', 20000), (val_df, 'val', 20000)]
+
+
+def save_split(save_folder, dataset, frames_num, agents_num, data, labels, frames, groups, multi_frame, split_name,
+               features=4):
+    if not multi_frame:
+        data = data.reshape((len(data), 1, agents_num, features))
+
+    if multi_frame:
+        split_data = (
+            [data[:, j, :] for j in range(agents_num)], labels, frames, groups)
+    else:
+        split_data = (
+            [data[:, :, 2:], data[:, :, :2]], labels, frames, groups)
+
+    path = '{}/{}_{}_{}'.format(save_folder, dataset, frames_num, agents_num)
+    os.makedirs(path, exist_ok=True)
+    dump('{}/{}.p'.format(path, split_name), split_data)
+
+
 if __name__ == '__main__':
     start = datetime.now()
     print('Started at {}'.format(start))
@@ -221,23 +255,27 @@ if __name__ == '__main__':
 
         group_pairs = get_group_pairs(groups)
 
-        scenes = get_scene_data(dataframe=df, consecutive_frames=args.frames_num, difference_between_frames=difference,
-                                groups=groups, step=1, sim=True)
+        for split_df, name, target_size in split_sims(df):
+            scenes = get_scene_data(dataframe=split_df, consecutive_frames=args.frames_num,
+                                    difference_between_frames=difference,
+                                    groups=groups, step=1, sim=True)
 
-        sample_rates = get_sample_rates(scenes, group_pairs, factor=factor[dataset])
-
-        # format dataset to be used by proposed approach
-        data, labels, frames, filtered_groups = dataset_reformat(dataframe=df, groups=groups,
-                                                                 scene_data=scenes,
-                                                                 group_pairs=group_pairs,
-                                                                 agents_num=args.agents_num,
-                                                                 sample_rates=sample_rates,
-                                                                 shift=args.shift)
-        dataset = '{}_shifted'.format(dataset) if args.shift else dataset
-        # save dataset in folds
-        save_folds(args.save_folder, dataset, args.frames_num, args.agents_num, data, labels, frames,
-                   filtered_groups, multi_frame, sim=True)
-        print('\tdata size: {}'.format(len(data)))
+            sample_rates = get_sample_rates(scenes, group_pairs, factor=factor[dataset], target_size=target_size)
+            print('\tsplit: {}, started at: {}'.format(name, dataset_start))
+            # format dataset to be used by proposed approach
+            data, labels, frames, filtered_groups = dataset_reformat(dataframe=split_df, groups=groups,
+                                                                     scene_data=scenes,
+                                                                     group_pairs=group_pairs,
+                                                                     agents_num=args.agents_num,
+                                                                     sample_rates=sample_rates,
+                                                                     shift=args.shift)
+            dataset_name = '{}_shifted'.format(dataset) if args.shift else dataset
+            # save dataset in folds
+            save_split(args.save_folder, dataset_name, args.frames_num, args.agents_num, data, labels, frames,
+                       filtered_groups, multi_frame, split_name=name)
+            print('\tdata size: {}'.format(len(data)))
+            end = datetime.now()
+            print('\tsplit: {}, finished in: {}'.format(name, end - dataset_start))
 
         end = datetime.now()
         print('Dataset: {}, finished in: {}'.format(dataset, end - dataset_start))
