@@ -18,7 +18,7 @@ from torch.optim import lr_scheduler
 
 from data_utils import *
 from models_NRI import *
-
+from models.DANTE.F1_calc import group_correctness
 
 def train(epoch, best_val_recall):
     t = time.time()
@@ -248,6 +248,19 @@ def test():
           )
 
 
+def get_groups_from_ids(group_ids):
+    groups = []
+    unique_group_ids = np.unique(group_ids)
+    for group_id in unique_group_ids:
+        group = []
+        for agent, agent_group_id in enumerate(group_ids):
+            if agent_group_id == group_id:
+                group.append(agent)
+        groups.append(group)
+
+    return groups
+
+
 def test_gmitre():
     """
     test group mitre recall and precision
@@ -264,6 +277,12 @@ def test_gmitre():
     precision_all = []
     recall_all = []
     F1_all = []
+    precision_one_all = []
+    recall_one_all = []
+    F1_one_all = []
+    precision_two_thirds_all = []
+    recall_two_thirds_all = []
+    F1_two_thirds_all = []
 
     with torch.no_grad():
         for idx in test_indices:
@@ -314,22 +333,66 @@ def test_gmitre():
             predicted_gr.append(pred_gIDs)
 
             recall, precision, F1 = compute_groupMitre_labels(gID, pred_gIDs)
+            predicted_groups = get_groups_from_ids(pred_gIDs)
+            true_groups = get_groups_from_ids(gID)
+            _, _, _, precision_one, recall_one = group_correctness(predicted_groups, true_groups, 1)
+            _, _, _, precision_two_thirds, recall_two_thirds = group_correctness(predicted_groups, true_groups, 2/3)
+            if precision_one * recall_one == 0:
+                f1_one = 0
+            else:
+                f1_one = float(2) * precision_one * recall_one / (precision_one + recall_one)
+            if precision_two_thirds * recall_two_thirds == 0:
+                f1_two_thirds = 0
+            else:
+                f1_two_thirds = float(2) * precision_two_thirds * recall_two_thirds / (precision_two_thirds + recall_two_thirds)
 
             recall_all.append(recall)
             precision_all.append(precision)
             F1_all.append(F1)
+            precision_two_thirds_all.append(precision_two_thirds)
+            recall_two_thirds_all.append(recall_two_thirds)
+            F1_two_thirds_all.append(f1_two_thirds)
+            precision_one_all.append(precision_one)
+            recall_one_all.append(recall_one)
+            F1_one_all.append(f1_one)
 
         average_recall = np.mean(recall_all)
         average_precision = np.mean(precision_all)
         average_F1 = np.mean(F1_all)
 
+        average_one_recall = np.mean(recall_one_all)
+        average_one_precision = np.mean(precision_one_all)
+        average_one_F1 = np.mean(F1_one_all)
+
+        average_two_thirds_recall = np.mean(recall_two_thirds_all)
+        average_two_thirds_precision = np.mean(precision_two_thirds_all)
+        average_two_thirds_F1 = np.mean(F1_two_thirds_all)
+
     print("Average recall: ", average_recall)
     print("Average precision: ", average_precision)
     print("Average F1: ", average_F1)
 
+    print("Average T=1 recall: ", average_one_recall)
+    print("Average T=1 precision: ", average_one_precision)
+    print("Average T=1 F1: ", average_one_F1)
+
+    print("Average T=2/3 recall: ", average_two_thirds_recall)
+    print("Average T=2/3 precision: ", average_two_thirds_precision)
+    print("Average T=2/3 F1: ", average_two_thirds_F1)
+
     print("Average recall: {:.10f}".format(average_recall),
           "Average precision: {:.10f}".format(average_precision),
-          "Average_F1: {:.10f}".format(average_F1),
+          "Average F1: {:.10f}".format(average_F1),
+          file=log)
+
+    print("Average T=1 recall: {:.10f}".format(average_one_recall),
+          "Average T=1 precision: {:.10f}".format(average_one_precision),
+          "Average T=1 F1: {:.10f}".format(average_one_F1),
+          file=log)
+
+    print("Average T=2/3 recall: {:.10f}".format(average_two_thirds_recall),
+          "Average T=2/3 precision: {:.10f}".format(average_two_thirds_precision),
+          "Average T=2/3 F1: {:.10f}".format(average_two_thirds_F1),
           file=log)
 
 
@@ -341,7 +404,7 @@ if __name__ == '__main__':
     parser.add_argument("--seed", type=int, default=42, help="Random seed.")
     parser.add_argument("--no-seed", action="store_true", default=False,
                         help="don't use seed.")
-    parser.add_argument("--epochs", type=int, default=200,
+    parser.add_argument("--epochs", type=int, default=10,
                         help="Number of epochs to train.")
     parser.add_argument("--batch-size", type=int, default=128,
                         help="Number of samples per batch.")
@@ -505,4 +568,5 @@ if __name__ == '__main__':
 
     test()
 
+    # TODO add f1 T=2/3 and f1 T=1
     test_gmitre()
