@@ -596,7 +596,7 @@ def normalise_data(dataframe):
         else:
             dataframe[column + '_norm'] = 0
 
-    df['measurement_norm'] = df[['pos_x_norm', 'pos_y_norm', 'v_x_norm', 'v_y_norm']].apply(tuple, axis=1)
+    dataframe['measurement_norm'] = dataframe[['pos_x_norm', 'pos_y_norm', 'v_x_norm', 'v_y_norm']].apply(tuple, axis=1)
 
     return dataframe
 
