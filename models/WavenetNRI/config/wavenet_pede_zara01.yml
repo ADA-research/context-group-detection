@@ -1,0 +1,4 @@
+---
+suffix: zara01_shifted_15
+dataset_folder: ../../datasets/reformatted/zara01_shifted_15_nri
+save_folder: logs/nripedsu
