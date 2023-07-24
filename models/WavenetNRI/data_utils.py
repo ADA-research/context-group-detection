@@ -86,8 +86,7 @@ def load_spring_sim(batch_size=1 , suffix="_static_5", folder="data/simulation/s
  """
 
 
-def load_spring_sim(batch_size=1, suffix='', dataset_folder='', label_rate=0.02, save_folder="data/simulation/spring_simulation",
-                    load_folder=None, normalize=True):
+def load_spring_sim(batch_size=1, suffix='', dataset_folder='', label_rate=0.02, load_folder=None, normalize=True):
     if load_folder is not None:
         # load saved data
         train_loader_path = os.path.join(load_folder, "train_data_loader" + suffix + ".pth")
@@ -107,14 +106,10 @@ def load_spring_sim(batch_size=1, suffix='', dataset_folder='', label_rate=0.02,
     vel_all = np.load('{}/vel_sim_{}.npy'.format(dataset_folder, suffix))
     edges_all = np.load('{}/gr_sim_{}.npy'.format(dataset_folder, suffix))
 
-    num_sims = loc_all.shape[0]
-    indices = np.arange(num_sims)
-    np.random.shuffle(indices)
-    train_idx = int(num_sims * 0.6)
-    valid_idx = int(num_sims * 0.8)
-    train_indices = indices[:train_idx]
-    valid_indices = indices[train_idx:valid_idx]
-    test_indices = indices[valid_idx:]
+    splits = np.load('{}/splits.npy'.format(dataset_folder, suffix), allow_pickle=True)
+    train_indices = splits[0]
+    test_indices = splits[1]
+    valid_indices = splits[2]
 
     loc_train = loc_all[train_indices]
     vel_train = vel_all[train_indices]
