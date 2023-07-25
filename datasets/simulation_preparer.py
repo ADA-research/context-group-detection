@@ -118,68 +118,6 @@ def get_sample_rates(scenes, group_pairs, factor=1, target_size=100000):
     }
 
 
-def get_sample_params(frames_num, agents_num):
-    steps = {
-        'sim_1': 1
-    }
-    multi_frame = True
-    if frames_num == 1:
-        multi_frame = False
-        if agents_num == 6:
-            factor = {
-                'sim_1': 1
-            }
-        elif agents_num == 10:
-            factor = {
-                'sim_1': 1
-            }
-    elif frames_num == 5:
-        if agents_num == 6:
-            factor = {
-                'sim_1': 1
-            }
-        elif agents_num == 10:
-            factor = {
-                'sim_1': 1
-            }
-    elif frames_num == 10:
-        if agents_num == 6:
-            factor = {
-                'sim_1': 1
-            }
-        elif agents_num == 10:
-            factor = {
-                'sim_1': 1
-            }
-    elif frames_num == 15:
-        if agents_num == 6:
-            factor = {
-                'sim_1': 1
-            }
-        elif agents_num == 10:
-            factor = {
-                'sim_1': 1
-            }
-    return multi_frame, steps, factor
-
-
-def get_args():
-    parser = argparse.ArgumentParser()
-
-    parser.add_argument('--seed', type=int, default=14)
-    parser.add_argument('--samples_freq', type=int, default=50)
-    parser.add_argument('-f', '--frames_num', type=int, default=15)
-    parser.add_argument('-a', '--agents_num', type=int, default=6)
-    parser.add_argument('-ts', '--target_size', type=int, default=100000)
-    parser.add_argument('-d', '--dataset', type=str, default='eth')
-    parser.add_argument('-sf', '--save_folder', type=str, default='./reformatted')
-    parser.add_argument('-p', '--plot', action="store_true", default=False)
-    parser.add_argument('-s', '--shift', action="store_true", default=True)
-    parser.add_argument('-r', '--report', action="store_true", default=False)
-
-    return parser.parse_args()
-
-
 def split_sims(df, save_folder_path):
     sims = df['sim'].unique()
     num_sims = len(sims)
@@ -216,6 +154,33 @@ def save_split(save_folder, dataset, frames_num, agents_num, data, labels, frame
     dump('{}/{}.p'.format(path, split_name), split_data)
 
 
+def get_sample_params():
+    steps = {
+        'sim_1': 1
+    }
+    factor = {
+        'sim_1': 1
+    }
+    return steps, factor
+
+
+def get_args():
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument('--seed', type=int, default=14)
+    parser.add_argument('--samples_freq', type=int, default=50)
+    parser.add_argument('-f', '--frames_num', type=int, default=49)
+    parser.add_argument('-a', '--agents_num', type=int, default=6)
+    parser.add_argument('-ts', '--target_size', type=int, default=100000)
+    parser.add_argument('-d', '--dataset', type=str, default='eth')
+    parser.add_argument('-sf', '--save_folder', type=str, default='./reformatted')
+    parser.add_argument('-p', '--plot', action="store_true", default=False)
+    parser.add_argument('-s', '--shift', action="store_true", default=True)
+    parser.add_argument('-r', '--report', action="store_true", default=False)
+
+    return parser.parse_args()
+
+
 if __name__ == '__main__':
     start = datetime.now()
     print('Started at {}'.format(start))
@@ -249,7 +214,7 @@ if __name__ == '__main__':
     if args.frames_num == 1:
         multi_frame = False
 
-    multi_frame, steps, factor = get_sample_params(args.frames_num, args.agents_num)
+    steps, factor = get_sample_params()
 
     for dataset in datasets_dict.keys():
         dataset_start = datetime.now()
