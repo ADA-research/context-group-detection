@@ -121,7 +121,8 @@ def collect_results(results_path, dir_name):
                 if start and rest_digit:
                     folder_path = fold_path + '/' + folder
                     results.append(read_results(folder_path))
-
+    if not results:
+        return {}
     return get_averages(results)
 
 
@@ -205,8 +206,11 @@ def write_final_nri_results(results, file_path, name):
 def get_args():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--dir_name', type=str, default="e150")
+    parser.add_argument('--dataset', type=str, default="eth")
+    parser.add_argument('--dir_name', type=str, default="e150_nc")
     parser.add_argument('--nri', action="store_true", default=False)
+    parser.add_argument('--no_context', action="store_true", default=False)
+    parser.add_argument('--single_dataset', action="store_true", default=False)
 
     return parser.parse_args()
 
@@ -214,25 +218,40 @@ def get_args():
 if __name__ == '__main__':
     args = get_args()
 
-    datasets = ['eth', 'hotel', 'zara01', 'zara02', 'students03']
-    # datasets = ['eth']
-    frames = [1, 5, 10, 15]
-    agents = [6, 10]
-    final_results = []
+    if args.single_dataset:
+        datasets = [args.dataset]
+        name = args.dataset
+    else:
+        datasets = ['eth', 'hotel', 'zara01', 'zara02', 'students03']
+        name = 'all'
 
+    if args.no_context:
+        frames = [5, 10, 15]
+        agents = [6]
+        dir_name = 'e150_nc'
+        name = '{}_nc'.format(name)
+    else:
+        frames = [1, 5, 10, 15]
+        agents = [6, 10]
+        dir_name = 'e150'
+
+    final_results = []
     if args.nri:
         for dataset in datasets:
             results_path = './WavenetNRI/logs/nripedsu/wavenetsym_{}_shifted_{}'.format(dataset, 15)
             results = collect_nri_results(results_path)
             write_nri_results(results, results_path)
             final_results.append((dataset, results))
-        write_final_nri_results(final_results, './WavenetNRI/logs/nripedsu', 'all')
+        write_final_nri_results(final_results, './WavenetNRI/logs/nripedsu', name)
     else:
         for dataset in datasets:
             for frames_num in frames:
                 for agents_num in agents:
                     results_path = './results/{}_shifted_{}_{}'.format(dataset, frames_num, agents_num)
                     results = collect_results(results_path, args.dir_name)
+                    if results == {}:
+                        print(results_path)
+                        continue
                     write_results(results, results_path, args.dir_name)
                     final_results.append(((dataset, frames_num, agents_num), results))
-        write_final_results(final_results, './results', 'all')
+        write_final_results(final_results, './results', name)
