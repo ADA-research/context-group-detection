@@ -156,10 +156,20 @@ def save_split(save_folder, dataset, frames_num, agents_num, data, labels, frame
 
 def get_sample_params():
     steps = {
-        'sim_1': 1
+        'sim_1': 1,
+        'sim_2': 1,
+        'sim_3': 1,
+        'sim_4': 1,
+        'sim_5': 1,
+        'sim_6': 1
     }
     factor = {
-        'sim_1': 1
+        'sim_1': 1,
+        'sim_2': 1,
+        'sim_3': 1,
+        'sim_4': 1,
+        'sim_5': 1,
+        'sim_6': 1
     }
     return steps, factor
 
@@ -191,12 +201,22 @@ if __name__ == '__main__':
     np.random.seed(args.seed)
 
     paths = {
-        'sim_1': './simulation/sim_10_3_2'
+        'sim_1': './simulation/sim_10_3_2_3',
+        'sim_2': './simulation/sim_10_3_2_4',
+        'sim_3': './simulation/sim_10_3_2_2',
+        'sim_4': './simulation/sim_10_3_5_3',
+        'sim_5': './simulation/sim_10_3_5_4',
+        'sim_6': './simulation/sim_10_3_5_2'
     }
 
     # create datasets report
     datasets_dict = {
-        'sim_1': dataset_data(paths['sim_1'], args.samples_freq)
+        'sim_1': dataset_data(paths['sim_1'], args.samples_freq),
+        'sim_2': dataset_data(paths['sim_2'], args.samples_freq),
+        'sim_3': dataset_data(paths['sim_3'], args.samples_freq),
+        'sim_4': dataset_data(paths['sim_4'], args.samples_freq),
+        'sim_5': dataset_data(paths['sim_5'], args.samples_freq),
+        'sim_6': dataset_data(paths['sim_6'], args.samples_freq)
     }
     if args.report:
         report('simulation_datasets.csv', datasets_dict)
@@ -204,7 +224,12 @@ if __name__ == '__main__':
 
     # create datasets group size histogram
     groups_dict = {
-        'sim_1': read_multi_groups(paths['sim_1'])
+        'sim_1': read_multi_groups(paths['sim_1']),
+        'sim_2': read_multi_groups(paths['sim_2']),
+        'sim_3': read_multi_groups(paths['sim_3']),
+        'sim_4': read_multi_groups(paths['sim_4']),
+        'sim_5': read_multi_groups(paths['sim_5']),
+        'sim_6': read_multi_groups(paths['sim_6'])
     }
     if args.plot:
         groups_size_hist(groups_dict, './group_size_plot.png')
