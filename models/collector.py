@@ -61,12 +61,22 @@ def read_nri_results(folder_path):
     with open(file_path, "r") as file:
         lines = [line.lstrip().rstrip().split() for line in file.readlines()]
 
-    # TODO needs to be changed to match other results
     results = {
-        'epoch': float(lines[-2][1]),
-        'accuracy': float(lines[-2][17]),
-        'f1': float(lines[-2][27]),
-        'recall': float(lines[-2][29])
+        'f1_one': {
+            'accuracy': float(lines[-2][7]),
+            'recall': float(lines[-2][3]),
+            'f1': float(lines[-2][11]),
+        },
+        'f1_two_thirds': {
+            'accuracy': float(lines[-1][7]),
+            'recall': float(lines[-1][3]),
+            'f1': float(lines[-1][11]),
+        },
+        'f1_gmitre': {
+            'accuracy': float(lines[-3][5]),
+            'recall': float(lines[-3][2]),
+            'f1': float(lines[-3][8]),
+        }
     }
 
     return results
@@ -87,14 +97,14 @@ def get_averages(results):
 
 
 def get_nri_averages(results):
-    accuracy = [res['accuracy'] for res in results]
-    recall = [res['recall'] for res in results]
-    f1 = [res['f1'] for res in results]
+    f1_one = [res['f1_one']['f1'] for res in results]
+    f1_two_thirds = [res['f1_two_thirds']['f1'] for res in results]
+    f1_gmitre = [res['f1_gmitre']['f1'] for res in results]
 
     return {
-        'accuracy': (np.mean(accuracy), np.std(accuracy)),
-        'recall': (np.mean(recall), np.std(recall)),
-        'f1': (np.mean(f1), np.std(f1))
+        'f1_1': (np.mean(f1_one), np.std(f1_one)),
+        'f1_2/3': (np.mean(f1_two_thirds), np.std(f1_two_thirds)),
+        'f1_gmitre': (np.mean(f1_gmitre), np.std(f1_gmitre))
     }
 
 
@@ -154,9 +164,9 @@ def write_nri_results(results, file_path):
     with open(file_path, "w") as file:
         file.write('{:<10s} {:<10s} {:<10s} {:<10s}\n'.format('', 'accuracy', 'recall', 'f1'))
         file.write('{:<10s} {:<10.7f} {:<10.7f} {:<10.7f}\n'.format(
-            'mean', results['accuracy'][0], results['recall'][0], results['f1'][0]))
+            'mean', results['f1_1'][0], results['f1_2/3'][0], results['f1_gmitre'][0]))
         file.write('{:<10s} {:<10.7f} {:<10.7f} {:<10.7f}\n'.format(
-            'std', results['accuracy'][1], results['recall'][1], results['f1'][1]))
+            'std', results['f1_1'][1], results['f1_2/3'][1], results['f1_gmitre'][1]))
 
 
 def get_args():
