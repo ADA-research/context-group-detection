@@ -413,7 +413,7 @@ def create_gif(sim, loc, vel, inter, ga, ap, save_folder):
 def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--seed", type=int, default=42, help="random seed")
-    parser.add_argument("--num-sim", type=int, default=10, help="number of simulations to perform.")
+    parser.add_argument("--num-sim", type=int, default=100, help="number of simulations to perform.")
     parser.add_argument("--length", type=int, default=5000, help="length of trajectory.")
     parser.add_argument("--sample-freq", type=int, default=100, help="how often to sample the trajectory.")
     parser.add_argument("--n-balls", type=int, default=10, help="number of balls in the simulation.")
@@ -452,7 +452,7 @@ if __name__ == '__main__':
         'ga': group_assignments,
         'gr': group_relationships
     }
-    suffix = '{}_{}_{}'.format(args.n_balls, int(args.K), int(args.b * 100))
+    suffix = '{}_{}_{}_{}'.format(args.n_balls, int(args.K), int(args.b * 100), args.groups)
     save_folder_path = args.save_folder + '/sim_{}'.format(suffix)
     save_data(save_folder_path, df, groups, data)
 
