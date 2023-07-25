@@ -572,6 +572,4 @@ if __name__ == '__main__':
     print("Best Epoch: {:04d}".format(best_epoch))
 
     test()
-
-    # TODO add f1 T=2/3 and f1 T=1
     test_gmitre()
