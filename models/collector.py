@@ -10,6 +10,8 @@ def read_results(folder_path):
     with open(file_path, "r") as file:
         lines = [line.lstrip().rstrip().split() for line in file.readlines()]
 
+    # print(folder_path)
+
     results = {
         'best_val': {
             'value': float(lines[0][1]),
@@ -152,6 +154,22 @@ def write_results(results, file_path, dir_name):
             'std', results['mse'][1], results['f1_1'][1], results['f1_2/3'][1], results['f1_gmitre'][1]))
 
 
+def write_final_results(results, file_path, name):
+    file_name = file_path + '/{}_results.csv'.format(name)
+
+    dfs = []
+    for info, result in results:
+        dataset, frames, agents = info
+        df = pd.DataFrame.from_dict(result, orient='index').transpose()
+        df['dataset'] = '{}_{}_{}'.format(dataset, frames, agents)
+        for col in 'f1_1', 'f1_2/3', 'f1_gmitre':
+            df[col] = df[col].round(4)
+        df = df[['dataset', 'f1_1', 'f1_2/3', 'f1_gmitre']]
+        dfs.append(df)
+    final_df = pd.concat(dfs)
+    final_df.to_csv(file_name, index=False)
+
+
 def write_nri_results(results, file_path):
     file_name = file_path + '/results.csv'
 
@@ -169,14 +187,26 @@ def write_nri_results(results, file_path):
             'std', results['f1_1'][1], results['f1_2/3'][1], results['f1_gmitre'][1]))
 
 
+def write_final_nri_results(results, file_path, name):
+    file_name = file_path + '/{}_nri_results.csv'.format(name)
+
+    dfs = []
+    for dataset, result in results:
+        df = pd.DataFrame.from_dict(result, orient='index').transpose()
+        df['dataset'] = '{}_nri'.format(dataset)
+        for col in 'f1_1', 'f1_2/3', 'f1_gmitre':
+            df[col] = df[col].round(4)
+        df = df[['dataset', 'f1_1', 'f1_2/3', 'f1_gmitre']]
+        dfs.append(df)
+    final_df = pd.concat(dfs)
+    final_df.to_csv(file_name, index=False)
+
+
 def get_args():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--dataset', type=str, default="eth_shifted")
-    parser.add_argument('-a', '--agents', type=int, default=10)
-    parser.add_argument('-cf', '--frames', type=int, default=15)
     parser.add_argument('--dir_name', type=str, default="e150")
-    parser.add_argument('--nri', action="store_true", default=True)
+    parser.add_argument('--nri', action="store_true", default=False)
 
     return parser.parse_args()
 
@@ -184,11 +214,25 @@ def get_args():
 if __name__ == '__main__':
     args = get_args()
 
+    datasets = ['eth', 'hotel', 'zara01', 'zara02', 'students03']
+    # datasets = ['eth']
+    frames = [1, 5, 10, 15]
+    agents = [6, 10]
+    final_results = []
+
     if args.nri:
-        results_path = './WavenetNRI/logs/nripedsu/wavenetsym_{}_{}'.format(args.dataset, args.frames)
-        results = collect_nri_results(results_path)
-        write_nri_results(results, results_path)
+        for dataset in datasets:
+            results_path = './WavenetNRI/logs/nripedsu/wavenetsym_{}_shifted_{}'.format(dataset, 15)
+            results = collect_nri_results(results_path)
+            write_nri_results(results, results_path)
+            final_results.append((dataset, results))
+        write_final_nri_results(final_results, './WavenetNRI/logs/nripedsu', 'all')
     else:
-        results_path = './results/{}_{}_{}'.format(args.dataset, args.frames, args.agents)
-        results = collect_results(results_path, args.dir_name)
-        write_results(results, results_path, args.dir_name)
+        for dataset in datasets:
+            for frames_num in frames:
+                for agents_num in agents:
+                    results_path = './results/{}_shifted_{}_{}'.format(dataset, frames_num, agents_num)
+                    results = collect_results(results_path, args.dir_name)
+                    write_results(results, results_path, args.dir_name)
+                    final_results.append(((dataset, frames_num, agents_num), results))
+        write_final_results(final_results, './results', 'all')
