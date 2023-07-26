@@ -206,11 +206,10 @@ def write_final_nri_results(results, file_path, name):
 def get_args():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--dataset', type=str, default="eth")
-    parser.add_argument('--dir_name', type=str, default="e150_nc")
     parser.add_argument('--nri', action="store_true", default=False)
     parser.add_argument('--no_context', action="store_true", default=False)
     parser.add_argument('--single_dataset', action="store_true", default=False)
+    parser.add_argument('--dataset', type=str, default="students03")
 
     return parser.parse_args()
 
@@ -248,10 +247,10 @@ if __name__ == '__main__':
             for frames_num in frames:
                 for agents_num in agents:
                     results_path = './results/{}_shifted_{}_{}'.format(dataset, frames_num, agents_num)
-                    results = collect_results(results_path, args.dir_name)
+                    results = collect_results(results_path, dir_name)
                     if results == {}:
                         print(results_path)
                         continue
-                    write_results(results, results_path, args.dir_name)
+                    write_results(results, results_path, dir_name)
                     final_results.append(((dataset, frames_num, agents_num), results))
         write_final_results(final_results, './results', name)
