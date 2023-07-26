@@ -120,6 +120,7 @@ def get_args():
     parser.add_argument('-d', '--dir_name', type=str, default="dir_name")
     parser.add_argument('-c', '--config', type=str, default="./config/model.yml")
     parser.add_argument('-nc', '--no_context', action="store_true", default=False)
+    parser.add_argument('--sim', action="store_true", default=False)
 
     return parser.parse_args()
 
@@ -133,9 +134,13 @@ if __name__ == '__main__':
 
     config = read_yaml(args.config)
 
-    train, test, val = load_data(
-        '../datasets/reformatted/{}_{}_{}/fold_{}'.format(
-            config['dataset'], args.frames, args.agents, args.fold), args.no_context)
+    if args.sim:
+        train, test, val = load_data(
+            '../datasets/reformatted/{}_{}_{}'.format(config['dataset'], args.frames, args.agents))
+    else:
+        train, test, val = load_data(
+            '../datasets/reformatted/{}_{}_{}/fold_{}'.format(
+                config['dataset'], args.frames, args.agents, args.fold), args.no_context)
 
     model = build_model(
         args.agents - 2, args.frames, config['features'], config['reg'], config['dropout'],
@@ -152,7 +157,11 @@ if __name__ == '__main__':
               validation_data=(val[0], val[1]), callbacks=[tensorboard, early_stop, history])
 
     no_context = "nc_" if args.no_context else ""
-    dir_name = '{}_{}_{}/fold_{}/{}_{}{}'.format(
-        config['dataset'], args.frames, args.agents, args.fold, args.dir_name, no_context, args.seed)
+    if args.sim:
+        dir_name = '{}_{}_{}/{}_{}{}'.format(
+            config['dataset'], args.frames, args.agents, args.dir_name, no_context, args.seed)
+    else:
+        dir_name = '{}_{}_{}/fold_{}/{}_{}{}'.format(
+            config['dataset'], args.frames, args.agents, args.fold, args.dir_name, no_context, args.seed)
     save_model_data(dir_name, config['reg'], config['dropout'], history, test, True, eps_thres=config['eps_thres'],
                     dominant_sets=config['dominant_sets'], layers=config['layers'], no_context=args.no_context)
