@@ -10,7 +10,7 @@
 # Default values
 n_balls=10
 groups=3
-K=1
+K=3.0
 b=0.02
 sims=100
 
