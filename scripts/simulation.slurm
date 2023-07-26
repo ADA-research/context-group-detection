@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=train_model
+#SBATCH --job-name=simulation
 #SBATCH --output=%x_%j.out
 #SBATCH --mail-user="thomasmaliappis@gmail.com"
 #SBATCH --mail-type="END"
@@ -11,7 +11,7 @@
 n_balls=10
 groups=3
 K=1
-b=""
+b=0.02
 sims=100
 
 # Read flags and their corresponding values
