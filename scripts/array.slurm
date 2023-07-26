@@ -18,9 +18,10 @@ dir_name=""
 agents=10
 frames=1
 nc=false
+sim=false
 
 # Read flags and their corresponding values
-while getopts "m:c:f:e:d:a:t:n" flag; do
+while getopts "m:c:f:e:d:a:t:np" flag; do
   case ${flag} in
   m) model="${OPTARG}" ;;
   c) config="${OPTARG}" ;;
@@ -30,6 +31,7 @@ while getopts "m:c:f:e:d:a:t:n" flag; do
   a) agents="${OPTARG}" ;;
   t) frames="${OPTARG}" ;;
   n) nc=true ;;
+  p) sim=true ;;
   *)
     echo "Invalid flag: ${flag}" >&2
     exit 1
@@ -53,6 +55,11 @@ if [ ${nc} = true ]; then
   nc_flag="-nc"
 fi
 
+sim_flag=""
+if [ ${sim} = true ]; then
+  sim_flag="--sim"
+fi
+
 frames_flag=""
 if [ ${frames} -ne 1 ]; then
   frames_flag="-t ${frames}"
@@ -60,6 +67,6 @@ fi
 
 echo "Script starting"
 cd "${HOME}/data1/context-group-detection/models" || exit
-python ${model}.py -c ${config} -f ${fold} -e ${epochs} -d ${dir_name} --seed ${SLURM_ARRAY_TASK_ID} -a ${agents} ${frames_flag} ${nc_flag}
+python ${model}.py -c ${config} -f ${fold} -e ${epochs} -d ${dir_name} --seed ${SLURM_ARRAY_TASK_ID} -a ${agents} ${frames_flag} ${nc_flag} ${sim_flag}
 
 echo "Script finished"
