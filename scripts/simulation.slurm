@@ -30,6 +30,7 @@ while getopts "n:g:k:b:s:" flag; do
 done
 
 module load TensorFlow/2.11.0-foss-2022a-CUDA-11.7.0
+pip install imageio
 
 export PYTHONPATH="${PYTHONPATH}:${HOME}/data1/context-group-detection/"
 
