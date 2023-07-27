@@ -60,7 +60,25 @@ def groups_size_hist(groups_dict, save_loc):
     plt.show()
 
 
-def frame_counts_plot(datasets_dict, save_loc):
+def agents_count_plot(datasets_dict, save_loc):
+    for dataset, data in datasets_dict.items():
+        agents_df = data['df'].groupby('frame_id')['agent_id'].apply(list).reset_index(name='agents')
+        agents_df['agents_count'] = agents_df['agents'].apply(len)
+        num_agents = agents_df.agents_count.values
+
+        data = pd.DataFrame({'Number of Agents': num_agents})
+
+        sns.set(style='whitegrid')
+
+        sns.boxenplot(data=data, x='Number of Agents', showfliers=False)
+
+        plt.xlabel('# Agents')
+        # plt.suptitle('Distribution of agents per frame appear in {} dataset'.format(dataset))
+        plt.savefig('{}/agents_count_plot_{}.png'.format(save_loc, dataset))
+        plt.show()
+
+
+def frames_count_plot(datasets_dict, save_loc):
     for dataset, data in datasets_dict.items():
         agents_df = data['df'].groupby('agent_id')['frame_id'].apply(list).reset_index(name='frames')
         agents_df['frames_count'] = agents_df['frames'].apply(len)
@@ -73,8 +91,8 @@ def frame_counts_plot(datasets_dict, save_loc):
         sns.boxenplot(data=data, x='Number of Frames', showfliers=False)
 
         plt.xlabel('# Frames')
-        plt.suptitle('Distribution of frames that agents appear in {} dataset'.format(dataset))
-        plt.savefig('{}/frame_counts_plot_{}.png'.format(save_loc, dataset))
+        # plt.suptitle('Distribution of frames that agents appear in {} dataset'.format(dataset))
+        plt.savefig('{}/frames_count_plot_{}.png'.format(save_loc, dataset))
         plt.show()
 
 
@@ -777,7 +795,7 @@ def get_args():
     parser.add_argument('-a', '--agents_num', type=int, default=10)
     parser.add_argument('-ts', '--target_size', type=int, default=100000)
     parser.add_argument('-sf', '--save_folder', type=str, default='./reformatted')
-    parser.add_argument('-p', '--plot', action="store_true", default=False)
+    parser.add_argument('-p', '--plot', action="store_true", default=True)
     parser.add_argument('-s', '--shift', action="store_true", default=True)
     parser.add_argument('-r', '--report', action="store_true", default=False)
     parser.add_argument('--nri', action="store_true", default=False)
@@ -815,7 +833,8 @@ if __name__ == '__main__':
         'students03': read_groups('./UCY/students03')
     }
     if args.plot:
-        frame_counts_plot(datasets_dict, '.')
+        frames_count_plot(datasets_dict, '.')
+        agents_count_plot(datasets_dict, '.')
         groups_size_hist(groups_dict, './group_size_plot.png')
         exit()
 
