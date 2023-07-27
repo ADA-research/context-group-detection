@@ -481,7 +481,7 @@ def dataset_reformat(dataframe, groups, group_pairs, scene_data, agents_num, sam
                 context_data = non_pair_data[:]
                 fake_context = agents_num - 2 - len(non_pair_data)
                 context_data = fill_data(pair_data, context_data, fake_context)
-                gather_data(context_data, data, groups, labels, pair_agents, pair_data, scene_frame_ids, scenes_frames)
+                gather_data(context_data, data, scene_groups, labels, pair_agents, pair_data, scene_frame_ids, scenes_frames)
             else:
                 if pair_agents in group_pairs:
                     pair_samples = sample_rates['same']
@@ -493,7 +493,7 @@ def dataset_reformat(dataframe, groups, group_pairs, scene_data, agents_num, sam
                     # getting the closest agents
                     # context_data = context_sample(pair_data, non_pair_data, agents_minimum - 2)
                     gather_data(
-                        context_data, data, groups, labels, pair_agents, pair_data, scene_frame_ids, scenes_frames)
+                        context_data, data, scene_groups, labels, pair_agents, pair_data, scene_frame_ids, scenes_frames)
         scenes_groups.append((scene_frame_ids, scene_groups))
     return np.asarray(data), np.asarray(labels), np.asarray(scenes_frames, dtype=object), np.asarray(scenes_groups,
                                                                                                      dtype=object)
