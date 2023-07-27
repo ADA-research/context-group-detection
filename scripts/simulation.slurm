@@ -3,9 +3,9 @@
 #SBATCH --output=%x_%j.out
 #SBATCH --mail-user="thomasmaliappis@gmail.com"
 #SBATCH --mail-type="END"
-#SBATCH --time=4:00:00
-#SBATCH --partition=cpu-short
-#SBATCH --mem=10G
+#SBATCH --time=10:00:00
+#SBATCH --partition=cpu-medium
+#SBATCH --mem=5G
 
 # Default values
 n_balls=10
