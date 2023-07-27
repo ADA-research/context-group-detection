@@ -60,6 +60,24 @@ def groups_size_hist(groups_dict, save_loc):
     plt.show()
 
 
+def frame_counts_plot(datasets_dict, save_loc):
+    for dataset, data in datasets_dict.items():
+        agents_df = data['df'].groupby('agent_id')['frame_id'].apply(list).reset_index(name='frames')
+        agents_df['frames_count'] = agents_df['frames'].apply(len)
+        num_frames = agents_df.frames_count.values
+
+        data = pd.DataFrame({'Number of Frames': num_frames})
+
+        sns.set(style='whitegrid')
+
+        sns.boxenplot(data=data, x='Number of Frames')
+
+        plt.xlabel('# Frames')
+        plt.suptitle('Distribution of frames that agents appear in {} dataset'.format(dataset))
+        plt.savefig('{}/frame_counts_plot_{}.png'.format(save_loc, dataset))
+        plt.show()
+
+
 def dataset_data(dataset_path):
     """
     Get data for specified dataset.
@@ -797,6 +815,7 @@ if __name__ == '__main__':
         'students03': read_groups('./UCY/students03')
     }
     if args.plot:
+        frame_counts_plot(datasets_dict, '.')
         groups_size_hist(groups_dict, './group_size_plot.png')
         exit()
 
