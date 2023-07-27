@@ -116,11 +116,11 @@ def get_args():
     parser.add_argument('-f', '--fold', type=int, default=0)
     parser.add_argument('-e', '--epochs', type=int, default=1)
     parser.add_argument('-a', '--agents', type=int, default=6)
-    parser.add_argument('-t', '--frames', type=int, default=15)
+    parser.add_argument('-t', '--frames', type=int, default=49)
     parser.add_argument('-d', '--dir_name', type=str, default="dir_name")
-    parser.add_argument('-c', '--config', type=str, default="./config/model.yml")
+    parser.add_argument('-c', '--config', type=str, default="./config/model_sim.yml")
     parser.add_argument('-nc', '--no_context', action="store_true", default=False)
-    parser.add_argument('--sim', action="store_true", default=False)
+    parser.add_argument('--sim', action="store_true", default=True)
 
     return parser.parse_args()
 
