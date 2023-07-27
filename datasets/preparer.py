@@ -70,7 +70,7 @@ def frame_counts_plot(datasets_dict, save_loc):
 
         sns.set(style='whitegrid')
 
-        sns.boxenplot(data=data, x='Number of Frames')
+        sns.boxenplot(data=data, x='Number of Frames', showfliers=False)
 
         plt.xlabel('# Frames')
         plt.suptitle('Distribution of frames that agents appear in {} dataset'.format(dataset))
