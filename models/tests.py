@@ -1,7 +1,9 @@
 import argparse
 import os
+
 import numpy as np
-from scipy.stats import anderson, friedmanchisquare
+from scipy.stats import anderson, friedmanchisquare, rankdata
+from scikit_posthocs import posthoc_nemenyi_friedman
 
 from models.collector import collect_nri_results, collect_results
 
@@ -26,7 +28,7 @@ def anderson_darling_test(data):
             print(f"At {sl * 100:.1f}% significance level, the data does not look Gaussian (reject H0).")
 
 
-def friedman_test(data):
+def friedman_test(data, models):
     # Perform Friedman test
     statistic, p_value = friedmanchisquare(*data.T)
 
@@ -37,6 +39,13 @@ def friedman_test(data):
     alpha = 0.05
     if p_value < alpha:
         print("There is a significant difference among the treatments (reject H0).")
+        # Perform Nemenyi post-hoc test
+        nemenyi_result = posthoc_nemenyi_friedman(data.T)
+        nemenyi_result.columns = models
+        nemenyi_result['model'] = models
+        nemenyi_result.set_index('model', inplace=True)
+        print("Critical Difference (Nemenyi):", nemenyi_result)
+        nemenyi_result.to_csv('nemenyi_result.csv')
     else:
         print("There is no significant difference among the treatments (fail to reject H0).")
 
@@ -59,7 +68,7 @@ def collect_data(results_path, nri_results_path, dataset, dir_name, metric):
                 elif metric == 't2/3':
                     result = [sample['best_val_f1_2/3']['value'] for sample in result]
                 context = '_nc' if '_nc' in name else ''
-                models.append('{}{}'.format(item.replace(dataset, ''), context))
+                models.append('{}{}'.format(item.replace(dataset + '_', ''), context))
                 results.append(result)
     # collect nri results
     for item in os.listdir(nri_results_path):
@@ -94,4 +103,4 @@ if __name__ == '__main__':
     results_path = './results'
     nri_results_path = './WavenetNRI/logs/nripedsu'
     models, data = collect_data(results_path, nri_results_path, args.dataset, args.dir_name, args.metric)
-    friedman_test(np.asarray(data))
+    friedman_test(np.asarray(data), models)
