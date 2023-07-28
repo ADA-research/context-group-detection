@@ -1,6 +1,9 @@
 import argparse
-
+import os
+import numpy as np
 from scipy.stats import anderson, friedmanchisquare
+
+from models.collector import collect_nri_results, collect_results
 
 
 def anderson_darling_test(data):
@@ -24,15 +27,6 @@ def anderson_darling_test(data):
 
 
 def friedman_test(data):
-    # Sample data (replace this with your actual data)
-    # Each row represents a participant/subject, and each column is a different treatment/condition
-    # data = np.array([
-    #     [3, 4, 5],
-    #     [2, 2, 3],
-    #     [5, 6, 4],
-    #     [4, 5, 6],
-    # ])
-
     # Perform Friedman test
     statistic, p_value = friedmanchisquare(*data.T)
 
@@ -47,29 +41,57 @@ def friedman_test(data):
         print("There is no significant difference among the treatments (fail to reject H0).")
 
 
-# TODO implement collect_data function
-def collect_data(friedman):
-    if friedman:
-        pass
-    else:
-        pass
-    return []
+def collect_data(results_path, nri_results_path, dataset, dir_name, metric):
+    # collect dante + model results
+    models = []
+    results = []
+    for item in os.listdir(results_path):
+        item_path = '{}/{}'.format(results_path, item)
+        if os.path.isdir(item_path) and item.startswith(dataset):
+            for name in [dir_name, '{}_nc'.format(dir_name)]:
+                result = collect_results(item_path, name, average=False)
+                if result == {}:
+                    continue
+                if metric == 'gmitre':
+                    result = [sample['best_val_f1_gmitre']['value'] for sample in result]
+                elif metric == 't1':
+                    result = [sample['best_val_f1_1']['value'] for sample in result]
+                elif metric == 't2/3':
+                    result = [sample['best_val_f1_2/3']['value'] for sample in result]
+                context = '_nc' if '_nc' in name else ''
+                models.append('{}{}'.format(item.replace(dataset, ''), context))
+                results.append(result)
+    # collect nri results
+    for item in os.listdir(nri_results_path):
+        item_path = '{}/{}'.format(nri_results_path, item)
+        if os.path.isdir(item_path) and item.startswith('wavenetsym_{}'.format(dataset)):
+            result = collect_nri_results(item_path, average=False)
+            if metric == 'gmitre':
+                result = [sample['f1_gmitre']['f1'] for sample in result]
+            elif metric == 't1':
+                result = [sample['f1_one']['f1'] for sample in result]
+            elif metric == 't2/3':
+                result = [sample['f1_two_thirds']['f1'] for sample in result]
+            models.append('nri')
+            results.append(result)
+            break
+    return models, results
 
 
 def get_args():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--friedman', action="store_true", default=True)
+    parser.add_argument('--dataset', type=str, default='eth_shifted')
+    parser.add_argument('--dir_name', type=str, default='e150')
+    parser.add_argument('--metric', type=str, default='gmitre')
 
     return parser.parse_args()
 
 
 if __name__ == '__main__':
-
     args = get_args()
 
-    data = collect_data(args.friedman)
-    if args.friedman:
-        friedman_test(data)
-    else:
-        anderson_darling_test(data)
+    results_path = './results'
+    nri_results_path = './WavenetNRI/logs/nripedsu'
+    models, data = collect_data(results_path, nri_results_path, args.dataset, args.dir_name, args.metric)
+    friedman_test(np.asarray(data))
