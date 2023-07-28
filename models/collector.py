@@ -110,7 +110,7 @@ def get_nri_averages(results):
     }
 
 
-def collect_results(results_path, dir_name):
+def collect_results(results_path, dir_name, average=True):
     results = []
     for fold in os.listdir(results_path):
         fold_path = results_path + '/' + fold
@@ -123,10 +123,13 @@ def collect_results(results_path, dir_name):
                     results.append(read_results(folder_path))
     if not results:
         return {}
-    return get_averages(results)
+    if average:
+        return get_nri_averages(results)
+    else:
+        return results
 
 
-def collect_nri_results(results_path):
+def collect_nri_results(results_path, average=True):
     results = []
     for fold in os.listdir(results_path):
         fold_path = results_path + '/' + fold
@@ -135,7 +138,10 @@ def collect_nri_results(results_path):
                 folder_path = fold_path + '/' + folder
                 results.append(read_nri_results(folder_path))
 
-    return get_nri_averages(results)
+    if average:
+        return get_nri_averages(results)
+    else:
+        return results
 
 
 def write_results(results, file_path, dir_name):
