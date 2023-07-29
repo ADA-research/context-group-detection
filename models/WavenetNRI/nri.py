@@ -20,6 +20,7 @@ sys.path.append('../../')
 from models.DANTE.F1_calc import group_correctness
 from nri_pede import get_groups_from_ids
 
+os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 
 def compute_label_weights(train_loader, eps=1e-4):
     total_gr = 0
