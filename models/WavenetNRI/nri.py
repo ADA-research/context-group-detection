@@ -216,7 +216,7 @@ def test_gmitre():
     """
     louvain = Louvain()
 
-    rel_rec, rel_send = create_edgeNode_relation(args.num_atoms, self_loops=False)
+    rel_rec, rel_send = create_edgeNode_relation(config['atoms'], self_loops=False)
     rel_rec, rel_send = rel_rec.float(), rel_send.float()
     if args.cuda:
         rel_rec, rel_send = rel_rec.cuda(), rel_send.cuda()
@@ -277,7 +277,7 @@ def test_gmitre():
             group_prob = group_prob.cpu().detach().numpy()
 
             if group_prob.sum() == 0:
-                pred_gIDs = np.arange(args.num_atoms)
+                pred_gIDs = np.arange(config['atoms'])
             else:
                 pred_gIDs = louvain.fit_predict(group_prob)
 
@@ -350,8 +350,6 @@ def test_gmitre():
 
 if __name__ == '__main__':
 
-    print("NEW")
-
     parser = argparse.ArgumentParser()
     parser.add_argument("--no-cuda", action="store_true", default=False,
                         help="Disables CUDA training.")
@@ -366,8 +364,8 @@ if __name__ == '__main__':
                         help="Initial learning rate.")
     parser.add_argument("--encoder-hidden", type=int, default=256,
                         help="Number of hidden units.")
-    parser.add_argument("--num-atoms", type=int, default=10,
-                        help="Number of atoms.")
+    # parser.add_argument("--num-atoms", type=int, default=15,
+    #                     help="Number of atoms.")
     parser.add_argument("--encoder", type=str, default="wavenet",
                         help="Type of encoder model.")
     parser.add_argument("--no-factor", action="store_true", default=False,
@@ -443,7 +441,7 @@ if __name__ == '__main__':
     print("Number of validation examples: ", len(valid_loader.dataset))
     print("Number of test examples: ", len(test_loader.dataset))
 
-    off_diag = np.ones([args.num_atoms, args.num_atoms]) - np.eye(args.num_atoms)
+    off_diag = np.ones([config['atoms'], config['atoms']]) - np.eye(config['atoms'])
     rel_rec = np.array(encode_onehot(np.where(off_diag)[0]), dtype=np.float32)
     rel_send = np.array(encode_onehot(np.where(off_diag)[1]), dtype=np.float32)
     rel_rec = torch.from_numpy(rel_rec)
@@ -492,8 +490,8 @@ if __name__ == '__main__':
         encoder.load_state_dict(torch.load(encoder_file))
         config['save_folder'] = False
 
-    triu_indices = get_triu_offdiag_indices(args.num_atoms)
-    tril_indices = get_tril_offdiag_indices(args.num_atoms)
+    triu_indices = get_triu_offdiag_indices(config['atoms'])
+    tril_indices = get_tril_offdiag_indices(config['atoms'])
 
     if args.gweight_auto:
         ng_weight, g_weight = compute_label_weights(train_loader)
