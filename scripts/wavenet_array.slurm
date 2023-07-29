@@ -7,7 +7,7 @@
 #SBATCH --time=03:00:00
 #SBATCH --partition=gpu-short
 #SBATCH --gres=gpu:1
-#SBATCH --mem-per-gpu=5G
+#SBATCH --mem-per-gpu=20G
 
 # Default values
 config="./config/wavenet_pede.yml"
