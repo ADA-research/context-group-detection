@@ -57,6 +57,7 @@ def train(epoch, best_val_F1):
 
     for batch_idx, (data, relations) in enumerate(train_loader):
         if args.cuda:
+            torch.cuda.empty_cache()
             data, relations = data.cuda(), relations.cuda()
         relations = relations.float()
         relations, relations_masked = relations[:, :, 0], relations[:, :, 1]
@@ -90,6 +91,7 @@ def train(epoch, best_val_F1):
     encoder.eval()
     for batch_idx, (data, relations) in enumerate(valid_loader):
         if args.cuda:
+            torch.cuda.empty_cache()
             data, relations = data.cuda(), relations.cuda()
         relations = relations.float()
         relations, relations_masked = relations[:, :, 0], relations[:, :, 1]
@@ -183,6 +185,7 @@ def test():
 
     for batch_idx, (data, relations) in enumerate(test_loader):
         if args.cuda:
+            torch.cuda.empty_cache()
             data, relations = data.cuda(), relations.cuda()
         relations = relations.float()
 
@@ -219,6 +222,7 @@ def test_gmitre():
     rel_rec, rel_send = create_edgeNode_relation(config['atoms'], self_loops=False)
     rel_rec, rel_send = rel_rec.float(), rel_send.float()
     if args.cuda:
+        torch.cuda.empty_cache()
         rel_rec, rel_send = rel_rec.cuda(), rel_send.cuda()
 
     encoder = torch.load(encoder_file)
@@ -240,6 +244,7 @@ def test_gmitre():
     with torch.no_grad():
         for batch_idx, (data, relations) in enumerate(test_loader):
             if args.cuda:
+                torch.cuda.empty_cache()
                 data, relations = data.cuda(), relations.cuda()
                 # data shape: [1, n_atoms, n_timesteps, n_in]
                 # relations, shape: [1, n_edges]
@@ -260,6 +265,7 @@ def test_gmitre():
                 gIDs.append(gID)
 
             if args.cuda:
+                torch.cuda.empty_cache()
                 data = data.cuda()
                 rel_rec, rel_send = rel_rec.cuda(), rel_send.cuda()
 
@@ -502,6 +508,7 @@ if __name__ == '__main__':
         cross_entropy_weight = torch.tensor([args.ng_weight, args.group_weight])
 
     if args.cuda:
+        torch.cuda.empty_cache()
         encoder.cuda()
         rel_rec = rel_rec.cuda()
         rel_send = rel_send.cuda()
