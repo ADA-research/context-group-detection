@@ -28,7 +28,7 @@ def anderson_darling_test(data):
             print(f"At {sl * 100:.1f}% significance level, the data does not look Gaussian (reject H0).")
 
 
-def friedman_test(data, models):
+def friedman_test(data, models, dataset):
     # Perform Friedman test
     statistic, p_value = friedmanchisquare(*data.T)
 
@@ -45,7 +45,7 @@ def friedman_test(data, models):
         nemenyi_result['model'] = models
         nemenyi_result.set_index('model', inplace=True)
         print("Critical Difference (Nemenyi):", nemenyi_result)
-        nemenyi_result.to_csv('nemenyi_result.csv')
+        nemenyi_result.to_csv('nemenyi_result_{}.csv'.format(dataset))
     else:
         print("There is no significant difference among the treatments (fail to reject H0).")
 
@@ -103,4 +103,4 @@ if __name__ == '__main__':
     results_path = './results'
     nri_results_path = './WavenetNRI/logs/nripedsu'
     models, data = collect_data(results_path, nri_results_path, args.dataset, args.dir_name, args.metric)
-    friedman_test(np.asarray(data), models)
+    friedman_test(np.asarray(data), models, args.dataset)
