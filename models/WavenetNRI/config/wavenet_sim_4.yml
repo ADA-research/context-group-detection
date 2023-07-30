@@ -1,7 +1,7 @@
 ---
-suffix: '12_3_2_2'
-dataset_folder: ../../datasets/simulation/sim_12_3_2_2
+suffix: '9_3_2_2'
+dataset_folder: ../../datasets/simulation/sim_9_3_2_2
 save_folder: logs/nrisu
 group_weight: 0.5
 ng_weight: 0.5
-atoms: 12
+atoms: 9

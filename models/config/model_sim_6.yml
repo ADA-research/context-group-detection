@@ -1,7 +1,7 @@
 ---
 features: 4
 dataset: sim_6_shifted
-dataset_path: ../datasets/simulation/sim_12_3_2_4
+dataset_path: ../datasets/simulation/sim_8_3_2_2
 patience: 150
 train_epochs: 0
 batch_size: 1024
