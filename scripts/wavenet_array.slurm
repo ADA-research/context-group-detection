@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --array=5-25
+#SBATCH --array=0-24
 #SBATCH --job-name=train_wave
 #SBATCH --output=%x_%j.out
 #SBATCH --mail-user="thomasmaliappis@gmail.com"
