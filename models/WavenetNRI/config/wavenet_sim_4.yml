@@ -4,4 +4,4 @@ dataset_folder: ../../datasets/simulation/sim_12_3_2_2
 save_folder: logs/nrisu
 group_weight: 0.5
 ng_weight: 0.5
-atoms: 15
+atoms: 12
