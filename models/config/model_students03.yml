@@ -1,0 +1,24 @@
+---
+features: 4
+dataset: students03_shifted
+dataset_path: ../datasets/UCY/students03
+patience: 150
+train_epochs: 0
+batch_size: 1024
+eps_thres: 1.0e-13
+learning_rate: 0.0001
+dominant_sets: true
+reg: 1.0e-07
+dropout: 0.35
+layers:
+  pair_filters:
+    - 32
+    - 128
+    - 256
+  context_filters:
+    - 64
+    - 128
+    - 256
+  combination_filters:
+    - 256
+    - 64
