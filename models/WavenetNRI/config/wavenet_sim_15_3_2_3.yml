@@ -1,0 +1,7 @@
+---
+suffix: '15_3_2_3'
+dataset_folder: ../../datasets/simulation/sim_15_3_2_3
+save_folder: logs/nrisu
+group_weight: 0.5
+ng_weight: 0.5
+atoms: 15
