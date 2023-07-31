@@ -201,9 +201,9 @@ if __name__ == '__main__':
     np.random.seed(args.seed)
 
     paths = {
-        # 'sim_1': './simulation/sim_10_3_2_3',
-        # 'sim_2': './simulation/sim_10_3_2_4',
-        # 'sim_3': './simulation/sim_10_3_2_2',
+        'sim_1': './simulation/sim_10_3_2_3',
+        'sim_2': './simulation/sim_10_3_2_4',
+        'sim_3': './simulation/sim_10_3_2_2',
         'sim_4': './simulation/sim_9_3_2_2',
         'sim_5': './simulation/sim_9_3_2_3',
         'sim_6': './simulation/sim_8_3_2_2'
@@ -211,9 +211,9 @@ if __name__ == '__main__':
 
     # create datasets report
     datasets_dict = {
-        # 'sim_1': dataset_data(paths['sim_1'], args.samples_freq),
-        # 'sim_2': dataset_data(paths['sim_2'], args.samples_freq),
-        # 'sim_3': dataset_data(paths['sim_3'], args.samples_freq),
+        'sim_1': dataset_data(paths['sim_1'], args.samples_freq),
+        'sim_2': dataset_data(paths['sim_2'], args.samples_freq),
+        'sim_3': dataset_data(paths['sim_3'], args.samples_freq),
         'sim_4': dataset_data(paths['sim_4'], args.samples_freq),
         'sim_5': dataset_data(paths['sim_5'], args.samples_freq),
         'sim_6': dataset_data(paths['sim_6'], args.samples_freq)
@@ -224,9 +224,9 @@ if __name__ == '__main__':
 
     # create datasets group size histogram
     groups_dict = {
-        # 'sim_1': read_multi_groups(paths['sim_1']),
-        # 'sim_2': read_multi_groups(paths['sim_2']),
-        # 'sim_3': read_multi_groups(paths['sim_3']),
+        'sim_1': read_multi_groups(paths['sim_1']),
+        'sim_2': read_multi_groups(paths['sim_2']),
+        'sim_3': read_multi_groups(paths['sim_3']),
         'sim_4': read_multi_groups(paths['sim_4']),
         'sim_5': read_multi_groups(paths['sim_5']),
         'sim_6': read_multi_groups(paths['sim_6'])
