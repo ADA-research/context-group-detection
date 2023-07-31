@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=train_wave
+#SBATCH --job-name=amd_test
 #SBATCH --output=%x_%j.out
 #SBATCH --mail-user="thomasmaliappis@gmail.com"
 #SBATCH --mail-type="END"
