@@ -2,10 +2,10 @@ import argparse
 import os
 
 import numpy as np
-from scipy.stats import anderson, friedmanchisquare, rankdata
 from scikit_posthocs import posthoc_nemenyi_friedman
+from scipy.stats import anderson, friedmanchisquare
 
-from models.collector import collect_nri_results, collect_results
+from models.collector import collect_nri_results, collect_results, collect_sim_results, collect_nri_sim_results
 
 
 def anderson_darling_test(data):
@@ -28,7 +28,7 @@ def anderson_darling_test(data):
             print(f"At {sl * 100:.1f}% significance level, the data does not look Gaussian (reject H0).")
 
 
-def friedman_test(data, models, dataset):
+def friedman_test(data, models, dataset, metric):
     # Perform Friedman test
     statistic, p_value = friedmanchisquare(*data.T)
 
@@ -45,12 +45,12 @@ def friedman_test(data, models, dataset):
         nemenyi_result['model'] = models
         nemenyi_result.set_index('model', inplace=True)
         print("Critical Difference (Nemenyi):", nemenyi_result)
-        nemenyi_result.to_csv('nemenyi_result_{}.csv'.format(dataset))
+        nemenyi_result.to_csv('nemenyi_result_{}_{}.csv'.format(dataset, metric))
     else:
         print("There is no significant difference among the treatments (fail to reject H0).")
 
 
-def collect_data(results_path, nri_results_path, dataset, dir_name, metric):
+def collect_data(results_path, nri_results_path, dataset, dir_name, metric, sim):
     # collect dante + model results
     models = []
     results = []
@@ -58,7 +58,10 @@ def collect_data(results_path, nri_results_path, dataset, dir_name, metric):
         item_path = '{}/{}'.format(results_path, item)
         if os.path.isdir(item_path) and item.startswith(dataset):
             for name in [dir_name, '{}_nc'.format(dir_name)]:
-                result = collect_results(item_path, name, average=False)
+                if sim:
+                    result = collect_sim_results(item_path, name, average=False)
+                else:
+                    result = collect_results(item_path, name, average=False)
                 if result == {}:
                     continue
                 if metric == 'gmitre':
@@ -70,11 +73,28 @@ def collect_data(results_path, nri_results_path, dataset, dir_name, metric):
                 context = '_nc' if '_nc' in name else ''
                 models.append('{}{}'.format(item.replace(dataset + '_', ''), context))
                 results.append(result)
+    if args.sim:
+        if dataset == 'sim_1_shifted':
+            dataset = '10_3_2_3'
+        elif dataset == 'sim_2_shifted':
+            dataset = '10_3_2_4'
+        elif dataset == 'sim_3_shifted':
+            dataset = '10_3_2_2'
+        elif dataset == 'sim_4_shifted':
+            dataset = '9_3_2_2'
+        elif dataset == 'sim_5_shifted':
+            dataset = '9_3_2_3'
+        elif dataset == 'sim_6_shifted':
+            dataset = '8_3_2_2'
     # collect nri results
     for item in os.listdir(nri_results_path):
         item_path = '{}/{}'.format(nri_results_path, item)
         if os.path.isdir(item_path) and item.startswith('wavenetsym_{}'.format(dataset)):
-            result = collect_nri_results(item_path, average=False)
+            if sim:
+                result = collect_nri_sim_results(item_path, average=False)
+            else:
+                result = collect_nri_results(item_path, average=False)
+
             if metric == 'gmitre':
                 result = [sample['f1_gmitre']['f1'] for sample in result]
             elif metric == 't1':
@@ -90,9 +110,9 @@ def collect_data(results_path, nri_results_path, dataset, dir_name, metric):
 def get_args():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--dataset', type=str, default='eth_shifted')
-    parser.add_argument('--dir_name', type=str, default='e150')
-    parser.add_argument('--metric', type=str, default='gmitre')
+    parser.add_argument('--dataset', type=str, default='sim_1_shifted')
+    parser.add_argument('--metric', type=str, default='t2/3')
+    parser.add_argument('--sim', action="store_true", default=True)
 
     return parser.parse_args()
 
@@ -101,6 +121,11 @@ if __name__ == '__main__':
     args = get_args()
 
     results_path = './results'
-    nri_results_path = './WavenetNRI/logs/nripedsu'
-    models, data = collect_data(results_path, nri_results_path, args.dataset, args.dir_name, args.metric)
-    friedman_test(np.asarray(data), models, args.dataset)
+    if args.sim:
+        nri_results_path = './WavenetNRI/logs/nrisu'
+        dir_name = 'e50'
+    else:
+        nri_results_path = './WavenetNRI/logs/nripedsu'
+        dir_name = 'e150'
+    models, data = collect_data(results_path, nri_results_path, args.dataset, dir_name, args.metric, args.sim)
+    friedman_test(np.asarray(data), models, args.dataset, args.metric)
