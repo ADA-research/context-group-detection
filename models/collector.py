@@ -124,7 +124,24 @@ def collect_results(results_path, dir_name, average=True):
     if not results:
         return {}
     if average:
-        return get_nri_averages(results)
+        return get_averages(results)
+    else:
+        return results
+
+
+def collect_sim_results(results_path, dir_name, average=True):
+    results = []
+    for seed in os.listdir(results_path):
+        seed_path = results_path + '/' + seed
+        if os.path.isdir(seed_path):
+            start = seed.startswith(dir_name)
+            rest_digit = seed.replace(dir_name, '')[1:].isdigit()
+            if start and rest_digit:
+                results.append(read_results(seed_path))
+    if not results:
+        return {}
+    if average:
+        return get_averages(results)
     else:
         return results
 
@@ -137,6 +154,19 @@ def collect_nri_results(results_path, average=True):
             for folder in os.listdir(fold_path):
                 folder_path = fold_path + '/' + folder
                 results.append(read_nri_results(folder_path))
+
+    if average:
+        return get_nri_averages(results)
+    else:
+        return results
+
+
+def collect_nri_sim_results(results_path, average=True):
+    results = []
+    for seed in os.listdir(results_path):
+        seed_path = results_path + '/' + seed
+        if os.path.isdir(seed_path):
+            results.append(read_nri_results(seed_path))
 
     if average:
         return get_nri_averages(results)
@@ -215,6 +245,7 @@ def get_args():
     parser.add_argument('--nri', action="store_true", default=False)
     parser.add_argument('--no_context', action="store_true", default=False)
     parser.add_argument('--single_dataset', action="store_true", default=False)
+    parser.add_argument('--sim', action="store_true", default=True)
     parser.add_argument('--dataset', type=str, default="students03")
 
     return parser.parse_args()
@@ -227,8 +258,15 @@ if __name__ == '__main__':
         datasets = [args.dataset]
         name = args.dataset
     else:
-        datasets = ['eth', 'hotel', 'zara01', 'zara02', 'students03']
-        name = 'all'
+        if args.sim:
+            if args.nri:
+                datasets = ['8_3_2_2', '9_3_2_2', '9_3_2_3', '10_3_2_2', '10_3_2_3', '10_3_2_4']
+            else:
+                datasets = ['sim_1', 'sim_2', 'sim_3', 'sim_4', 'sim_5', 'sim_6']
+            name = 'all_sim'
+        else:
+            datasets = ['eth', 'hotel', 'zara01', 'zara02', 'students03']
+            name = 'all'
 
     if args.no_context:
         frames = [5, 10, 15]
@@ -236,24 +274,39 @@ if __name__ == '__main__':
         dir_name = 'e150_nc'
         name = '{}_nc'.format(name)
     else:
-        frames = [1, 5, 10, 15]
-        agents = [6, 10]
-        dir_name = 'e150'
+        if args.sim:
+            frames = [49]
+            agents = [6, 10]
+            dir_name = 'e50'
+        else:
+            frames = [1, 5, 10, 15]
+            agents = [6, 10]
+            dir_name = 'e150'
 
     final_results = []
     if args.nri:
         for dataset in datasets:
-            results_path = './WavenetNRI/logs/nripedsu/wavenetsym_{}_shifted_{}'.format(dataset, 15)
-            results = collect_nri_results(results_path)
+            if args.sim:
+                results_path = './WavenetNRI/logs/nrisu/su_wavenetsym_{}'.format(dataset, 15)
+                results = collect_nri_sim_results(results_path)
+            else:
+                results_path = './WavenetNRI/logs/nripedsu/wavenetsym_{}_shifted_{}'.format(dataset, 15)
+                results = collect_nri_results(results_path)
             write_nri_results(results, results_path)
             final_results.append((dataset, results))
-        write_final_nri_results(final_results, './WavenetNRI/logs/nripedsu', name)
+        if args.sim:
+            write_final_nri_results(final_results, './WavenetNRI/logs/nrisu', name)
+        else:
+            write_final_nri_results(final_results, './WavenetNRI/logs/nripedsu', name)
     else:
         for dataset in datasets:
             for frames_num in frames:
                 for agents_num in agents:
                     results_path = './results/{}_shifted_{}_{}'.format(dataset, frames_num, agents_num)
-                    results = collect_results(results_path, dir_name)
+                    if args.sim:
+                        results = collect_sim_results(results_path, dir_name)
+                    else:
+                        results = collect_results(results_path, dir_name)
                     if results == {}:
                         print(results_path)
                         continue
