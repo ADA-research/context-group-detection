@@ -201,12 +201,12 @@ if __name__ == '__main__':
     np.random.seed(args.seed)
 
     paths = {
-        'sim_1': './simulation/sim_10_3_2_3',
-        'sim_2': './simulation/sim_10_3_2_4',
-        'sim_3': './simulation/sim_10_3_2_2',
-        'sim_4': './simulation/sim_9_3_2_2',
-        'sim_5': './simulation/sim_9_3_2_3',
-        'sim_6': './simulation/sim_8_3_2_2'
+        'sim_1': './simulation/sim_8_3_2_2',
+        'sim_2': './simulation/sim_9_3_2_2',
+        'sim_3': './simulation/sim_9_3_2_3',
+        'sim_4': './simulation/sim_10_3_2_2',
+        'sim_5': './simulation/sim_10_3_2_3',
+        'sim_6': './simulation/sim_10_3_2_4'
     }
 
     # create datasets report
@@ -232,7 +232,7 @@ if __name__ == '__main__':
         'sim_6': read_multi_groups(paths['sim_6'])
     }
     if args.plot:
-        groups_size_hist(groups_dict, './group_size_plot.png')
+        groups_size_hist(groups_dict, './group_size_plot_sim.png')
         exit()
 
     multi_frame = True
