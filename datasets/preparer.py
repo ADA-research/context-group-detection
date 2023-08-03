@@ -835,7 +835,7 @@ if __name__ == '__main__':
     if args.plot:
         frames_count_plot(datasets_dict, '.')
         agents_count_plot(datasets_dict, '.')
-        groups_size_hist(groups_dict, './group_size_plot.png')
+        groups_size_hist(groups_dict, './group_size_plot_pede.png')
         exit()
 
     multi_frame, steps, factor = get_sample_params(args.frames_num, args.agents_num)
