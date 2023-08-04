@@ -12,6 +12,7 @@ __pycache__
 
 # ignored folders
 logs
+latex
 models/config
 models/results
 models/DANTE/models
