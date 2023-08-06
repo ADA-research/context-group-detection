@@ -243,10 +243,10 @@ def get_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--nri', action="store_true", default=False)
-    parser.add_argument('--no_context', action="store_true", default=False)
-    parser.add_argument('--single_dataset', action="store_true", default=False)
+    parser.add_argument('--no_context', action="store_true", default=True)
+    parser.add_argument('--single_dataset', action="store_true", default=True)
     parser.add_argument('--sim', action="store_true", default=True)
-    parser.add_argument('--dataset', type=str, default="students03")
+    parser.add_argument('--dataset', type=str, default="sim_1")
 
     return parser.parse_args()
 
@@ -269,9 +269,14 @@ if __name__ == '__main__':
             name = 'all'
 
     if args.no_context:
-        frames = [5, 10, 15]
-        agents = [6]
-        dir_name = 'e150_nc'
+        if args.sim:
+            frames = [49]
+            agents = [6, 10]
+            dir_name = 'e50_nc'
+        else:
+            frames = [5, 10, 15]
+            agents = [6]
+            dir_name = 'e150_nc'
         name = '{}_nc'.format(name)
     else:
         if args.sim:
@@ -285,6 +290,7 @@ if __name__ == '__main__':
 
     final_results = []
     if args.nri:
+        name = '{}_f_15'.format(name)
         for dataset in datasets:
             if args.sim:
                 results_path = './WavenetNRI/logs/nrisu/su_wavenetsym_{}'.format(dataset, 15)
@@ -299,6 +305,8 @@ if __name__ == '__main__':
         else:
             write_final_nri_results(final_results, './WavenetNRI/logs/nripedsu', name)
     else:
+        name = '{}_f_{}_a_{}'.format(
+            name, '_'.join(str(frame) for frame in frames), '_'.join(str(agent) for agent in agents))
         for dataset in datasets:
             for frames_num in frames:
                 for agents_num in agents:
