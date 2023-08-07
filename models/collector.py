@@ -293,7 +293,7 @@ if __name__ == '__main__':
         name = '{}_f_15'.format(name)
         for dataset in datasets:
             if args.sim:
-                results_path = './WavenetNRI/logs/nrisu/su_wavenetsym_{}'.format(dataset, 15)
+                results_path = './WavenetNRI/logs/nrisu/wavenetsym_{}'.format(dataset, 15)
                 results = collect_nri_sim_results(results_path)
             else:
                 results_path = './WavenetNRI/logs/nripedsu/wavenetsym_{}_shifted_{}'.format(dataset, 15)
