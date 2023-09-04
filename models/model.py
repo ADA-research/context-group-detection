@@ -4,7 +4,7 @@ import os
 import numpy as np
 import tensorflow as tf
 from keras.callbacks import EarlyStopping, TensorBoard
-from keras.layers import Dense, Conv1D, LSTM, concatenate, Input, Flatten, Dropout, BatchNormalization
+from keras.layers import Dense, Conv1D, LSTM, concatenate, Input, Flatten, Dropout, BatchNormalization, GRU
 from keras.models import Model
 from keras.optimizers import Adam
 from keras.regularizers import l2
@@ -15,7 +15,8 @@ os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 
 
 def build_model(context_size, consecutive_frames, features, reg_amount, drop_amount, learning_rate, lstm_units=64,
-                pair_filters=[32], context_filters=[32], combination_filters=[64], no_context=False):
+                pair_filters=[32], context_filters=[32], combination_filters=[64], no_context=False, gru=False,
+                dense=False):
     """
     Builds model based on given parameters.
     :param context_size: size of context
@@ -29,6 +30,8 @@ def build_model(context_size, consecutive_frames, features, reg_amount, drop_amo
     :param context_filters: filters to be used in conv1d layers for context
     :param combination_filters: units to be used in dense layer
     :param no_context: True, if no context is used, otherwise False
+    :param gru: True, if GRU layers are used instead of LSTM layers
+    :param dense: True, if Dense layers are used instead of Conv1D layers
     :return: model
     """
     inputs = []
@@ -43,8 +46,12 @@ def build_model(context_size, consecutive_frames, features, reg_amount, drop_amo
 
     pair_layers = []
     for pair_input in pair_inputs:
-        lstm = LSTM(lstm_units, return_sequences=True)(pair_input)
-        pair_layers.append(lstm)
+        if gru:
+            # TODO check if it works
+            layer = GRU(lstm_units)(pair_input)
+        else:
+            layer = LSTM(lstm_units, return_sequences=True)(pair_input)
+        pair_layers.append(layer)
 
     reg = l2(reg_amount)
 
@@ -52,10 +59,15 @@ def build_model(context_size, consecutive_frames, features, reg_amount, drop_amo
 
     pair_x = pair_concatenated
     for filters in pair_filters:
-        pair_x = Conv1D(filters=filters, kernel_size=1, kernel_regularizer=reg, activation='relu',
-                        name='pair_conv_{}'.format(filters))(pair_x)
-        pair_x = Dropout(drop_amount)(pair_x)
-        pair_x = BatchNormalization()(pair_x)
+        if dense:
+            # TODO check if it works
+            pair_x = Dense(units=filters, use_bias='True', kernel_regularizer=reg, activation='relu',
+                           kernel_initializer="he_normal", name='pair_dense_{}')(pair_x)
+        else:
+            pair_x = Conv1D(filters=filters, kernel_size=1, kernel_regularizer=reg, activation='relu',
+                            name='pair_conv_{}'.format(filters))(pair_x)
+            pair_x = Dropout(drop_amount)(pair_x)
+            pair_x = BatchNormalization()(pair_x)
     pair_conv = pair_x
     pair_layer = pair_conv
 
@@ -71,17 +83,26 @@ def build_model(context_size, consecutive_frames, features, reg_amount, drop_amo
 
         context_layers = []
         for context_input in context_inputs:
-            lstm = LSTM(lstm_units, return_sequences=True)(context_input)
-            context_layers.append(lstm)
+            if gru:
+                # TODO check if it works
+                layer = GRU(lstm_units)(context_input)
+            else:
+                layer = LSTM(lstm_units, return_sequences=True)(context_input)
+            context_layers.append(layer)
 
         context_concatenated = concatenate(context_layers)
 
         context_x = context_concatenated
         for filters in context_filters:
-            context_x = Conv1D(filters=filters, kernel_size=1, kernel_regularizer=reg, activation='relu',
-                               name='context_conv_{}'.format(filters))(context_x)
-            context_x = Dropout(drop_amount)(context_x)
-            context_x = BatchNormalization()(context_x)
+            if dense:
+                # TODO check if it works
+                context_x = Dense(units=filters, use_bias='True', kernel_regularizer=reg, activation='relu',
+                                  kernel_initializer="he_normal", name='context_dense_{}')(context_x)
+            else:
+                context_x = Conv1D(filters=filters, kernel_size=1, kernel_regularizer=reg, activation='relu',
+                                   name='context_conv_{}'.format(filters))(context_x)
+                context_x = Dropout(drop_amount)(context_x)
+                context_x = BatchNormalization()(context_x)
         context_conv = context_x
         context_layer = context_conv
 
