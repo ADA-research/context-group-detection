@@ -48,7 +48,7 @@ def build_model(context_size, consecutive_frames, features, reg_amount, drop_amo
     for pair_input in pair_inputs:
         if gru:
             # TODO check if it works
-            layer = GRU(lstm_units)(pair_input)
+            layer = GRU(lstm_units, return_sequences=True)(pair_input)
         else:
             layer = LSTM(lstm_units, return_sequences=True)(pair_input)
         pair_layers.append(layer)
@@ -85,7 +85,7 @@ def build_model(context_size, consecutive_frames, features, reg_amount, drop_amo
         for context_input in context_inputs:
             if gru:
                 # TODO check if it works
-                layer = GRU(lstm_units)(context_input)
+                layer = GRU(lstm_units, return_sequences=True)(context_input)
             else:
                 layer = LSTM(lstm_units, return_sequences=True)(context_input)
             context_layers.append(layer)
