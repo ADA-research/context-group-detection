@@ -14,6 +14,8 @@ dominant_sets: true
 reg: 1.0e-07
 dropout: 0.35
 layers:
+  gru: true
+  dense: true
   pair_filters:
     - 32
     - 128
