@@ -47,7 +47,6 @@ def build_model(context_size, consecutive_frames, features, reg_amount, drop_amo
     pair_layers = []
     for pair_input in pair_inputs:
         if gru:
-            # TODO check if it works
             layer = GRU(lstm_units, return_sequences=True)(pair_input)
         else:
             layer = LSTM(lstm_units, return_sequences=True)(pair_input)
@@ -60,9 +59,8 @@ def build_model(context_size, consecutive_frames, features, reg_amount, drop_amo
     pair_x = pair_concatenated
     for filters in pair_filters:
         if dense:
-            # TODO check if it works
             pair_x = Dense(units=filters, use_bias='True', kernel_regularizer=reg, activation='relu',
-                           kernel_initializer="he_normal", name='pair_dense_{}')(pair_x)
+                           kernel_initializer="he_normal", name='pair_dense_{}'.format(filters))(pair_x)
         else:
             pair_x = Conv1D(filters=filters, kernel_size=1, kernel_regularizer=reg, activation='relu',
                             name='pair_conv_{}'.format(filters))(pair_x)
@@ -84,7 +82,6 @@ def build_model(context_size, consecutive_frames, features, reg_amount, drop_amo
         context_layers = []
         for context_input in context_inputs:
             if gru:
-                # TODO check if it works
                 layer = GRU(lstm_units, return_sequences=True)(context_input)
             else:
                 layer = LSTM(lstm_units, return_sequences=True)(context_input)
@@ -95,9 +92,8 @@ def build_model(context_size, consecutive_frames, features, reg_amount, drop_amo
         context_x = context_concatenated
         for filters in context_filters:
             if dense:
-                # TODO check if it works
                 context_x = Dense(units=filters, use_bias='True', kernel_regularizer=reg, activation='relu',
-                                  kernel_initializer="he_normal", name='context_dense_{}')(context_x)
+                                  kernel_initializer="he_normal", name='context_dense_{}'.format(filters))(context_x)
             else:
                 context_x = Conv1D(filters=filters, kernel_size=1, kernel_regularizer=reg, activation='relu',
                                    name='context_conv_{}'.format(filters))(context_x)
@@ -167,7 +163,8 @@ if __name__ == '__main__':
         args.agents - 2, args.frames, config['features'], config['reg'], config['dropout'],
         config['learning_rate'], no_context=args.no_context, pair_filters=config['layers']['pair_filters'],
         context_filters=config['layers']['context_filters'],
-        combination_filters=config['layers']['combination_filters'])
+        combination_filters=config['layers']['combination_filters'], gru=config['layers']['gru'],
+        dense=config['layers']['dense'])
 
     tensorboard = TensorBoard(log_dir='./logs')
     early_stop = EarlyStopping(monitor='val_loss', patience=config['patience'])
