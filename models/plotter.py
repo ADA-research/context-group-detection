@@ -31,15 +31,15 @@ def modify_df(dataframe, no_context=False):
     details_size = len(details[0])
     dataframe['dataset'] = details.apply(lambda x: x[0])
     if details_size == 2:
-        dataframe['name'] = details.apply(lambda x: x[1])
+        dataframe['name'] = 'WavenetNRI'
     else:
         if details[0][1] == '1':
-            dataframe['name'] = 'dante c' + details.apply(lambda x: str(int(x[2]) - 2))
+            dataframe['name'] = 'DANTE c' + details.apply(lambda x: str(int(x[2]) - 2))
         else:
             if no_context:
-                dataframe['name'] = 't-dante nc'
+                dataframe['name'] = 'T-DANTE nc'
             else:
-                dataframe['name'] = 't-dante c' + details.apply(lambda x: str(int(x[2]) - 2))
+                dataframe['name'] = 'T-DANTE c' + details.apply(lambda x: str(int(x[2]) - 2))
 
     float_columns = list(dataframe.columns.values[1:-1])
     dataframe[float_columns] = dataframe[float_columns].astype(float)
@@ -55,14 +55,14 @@ def modify_sim_df(dataframe, no_context=False, fix_datasets=False):
         dataframe['dataset'] = dataframe['dataset'].replace('10_3_2_2_nri', 'sim_4')
         dataframe['dataset'] = dataframe['dataset'].replace('10_3_2_3_nri', 'sim_5')
         dataframe['dataset'] = dataframe['dataset'].replace('10_3_2_4_nri', 'sim_6')
-        dataframe['name'] = 'nri'
+        dataframe['name'] = 'WavenetNRI'
     else:
         details = dataframe['dataset'].str.split('_')
         dataframe['dataset'] = details.apply(lambda x: '_'.join(x[0:2]))
         if no_context:
-            dataframe['name'] = 't-dante nc'
+            dataframe['name'] = 'T-DANTE nc'
         else:
-            dataframe['name'] = 't-dante c' + details.apply(lambda x: str(int(x[-1]) - 2))
+            dataframe['name'] = 'T-DANTE c' + details.apply(lambda x: str(int(x[-1]) - 2))
 
     float_columns = list(dataframe.columns.values[1:-1])
     dataframe[float_columns] = dataframe[float_columns].astype(float)
@@ -82,15 +82,15 @@ def get_args():
     return parser.parse_args()
 
 
-def plot_df(dataframe, metric, ylabel, savefile):
+def plot_df(dataframe, metric, ylabel, title, savefile):
     # plt.figure(figsize=(12, 6))
     sns.barplot(data=dataframe, x='dataset', y=metric, hue='name', errorbar='sd', errcolor='red')
     plt.xlabel('Dataset')
     plt.ylabel(ylabel)
-    plt.title('Plot of {} value for each Model and Dataset'.format(ylabel))
-    plt.ylim(0, 1)
-    plt.legend(title='Model')
-    plt.tight_layout()
+    plt.title(title)
+    # plt.ylim(0, 1)
+    plt.legend(title='Model', loc='lower center')
+    # plt.tight_layout()
     plt.savefig(savefile)
     plt.show()
 
@@ -112,28 +112,52 @@ if __name__ == '__main__':
     pede_nc_results = modify_df(pede_nc_results, no_context=True)
     pede_dante_results = modify_df(pede_dante_results)
     pede_tdante_results = modify_df(pede_tdante_results)
+
     sim_nri_results = modify_sim_df(sim_nri_results, fix_datasets=True)
     sim_nc_results = modify_sim_df(sim_nc_results, no_context=True)
-    # sim_dante_results = modify_sim_df(sim_dante_results)
     sim_tdante_results = modify_sim_df(sim_tdante_results)
 
     # final form data
     abl_pede = pd.concat([pede_nc_results, pede_tdante_results])
     abl_sim = pd.concat([sim_nc_results, sim_tdante_results])
     bas_pede = pd.concat([pede_dante_results, pede_nri_results, pede_tdante_results])
+    bas_pede = bas_pede[~bas_pede['name'].isin(['DANTE c4', 'T-DANTE c4'])]
     bas_sim = pd.concat([sim_nri_results, sim_tdante_results])
+    bas_sim = bas_sim[~bas_sim['name'].isin(['DANTE c4', 'T-DANTE c4'])]
 
     sns.set(style='whitegrid')
-    plot_df(abl_pede, metric='f1_1', ylabel='Group Correctness 1 F1', savefile='abl_pede_f1_1')
-    plot_df(bas_pede, metric='f1_1', ylabel='Group Correctness 1 F1', savefile='bas_pede_f1_1')
-    plot_df(abl_pede, metric='f1_2/3', ylabel='Group Correctness 2/3 F1', savefile='abl_pede_f1_23')
-    plot_df(bas_pede, metric='f1_2/3', ylabel='Group Correctness 2/3 F1', savefile='bas_pede_f1_23')
-    plot_df(abl_pede, metric='f1_gmitre', ylabel='Group Mitre F1', savefile='abl_pede_f1_gmitre')
-    plot_df(bas_pede, metric='f1_gmitre', ylabel='Group Mitre F1', savefile='bas_pede_f1_gmitre')
+    plot_df(abl_pede, metric='f1_1', ylabel='F1',
+            title='Group Correctness P=1 F1 values\nfor each Model and Pedestrian Dataset',
+            savefile='abl_pede_f1_1')
+    plot_df(bas_pede, metric='f1_1', ylabel='F1',
+            title='Group Correctness P=1 F1 values\nfor each Model and Pedestrian Dataset',
+            savefile='bas_pede_f1_1')
+    plot_df(abl_pede, metric='f1_2/3', ylabel='F1',
+            title='Group Correctness P=2/3 F1 values\nfor each Model and Pedestrian Dataset', savefile='abl_pede_f1_23')
+    plot_df(bas_pede, metric='f1_2/3', ylabel='F1',
+            title='Group Correctness P=2/3 F1 values\nfor each Model and Pedestrian Dataset', savefile='bas_pede_f1_23')
+    plot_df(abl_pede, metric='f1_gmitre', ylabel='F1',
+            title='Group Mitre F1 values\nfor each Model and Pedestrian Dataset',
+            savefile='abl_pede_f1_gmitre')
+    plot_df(bas_pede, metric='f1_gmitre', ylabel='F1',
+            title='Group Mitre F1 values\nfor each Model and Pedestrian Dataset',
+            savefile='bas_pede_f1_gmitre')
 
-    plot_df(abl_sim, metric='f1_1', ylabel='Group Correctness 1 F1', savefile='abl_sim_f1_1')
-    plot_df(bas_sim, metric='f1_1', ylabel='Group Correctness 1 F1', savefile='bas_sim_f1_1')
-    plot_df(abl_sim, metric='f1_2/3', ylabel='Group Correctness 2/3 F1', savefile='abl_sim_f1_23')
-    plot_df(bas_sim, metric='f1_2/3', ylabel='Group Correctness 2/3 F1', savefile='bas_sim_f1_23')
-    plot_df(abl_sim, metric='f1_gmitre', ylabel='Group Mitre F1', savefile='abl_sim_f1_gmitre')
-    plot_df(bas_sim, metric='f1_gmitre', ylabel='Group Mitre F1', savefile='bas_sim_f1_gmitre')
+    plot_df(abl_sim, metric='f1_1', ylabel='F1',
+            title='Group Correctness P=1 F1 values\nfor each Model and Simulation Dataset',
+            savefile='abl_sim_f1_1')
+    plot_df(bas_sim, metric='f1_1', ylabel='F1',
+            title='Group Correctness P=1 F1 values\nfor each Model and Simulation Dataset',
+            savefile='bas_sim_f1_1')
+    plot_df(abl_sim, metric='f1_2/3', ylabel='F1',
+            title='Group Correctness P=2/3 F1 values\nfor each Model and Simulation Dataset',
+            savefile='abl_sim_f1_23')
+    plot_df(bas_sim, metric='f1_2/3', ylabel='F1',
+            title='Group Correctness P=2/3 F1 values\nfor each Model and Simulation Dataset',
+            savefile='bas_sim_f1_23')
+    plot_df(abl_sim, metric='f1_gmitre', ylabel='F1',
+            title='Group Mitre F1 values\nfor each Model and Simulation Dataset',
+            savefile='abl_sim_f1_gmitre')
+    plot_df(bas_sim, metric='f1_gmitre', ylabel='F1',
+            title='Group Mitre F1 values\nfor each Model and Simulation Dataset',
+            savefile='bas_sim_f1_gmitre')
