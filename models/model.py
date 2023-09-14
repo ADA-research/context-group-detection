@@ -137,7 +137,7 @@ def get_args():
     parser.add_argument('-d', '--dir_name', type=str, default="dir_name")
     parser.add_argument('-c', '--config', type=str, default="./config/model_sim.yml")
     parser.add_argument('-nc', '--no_context', action="store_true", default=False)
-    parser.add_argument('--sim', action="store_true", default=True)
+    parser.add_argument('--sim', action="store_true", default=False)
 
     return parser.parse_args()
 
