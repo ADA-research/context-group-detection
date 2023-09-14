@@ -19,9 +19,10 @@ agents=10
 frames=1
 nc=false
 sim=false
+name=""
 
 # Read flags and their corresponding values
-while getopts "m:c:f:e:d:a:t:np" flag; do
+while getopts "m:c:f:e:d:a:t:o:np" flag; do
   case ${flag} in
   m) model="${OPTARG}" ;;
   c) config="${OPTARG}" ;;
@@ -30,6 +31,7 @@ while getopts "m:c:f:e:d:a:t:np" flag; do
   d) dir_name="${OPTARG}" ;;
   a) agents="${OPTARG}" ;;
   t) frames="${OPTARG}" ;;
+  o) name="${OPTARG}" ;;
   n) nc=true ;;
   p) sim=true ;;
   *)
@@ -47,7 +49,7 @@ export PYTHONPATH="${PYTHONPATH}:${HOME}/data1/context-group-detection/"
 echo "User: ${SLURM_JOB_USER}, hostname: ${HOSTNAME}, job_id: ${SLURM_JOB_ID}, array_task_id: ${SLURM_ARRAY_TASK_ID}"
 echo "Current working directory: $(pwd)"
 
-echo "Running ${model}, agents: ${agents}, frames: ${frames}, nc: ${nc}"
+echo "Running ${model}, agents: ${agents}, frames: ${frames}, nc: ${nc}, name: ${name}"
 echo "Using config file at: ${config}, fold: ${fold}, epochs: ${epochs}, dir_name: ${dir_name}, seed: ${SLURM_ARRAY_TASK_ID}"
 
 nc_flag=""
@@ -67,6 +69,6 @@ fi
 
 echo "Script starting"
 cd "${HOME}/data1/context-group-detection/models" || exit
-python ${model}.py -c ${config} -f ${fold} -e ${epochs} -d ${dir_name} --seed ${SLURM_ARRAY_TASK_ID} -a ${agents} ${frames_flag} ${nc_flag} ${sim_flag}
+python ${model}.py -c ${config} -f ${fold} -e ${epochs} -n ${name} -d ${dir_name} --seed ${SLURM_ARRAY_TASK_ID} -a ${agents} ${frames_flag} ${nc_flag} ${sim_flag}
 
 echo "Script finished"

@@ -134,6 +134,7 @@ def get_args():
     parser.add_argument('-e', '--epochs', type=int, default=1)
     parser.add_argument('-a', '--agents', type=int, default=6)
     parser.add_argument('-t', '--frames', type=int, default=49)
+    parser.add_argument('-n', '--name', type=str, default="name")
     parser.add_argument('-d', '--dir_name', type=str, default="dir_name")
     parser.add_argument('-c', '--config', type=str, default="./config/model_sim.yml")
     parser.add_argument('-nc', '--no_context', action="store_true", default=False)
@@ -176,10 +177,10 @@ if __name__ == '__main__':
 
     no_context = "nc_" if args.no_context else ""
     if args.sim:
-        dir_name = '{}_{}_{}/{}_{}{}'.format(
-            config['dataset'], args.frames, args.agents, args.dir_name, no_context, args.seed)
+        dir_name = '{}_{}_{}_{}/{}_{}{}'.format(
+            config['dataset'], args.frames, args.agents, args.name, args.dir_name, no_context, args.seed)
     else:
-        dir_name = '{}_{}_{}/fold_{}/{}_{}{}'.format(
-            config['dataset'], args.frames, args.agents, args.fold, args.dir_name, no_context, args.seed)
+        dir_name = '{}_{}_{}_{}/fold_{}/{}_{}{}'.format(
+            config['dataset'], args.frames, args.agents, args.name, args.fold, args.dir_name, no_context, args.seed)
     save_model_data(dir_name, config['reg'], config['dropout'], history, test, True, eps_thres=config['eps_thres'],
                     dominant_sets=config['dominant_sets'], layers=config['layers'], no_context=args.no_context)
