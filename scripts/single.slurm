@@ -22,7 +22,7 @@ sim=false
 name=""
 
 # Read flags and their corresponding values
-while getopts "m:c:f:e:d:s:a:t:np" flag; do
+while getopts "m:c:f:e:d:s:a:t:o:np" flag; do
   case ${flag} in
   m) model="${OPTARG}" ;;
   c) config="${OPTARG}" ;;
