@@ -247,6 +247,7 @@ def get_args():
     parser.add_argument('--single_dataset', action="store_true", default=True)
     parser.add_argument('--sim', action="store_true", default=True)
     parser.add_argument('--dataset', type=str, default="sim_1")
+    parser.add_argument('--model', type=str, default="_gd")
 
     return parser.parse_args()
 
@@ -274,7 +275,7 @@ if __name__ == '__main__':
             agents = [6, 10]
             dir_name = 'e50_nc'
         else:
-            frames = [5, 10, 15]
+            frames = [15]
             agents = [6]
             dir_name = 'e150_nc'
         name = '{}_nc'.format(name)
@@ -284,7 +285,7 @@ if __name__ == '__main__':
             agents = [6, 10]
             dir_name = 'e50'
         else:
-            frames = [1, 5, 10, 15]
+            frames = [15]
             agents = [6, 10]
             dir_name = 'e150'
 
@@ -310,7 +311,7 @@ if __name__ == '__main__':
         for dataset in datasets:
             for frames_num in frames:
                 for agents_num in agents:
-                    results_path = './results/{}_shifted_{}_{}'.format(dataset, frames_num, agents_num)
+                    results_path = './results/{}_shifted_{}_{}{}'.format(dataset, frames_num, agents_num, args.model)
                     if args.sim:
                         results = collect_sim_results(results_path, dir_name)
                     else:
