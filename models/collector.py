@@ -243,9 +243,9 @@ def get_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--nri', action="store_true", default=False)
-    parser.add_argument('--no_context', action="store_true", default=True)
+    parser.add_argument('--no_context', action="store_true", default=False)
     parser.add_argument('--single_dataset', action="store_true", default=True)
-    parser.add_argument('--sim', action="store_true", default=True)
+    parser.add_argument('--sim', action="store_true", default=False)
     parser.add_argument('--dataset', type=str, default="sim_1")
     parser.add_argument('--model', type=str, default="_gd")
 
