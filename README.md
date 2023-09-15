@@ -11,10 +11,10 @@ based on DANTE [[5]](#5) and we applied LSTM/GRU layers to include temporal feat
 name our model T-DANTE. Figure 1 and Figure 2 give a visual
 representation for the first and second part of our framework, respectively.
 
-![trajectories to affinity graph](models/pngs/trajectories%20to%20affinity%20graph.png)
+![trajectories to affinity graph](pngs/trajectories%20to%20affinity%20graph.png)
 *Figure 1: Trajectories to affinity graph*
 
-![graph community detection](models/pngs/graph%20community%20detection.png)
+![graph community detection](pngs/graph%20community%20detection.png)
 *Figure 2: Affinity graph community detection*
 
 T-DANTE is a deep neural network (DNN) that predicts the weights for each of the edges in the
@@ -57,7 +57,51 @@ as the communities that they belong to.
 
 ### Dataset Preprocessing
 
-[//]: # (todo add how to run files)
+<img alt="folds split" src="pngs/frames.png" style="width:400px;"/>
+
+*Figure 3: Frames of reference*
+
+<img alt="folds split" src="pngs/folds.png" style="width:400px;"/>
+
+*Figure 4: Fold splits*
+
+The datasets need to be processed in order to be used by the input structure of T-DANTE.
+At the beginning of the process we need to find all the possible scenes of size T, which is a parameter to handle the
+number of timeframes that scenes consist of. In order for a number of timeframes to form a scene, they have to be
+consecutive and no other timeframes exist between them. The only other constraint for a scene to be part of the dataset
+is for at least 2 agents to appear in it. During the process of finding the scenes, we keep track of the groups and
+the agents that are included in the scene, so we can use that information during the evaluation of our method.
+In the subsequent stage of the dataset preprocessing we create samples extracted from the extracted scenes. For each
+possible pair of agents in each scene, multiple samples are created, when enough agents are there, by using different
+agents as part of the context of the pair of interest. Information about the groups of the scene, the label of the
+affinity between the pair of agents of interest and the timeframe ids that constitute the scene is kept to be used in
+later stages of splitting the dataset into fold and the evaluation of the model. The balance of the dataset is managed
+by sampling with different rates pairs of agents that are in the same group and pairs of agents that are in different
+groups. The spatial features of each agent are originally obtained in a world reference frame W. However, we transform
+the features of each agent in the social context of a sample using a local frame of reference defined with respect to
+the pair of individuals whose affinity a<sub>ij</sub> is being computed. This frame L<sub>ij</sub> is illustrated in
+Figure 3 and is located at the middle point between agents i and j in the global frame W. This transformation of the
+context features helps learning and generalisation of our approach. The last phase of the procedure is to split the
+samples of the dataset into folds as a 5-fold cross validation approach is applied. In Figure 4 we try to visualise that
+the samples are split into 5 parts, with 3 of them being the training set, 1 of them being the validation set and the
+last 1 being the test set. The samples are split in that way so the data representing one scene are included in the same
+set, in order to be able to construct the affinity graph that corresponds to a scene. For each fold the parts that
+represent each set change in order for every part of the samples to be used in each one of the training, validation and
+test sets.
+
+In order to preprocess the pedestrian datasets you need to run [preparer.py](datasets/preparer.py) with the following
+command
+
+```
+python preparer.py -f 15 -a 10 -sf "path_to_save_folder" 
+```
+
+The preprocessing of the simulation datasets has been implemented
+in [simulation_preparer.py](datasets/simulation_preparer.py) that needs the following command to run
+
+```
+python simulation_preparer.py -f 49 -a 10 -sf "path_to_save_folder" 
+```
 
 ## Baselines
 
@@ -83,9 +127,53 @@ as the communities that they belong to.
   scenes as samples, something that is different from our approach that uses only a specific amount of surrounding
   agents to predict the affinities.
 
-## Results
+## Experiments
 
-[//]: # (todo add results and how to run experiments)
+### How to run
+
+In order to train T-DANTE using a pedestrian dataset, you need to run the following command
+
+```
+python model.py -c path_to_config_file -f fold -e epochs --seed ${seed} -a 10 -f 15
+```
+
+For a simulation dataset the command is the following
+
+```
+python model.py -c path_to_config_file -f fold -e epochs --seed ${seed} -a 10 -f 15 --sim
+```
+
+More information has to be defined in the configuration files.
+
+### Results
+
+#### Ablation Study
+
+- Pedestrian datasets
+
+  <img alt="ablation study pedestrian datasets gmitre results" src="models/abl_pede_f1_gmitre.png" style="width:300px;"/>
+  <img alt="ablation study pedestrian datasets gc 1 results" src="models/abl_pede_f1_1.png" style="width:300px;"/>
+  <img alt="ablation study pedestrian datasets gc 23 results" src="models/abl_pede_f1_23.png" style="width:300px;"/>
+
+- Simulation datasets
+
+  <img alt="ablation study simulation datasets gmitre results" src="models/abl_sim_f1_gmitre.png" style="width:300px;"/>
+  <img alt="ablation study simulation datasets gc 1 results" src="models/abl_sim_f1_1.png" style="width:300px;"/>
+  <img alt="ablation study simulation datasets gc 23 results" src="models/abl_sim_f1_23.png" style="width:300px;"/>
+
+#### T-DANTE vs Baselines
+
+- Pedestrian datasets
+
+  <img alt="baselines pedestrian datasets gmitre results" src="models/bas_pede_f1_gmitre.png" style="width:300px;"/>
+  <img alt="baselines pedestrian datasets gc 1 results" src="models/bas_pede_f1_1.png" style="width:300px;"/>
+  <img alt="baselines pedestrian datasets gc 23 results" src="models/bas_pede_f1_23.png" style="width:300px;"/>
+
+- Simulation datasets
+
+  <img alt="baselines simulation datasets gmitre results" src="models/bas_sim_f1_gmitre.png" style="width:300px;"/>
+  <img alt="baselines simulation datasets gc 1 results" src="models/bas_sim_f1_1.png" style="width:300px;"/>
+  <img alt="baselines simulation datasets gc 23 results" src="models/bas_sim_f1_23.png" style="width:300px;"/>
 
 ## References
 
