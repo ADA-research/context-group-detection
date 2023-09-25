@@ -175,7 +175,7 @@ def collect_nri_sim_results(results_path, average=True):
 
 
 def write_results(results, file_path, dir_name):
-    file_name = file_path + '/{}_results.csv'.format(dir_name)
+    file_name = file_path + '/{}.csv'.format(dir_name)
 
     df = pd.DataFrame.from_dict(results, orient='index').transpose()
     df['metric'] = ['mean', 'std']
@@ -192,7 +192,7 @@ def write_results(results, file_path, dir_name):
 
 
 def write_final_results(results, file_path, name):
-    file_name = file_path + '/{}_results.csv'.format(name)
+    file_name = file_path + '/{}.csv'.format(name)
 
     dfs = []
     for info, result in results:
@@ -225,7 +225,7 @@ def write_nri_results(results, file_path):
 
 
 def write_final_nri_results(results, file_path, name):
-    file_name = file_path + '/{}_nri_results.csv'.format(name)
+    file_name = file_path + '/{}.csv'.format(name)
 
     dfs = []
     for dataset, result in results:
@@ -323,7 +323,7 @@ if __name__ == '__main__':
                     pede_nc_results.append(
                         ((dataset, frames_num, agents_num), collect_results(results_path_gd, 'e150_nc')))
     write_final_results(pede_dante_results, './results', 'pede_dante_results')
-    write_final_results(pede_tdante_results, './results', 'pede_results')
+    write_final_results(pede_tdante_results, './results', 'pede_tdante_results')
     write_final_results(pede_nc_results, './results', 'pede_nc_results')
     write_final_nri_results(pede_wavenet_results, './WavenetNRI/logs/nripedsu', 'pede_wavenet_results')
     # write_final_nri_results(pede_nri_results, './WavenetNRI/logs/nripedsu', 'pede_nri_results')
@@ -344,7 +344,7 @@ if __name__ == '__main__':
                         ((dataset, frames_num, agents_num), collect_sim_results(results_path_gd, 'e50_nc')))
 
     write_final_results(sim_nc_results, './results', 'sim_nc_results')
-    write_final_results(sim_tdante_results, './results', 'sim_results')
+    write_final_results(sim_tdante_results, './results', 'sim_tdante_results')
 
     for dataset in nri_datasets:
         results_path = './WavenetNRI/logs/nrisu/wavenetsym_{}'.format(dataset, 15)
