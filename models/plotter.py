@@ -84,7 +84,7 @@ def get_args():
 
 def plot_df(dataframe, metric, ylabel, title, savefile):
     # plt.figure(figsize=(12, 6))
-    sns.barplot(data=dataframe, x='dataset', y=metric, hue='name', errorbar='sd', errcolor='red')
+    sns.barplot(data=dataframe, x='dataset', y=metric, hue='name', errorbar='sd')
     plt.xlabel('Dataset')
     plt.ylabel(ylabel)
     plt.title(title)
@@ -99,65 +99,64 @@ if __name__ == '__main__':
     args = get_args()
 
     # read data
-    pede_nri_results = read_csv("./WavenetNRI/logs/nripedsu/all_f_15_nri_results.csv")
-    pede_nc_results = read_csv("./results/all_nc_f_15_a_6_results.csv")
-    pede_dante_results = read_csv("./results/all_f_1_a_6_10_results.csv")
-    pede_tdante_results = read_csv("./results/all_f_15_a_6_10_results.csv")
-    sim_nri_results = read_csv("./WavenetNRI/logs/nrisu/all_sim_f_15_nri_results.csv")
-    sim_nc_results = read_csv("./results/all_sim_nc_f_49_a_6_10_results.csv")
-    # sim_dante_results = read_csv("")
-    sim_tdante_results = read_csv("./results/all_sim_f_49_a_6_10_results.csv")
+    pede_wavenet_results = read_csv("./WavenetNRI/logs/nripedsu/pede_wavenet_results.csv")
+    pede_nc_results = read_csv("./results/pede_nc_results.csv")
+    pede_dante_results = read_csv("./results/pede_dante_results.csv")
+    pede_tdante_results = read_csv("./results/pede_tdante_results.csv")
+    sim_wavenet_results = read_csv("./WavenetNRI/logs/nrisu/sim_wavenet_results.csv")
+    sim_nc_results = read_csv("./results/sim_nc_results.csv")
+    sim_tdante_results = read_csv("./results/sim_tdante_results.csv")
 
-    pede_nri_results = modify_df(pede_nri_results)
+    pede_wavenet_results = modify_df(pede_wavenet_results)
     pede_nc_results = modify_df(pede_nc_results, no_context=True)
     pede_dante_results = modify_df(pede_dante_results)
     pede_tdante_results = modify_df(pede_tdante_results)
 
-    sim_nri_results = modify_sim_df(sim_nri_results, fix_datasets=True)
+    sim_wavenet_results = modify_sim_df(sim_wavenet_results, fix_datasets=True)
     sim_nc_results = modify_sim_df(sim_nc_results, no_context=True)
     sim_tdante_results = modify_sim_df(sim_tdante_results)
 
     # final form data
     abl_pede = pd.concat([pede_nc_results, pede_tdante_results])
     abl_sim = pd.concat([sim_nc_results, sim_tdante_results])
-    bas_pede = pd.concat([pede_dante_results, pede_nri_results, pede_tdante_results])
+    bas_pede = pd.concat([pede_dante_results, pede_wavenet_results, pede_tdante_results])
     bas_pede = bas_pede[~bas_pede['name'].isin(['DANTE c4', 'T-DANTE c4'])]
-    bas_sim = pd.concat([sim_nri_results, sim_tdante_results])
+    bas_sim = pd.concat([sim_wavenet_results, sim_tdante_results])
     bas_sim = bas_sim[~bas_sim['name'].isin(['DANTE c4', 'T-DANTE c4'])]
 
     sns.set(style='whitegrid')
     plot_df(abl_pede, metric='f1_1', ylabel='F1',
             title='Group Correctness P=1 F1 values\nfor each Model and Pedestrian Dataset',
-            savefile='abl_pede_f1_1')
+            savefile='pngs/abl_pede_f1_1')
     plot_df(bas_pede, metric='f1_1', ylabel='F1',
             title='Group Correctness P=1 F1 values\nfor each Model and Pedestrian Dataset',
-            savefile='bas_pede_f1_1')
+            savefile='pngs/bas_pede_f1_1')
     plot_df(abl_pede, metric='f1_2/3', ylabel='F1',
-            title='Group Correctness P=2/3 F1 values\nfor each Model and Pedestrian Dataset', savefile='abl_pede_f1_23')
+            title='Group Correctness P=2/3 F1 values\nfor each Model and Pedestrian Dataset', savefile='pngs/abl_pede_f1_23')
     plot_df(bas_pede, metric='f1_2/3', ylabel='F1',
-            title='Group Correctness P=2/3 F1 values\nfor each Model and Pedestrian Dataset', savefile='bas_pede_f1_23')
+            title='Group Correctness P=2/3 F1 values\nfor each Model and Pedestrian Dataset', savefile='pngs/bas_pede_f1_23')
     plot_df(abl_pede, metric='f1_gmitre', ylabel='F1',
             title='Group Mitre F1 values\nfor each Model and Pedestrian Dataset',
-            savefile='abl_pede_f1_gmitre')
+            savefile='pngs/abl_pede_f1_gmitre')
     plot_df(bas_pede, metric='f1_gmitre', ylabel='F1',
             title='Group Mitre F1 values\nfor each Model and Pedestrian Dataset',
-            savefile='bas_pede_f1_gmitre')
+            savefile='pngs/bas_pede_f1_gmitre')
 
     plot_df(abl_sim, metric='f1_1', ylabel='F1',
             title='Group Correctness P=1 F1 values\nfor each Model and Simulation Dataset',
-            savefile='abl_sim_f1_1')
+            savefile='pngs/abl_sim_f1_1')
     plot_df(bas_sim, metric='f1_1', ylabel='F1',
             title='Group Correctness P=1 F1 values\nfor each Model and Simulation Dataset',
-            savefile='bas_sim_f1_1')
+            savefile='pngs/bas_sim_f1_1')
     plot_df(abl_sim, metric='f1_2/3', ylabel='F1',
             title='Group Correctness P=2/3 F1 values\nfor each Model and Simulation Dataset',
-            savefile='abl_sim_f1_23')
+            savefile='pngs/abl_sim_f1_23')
     plot_df(bas_sim, metric='f1_2/3', ylabel='F1',
             title='Group Correctness P=2/3 F1 values\nfor each Model and Simulation Dataset',
-            savefile='bas_sim_f1_23')
+            savefile='pngs/bas_sim_f1_23')
     plot_df(abl_sim, metric='f1_gmitre', ylabel='F1',
             title='Group Mitre F1 values\nfor each Model and Simulation Dataset',
-            savefile='abl_sim_f1_gmitre')
+            savefile='pngs/abl_sim_f1_gmitre')
     plot_df(bas_sim, metric='f1_gmitre', ylabel='F1',
             title='Group Mitre F1 values\nfor each Model and Simulation Dataset',
-            savefile='bas_sim_f1_gmitre')
+            savefile='pngs/bas_sim_f1_gmitre')
