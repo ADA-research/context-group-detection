@@ -7,7 +7,7 @@ import math
 
 import torch.nn.functional as F
 
-from utils import *
+from models.WavenetNRI.utils import *
 
 _EPS = 1e-10
 

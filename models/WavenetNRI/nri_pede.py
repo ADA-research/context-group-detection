@@ -17,11 +17,11 @@ from sknetwork.clustering import Louvain
 from sknetwork.topology import get_connected_components
 from torch.optim import lr_scheduler
 
-from data_utils import *
+from models.WavenetNRI.data_utils import *
 
 sys.path.append('../../')
 from models.DANTE.F1_calc import group_correctness
-from models_NRI import *
+from models.WavenetNRI.models_NRI import *
 
 
 def train(epoch, best_val_recall):
