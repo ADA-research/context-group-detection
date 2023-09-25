@@ -14,7 +14,7 @@ __pycache__
 logs
 latex
 models/config
-models/*.png
+models/pngs
 models/results
 models/DANTE/models
 models/WavenetNRI/data
