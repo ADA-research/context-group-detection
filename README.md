@@ -151,29 +151,29 @@ More information has to be defined in the configuration files.
 
 - Pedestrian datasets
 
-  <img alt="ablation study pedestrian datasets gmitre results" src="models/abl_pede_f1_gmitre.png" style="width:300px;"/>
-  <img alt="ablation study pedestrian datasets gc 1 results" src="models/abl_pede_f1_1.png" style="width:300px;"/>
-  <img alt="ablation study pedestrian datasets gc 23 results" src="models/abl_pede_f1_23.png" style="width:300px;"/>
+  <img alt="ablation study pedestrian datasets gmitre results" src="models/pngs/abl_pede_f1_gmitre.png" style="width:300px;"/>
+  <img alt="ablation study pedestrian datasets gc 1 results" src="models/pngs/abl_pede_f1_1.png" style="width:300px;"/>
+  <img alt="ablation study pedestrian datasets gc 23 results" src="models/pngs/abl_pede_f1_23.png" style="width:300px;"/>
 
 - Simulation datasets
 
-  <img alt="ablation study simulation datasets gmitre results" src="models/abl_sim_f1_gmitre.png" style="width:300px;"/>
-  <img alt="ablation study simulation datasets gc 1 results" src="models/abl_sim_f1_1.png" style="width:300px;"/>
-  <img alt="ablation study simulation datasets gc 23 results" src="models/abl_sim_f1_23.png" style="width:300px;"/>
+  <img alt="ablation study simulation datasets gmitre results" src="models/pngs/abl_sim_f1_gmitre.png" style="width:300px;"/>
+  <img alt="ablation study simulation datasets gc 1 results" src="models/pngs/abl_sim_f1_1.png" style="width:300px;"/>
+  <img alt="ablation study simulation datasets gc 23 results" src="models/pngs/abl_sim_f1_23.png" style="width:300px;"/>
 
 #### T-DANTE vs Baselines
 
 - Pedestrian datasets
 
-  <img alt="baselines pedestrian datasets gmitre results" src="models/bas_pede_f1_gmitre.png" style="width:300px;"/>
-  <img alt="baselines pedestrian datasets gc 1 results" src="models/bas_pede_f1_1.png" style="width:300px;"/>
-  <img alt="baselines pedestrian datasets gc 23 results" src="models/bas_pede_f1_23.png" style="width:300px;"/>
+  <img alt="baselines pedestrian datasets gmitre results" src="models/pngs/bas_pede_f1_gmitre.png" style="width:300px;"/>
+  <img alt="baselines pedestrian datasets gc 1 results" src="models/pngs/bas_pede_f1_1.png" style="width:300px;"/>
+  <img alt="baselines pedestrian datasets gc 23 results" src="models/pngs/bas_pede_f1_23.png" style="width:300px;"/>
 
 - Simulation datasets
 
-  <img alt="baselines simulation datasets gmitre results" src="models/bas_sim_f1_gmitre.png" style="width:300px;"/>
-  <img alt="baselines simulation datasets gc 1 results" src="models/bas_sim_f1_1.png" style="width:300px;"/>
-  <img alt="baselines simulation datasets gc 23 results" src="models/bas_sim_f1_23.png" style="width:300px;"/>
+  <img alt="baselines simulation datasets gmitre results" src="models/pngs/bas_sim_f1_gmitre.png" style="width:300px;"/>
+  <img alt="baselines simulation datasets gc 1 results" src="models/pngs/bas_sim_f1_1.png" style="width:300px;"/>
+  <img alt="baselines simulation datasets gc 23 results" src="models/pngs/bas_sim_f1_23.png" style="width:300px;"/>
 
 ## References
 
