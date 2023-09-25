@@ -224,9 +224,6 @@ def test_gmitre():
     encoder = torch.load(encoder_file)
     encoder.eval()
 
-    gIDs = []
-    predicted_gr = []
-
     precision_all = []
     recall_all = []
     F1_all = []
@@ -254,10 +251,8 @@ def test_gmitre():
 
             if label_converted.sum() == 0:
                 gID = list(range(label_converted.shape[1]))
-                gIDs.append(gID)
             else:
                 gID = list(get_connected_components(label_converted))
-                gIDs.append(gID)
 
             if args.cuda:
                 data = data.cuda()
@@ -280,8 +275,6 @@ def test_gmitre():
                 pred_gIDs = np.arange(config['atoms'])
             else:
                 pred_gIDs = louvain.fit_predict(group_prob)
-
-            predicted_gr.append(pred_gIDs)
 
             recall, precision, F1 = compute_groupMitre_labels(gID, pred_gIDs)
             predicted_groups = get_groups_from_ids(pred_gIDs)
