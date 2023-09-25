@@ -242,12 +242,11 @@ def write_final_nri_results(results, file_path, name):
 def get_args():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--nri', action="store_true", default=False)
-    parser.add_argument('--no_context', action="store_true", default=False)
-    parser.add_argument('--single_dataset', action="store_true", default=True)
     parser.add_argument('--sim', action="store_true", default=False)
+    parser.add_argument('--no_context', action="store_true", default=False)
+    parser.add_argument('--model', type=str, default="nri")
     parser.add_argument('--dataset', type=str, default="sim_1")
-    parser.add_argument('--model', type=str, default="_gd")
+    parser.add_argument('--single_dataset', action="store_true", default=False)
 
     return parser.parse_args()
 
@@ -255,70 +254,102 @@ def get_args():
 if __name__ == '__main__':
     args = get_args()
 
+    nri_datasets = ['8_3_2_2', '9_3_2_2', '9_3_2_3', '10_3_2_2', '10_3_2_3', '10_3_2_4']
+    sim_datasets = ['sim_1', 'sim_2', 'sim_3', 'sim_4', 'sim_5', 'sim_6']
+    pede_datasets = ['eth', 'hotel', 'zara01', 'zara02', 'students03']
     if args.single_dataset:
-        datasets = [args.dataset]
-        name = args.dataset
-    else:
-        if args.sim:
-            if args.nri:
-                datasets = ['8_3_2_2', '9_3_2_2', '9_3_2_3', '10_3_2_2', '10_3_2_3', '10_3_2_4']
-            else:
-                datasets = ['sim_1', 'sim_2', 'sim_3', 'sim_4', 'sim_5', 'sim_6']
-            name = 'all_sim'
-        else:
-            datasets = ['eth', 'hotel', 'zara01', 'zara02', 'students03']
-            name = 'all'
-
-    if args.no_context:
-        if args.sim:
-            frames = [49]
-            agents = [6, 10]
-            dir_name = 'e50_nc'
-        else:
-            frames = [15]
-            agents = [6]
-            dir_name = 'e150_nc'
-        name = '{}_nc'.format(name)
-    else:
-        if args.sim:
-            frames = [49]
-            agents = [6, 10]
-            dir_name = 'e50'
-        else:
-            frames = [15]
-            agents = [6, 10]
-            dir_name = 'e150'
-
-    final_results = []
-    if args.nri:
-        name = '{}_f_15'.format(name)
-        for dataset in datasets:
+        if args.model == 'wavenet':
             if args.sim:
-                results_path = './WavenetNRI/logs/nrisu/wavenetsym_{}'.format(dataset, 15)
-                results = collect_nri_sim_results(results_path)
+                results_path = './WavenetNRI/logs/nrisu/wavenetsym_{}'.format(args.dataset, 15)
+                results = (args.dataset, collect_nri_sim_results(results_path))
+                write_final_nri_results(results, './WavenetNRI/logs/nrisu', 'sim_wavenet_results')
             else:
-                results_path = './WavenetNRI/logs/nripedsu/wavenetsym_{}_shifted_{}'.format(dataset, 15)
-                results = collect_nri_results(results_path)
-            write_nri_results(results, results_path)
-            final_results.append((dataset, results))
-        if args.sim:
-            write_final_nri_results(final_results, './WavenetNRI/logs/nrisu', name)
+                results_path = './WavenetNRI/logs/nripedsu/wavenetsym_{}_shifted_{}'.format(args.dataset, 15)
+                results = (args.dataset, collect_nri_results(results_path))
+                write_final_nri_results(results, './WavenetNRI/logs/nripedsu', 'pede_wavenet_results')
+        elif args.model == 'nri':
+            if args.sim:
+                results_path = './WavenetNRI/logs/nrisu/cnn_{}'.format(args.dataset, 15)
+                results = (args.dataset, collect_nri_sim_results(results_path))
+                write_final_nri_results(results, './WavenetNRI/logs/nrisu', 'sim_nri_results')
+            else:
+                results_path = './WavenetNRI/logs/nripedsu/cnn_{}_shifted_{}'.format(args.dataset, 15)
+                results = (args.dataset, collect_nri_results(results_path))
+                write_final_nri_results(results, './WavenetNRI/logs/nripedsu', 'pede_nri_results')
+        elif args.model == 'gd':
+            results_path = './results/{}_shifted_{}_{}_gd'.format(args.dataset, args.frames, args.agents)
+            if args.sim:
+                results = collect_sim_results(results_path, args.dir_name)
+            else:
+                results = collect_results(results_path, args.dir_name)
         else:
-            write_final_nri_results(final_results, './WavenetNRI/logs/nripedsu', name)
-    else:
-        name = '{}_f_{}_a_{}'.format(
-            name, '_'.join(str(frame) for frame in frames), '_'.join(str(agent) for agent in agents))
-        for dataset in datasets:
-            for frames_num in frames:
-                for agents_num in agents:
-                    results_path = './results/{}_shifted_{}_{}{}'.format(dataset, frames_num, agents_num, args.model)
-                    if args.sim:
-                        results = collect_sim_results(results_path, dir_name)
-                    else:
-                        results = collect_results(results_path, dir_name)
-                    if results == {}:
-                        print(results_path)
-                        continue
-                    write_results(results, results_path, dir_name)
-                    final_results.append(((dataset, frames_num, agents_num), results))
-        write_final_results(final_results, './results', name)
+            results_path = './results/{}_shifted_{}_{}'.format(args.dataset, args.frames, args.agents)
+            if args.sim:
+                results = collect_sim_results(results_path, args.dir_name)
+            else:
+                results = collect_results(results_path, args.dir_name)
+        exit()
+
+    pede_wavenet_results = []
+    pede_nri_results = []
+    pede_nc_results = []
+    pede_dante_results = []
+    pede_tdante_results = []
+    sim_wavenet_results = []
+    sim_nri_results = []
+    sim_nc_results = []
+    sim_tdante_results = []
+
+    for dataset in pede_datasets:
+        dataset_results = []
+        results_path = './WavenetNRI/logs/nripedsu/wavenetsym_{}_shifted_{}'.format(dataset, 15)
+        pede_wavenet_results.append((dataset, collect_nri_results(results_path)))
+        # results_path = './WavenetNRI/logs/nripedsu/nri_{}_shifted_{}'.format(dataset, 15)
+        # pede_nri_results.append((dataset, collect_nri_results(results_path)))
+        for agents_num in [6, 10]:
+            pede_dante_results.append((
+                (dataset, 1, agents_num),
+                collect_results('./results/{}_shifted_1_{}'.format(dataset, agents_num), 'e150')))
+            for frames_num in [15]:
+                results_path = './results/{}_shifted_{}_{}'.format(dataset, frames_num, agents_num)
+                results_path_gd = './results/{}_shifted_{}_{}_gd'.format(dataset, frames_num, agents_num)
+                pede_tdante_results.append(
+                    ((dataset, frames_num, agents_num), collect_results(results_path, 'e150')))
+                pede_tdante_results.append(
+                    ((dataset, frames_num, agents_num), collect_results(results_path_gd, 'e150')))
+                if agents_num == 6:
+                    pede_nc_results.append(
+                        ((dataset, frames_num, agents_num), collect_results(results_path, 'e150_nc')))
+                    pede_nc_results.append(
+                        ((dataset, frames_num, agents_num), collect_results(results_path_gd, 'e150_nc')))
+    write_final_results(pede_dante_results, './results', 'pede_dante_results')
+    write_final_results(pede_tdante_results, './results', 'pede_results')
+    write_final_results(pede_nc_results, './results', 'pede_nc_results')
+    write_final_nri_results(pede_wavenet_results, './WavenetNRI/logs/nripedsu', 'pede_wavenet_results')
+    # write_final_nri_results(pede_nri_results, './WavenetNRI/logs/nripedsu', 'pede_nri_results')
+
+    for dataset in sim_datasets:
+        for agents_num in [6, 10]:
+            for frames_num in [49]:
+                results_path = './results/{}_shifted_{}_{}'.format(dataset, frames_num, agents_num)
+                results_path_gd = './results/{}_shifted_{}_{}_gd'.format(dataset, frames_num, agents_num)
+                sim_tdante_results.append(
+                    ((dataset, frames_num, agents_num), collect_sim_results(results_path, 'e50')))
+                sim_tdante_results.append(
+                    ((dataset, frames_num, agents_num), collect_sim_results(results_path_gd, 'e50')))
+                if agents_num == 6:
+                    sim_nc_results.append(
+                        ((dataset, frames_num, agents_num), collect_sim_results(results_path, 'e50_nc')))
+                    sim_nc_results.append(
+                        ((dataset, frames_num, agents_num), collect_sim_results(results_path_gd, 'e50_nc')))
+
+    write_final_results(sim_nc_results, './results', 'sim_nc_results')
+    write_final_results(sim_tdante_results, './results', 'sim_results')
+
+    for dataset in nri_datasets:
+        results_path = './WavenetNRI/logs/nrisu/wavenetsym_{}'.format(dataset, 15)
+        sim_wavenet_results.append((dataset, collect_nri_sim_results(results_path)))
+        # results_path = './WavenetNRI/logs/nrisu/cnn_{}'.format(dataset, 15)
+        # sim_nri_results.append((dataset, collect_nri_sim_results(results_path)))
+    write_final_nri_results(sim_wavenet_results, './WavenetNRI/logs/nrisu', 'sim_wavenet_results')
+    # write_final_nri_results(sim_nri_results, './WavenetNRI/logs/nrisu', 'sim_nri_results')
