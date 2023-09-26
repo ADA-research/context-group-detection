@@ -4,9 +4,11 @@ copied from https://github.com/ethanfetaya/NRI
 """
 
 import math
+import sys
 
 import torch.nn.functional as F
 
+sys.path.append('../../')
 from models.WavenetNRI.utils import *
 
 _EPS = 1e-10
