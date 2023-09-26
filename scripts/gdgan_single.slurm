@@ -4,7 +4,7 @@
 #SBATCH --mail-user="thomasmaliappis@gmail.com"
 #SBATCH --mail-type="END"
 #SBATCH --time=01:00:00
-#SBATCH --partition=test
+#SBATCH --partition=testing
 #SBATCH --gres=gpu:1
 #SBATCH --mem-per-gpu=20G
 
