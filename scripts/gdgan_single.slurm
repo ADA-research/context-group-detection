@@ -14,17 +14,15 @@ model="gdgan_pede"
 fold=-1
 seed=14
 epochs=200
-original=false
 
 # Read flags and their corresponding values
-while getopts "m:c:f:e:s:o" flag; do
+while getopts "m:c:f:e:s:" flag; do
   case ${flag} in
   m) model="${OPTARG}" ;;
   c) config="${OPTARG}" ;;
   f) fold="${OPTARG}" ;;
   e) epochs="${OPTARG}" ;;
   s) seed="${OPTARG}" ;;
-  o) original=true ;;
   *)
     echo "Invalid flag: ${flag}" >&2
     exit 1
@@ -42,20 +40,15 @@ echo "User: ${SLURM_JOB_USER}, hostname: ${HOSTNAME}, job_id: ${SLURM_JOB_ID}"
 echo "Current working directory: $(pwd)"
 
 echo "Running ${model}"
-echo "Using config file at: ${config}, fold: ${fold}, epochs: ${epochs}, seed: ${seed}, original: ${original}"
+echo "Using config file at: ${config}, fold: ${fold}, epochs: ${epochs}, seed: ${seed}"
 
 fold_flag=""
 if [ ${fold} != -1 ]; then
   fold_flag="--split ${fold}"
 fi
 
-encoder_flag="--encoder wavenetsym --use-motion"
-if [ ${original} == false ]; then
-  encoder_flag="--encoder cnn"
-fi
-
 echo "Script starting"
 cd "${HOME}/data1/context-group-detection/models/WavenetNRI/" || exit
-python ${model}.py -c ${config} ${fold_flag} --epochs ${epochs} --seed ${seed} ${encoder_flag}
+python ${model}.py -c ${config} ${fold_flag} --epochs ${epochs} --seed ${seed}
 
 echo "Script finished"
