@@ -48,7 +48,7 @@ if [ ${fold} != -1 ]; then
 fi
 
 echo "Script starting"
-cd "${HOME}/data1/context-group-detection/models/WavenetNRI/" || exit
+cd "${HOME}/data1/context-group-detection/models/GDGAN/" || exit
 python ${model}.py -c ${config} ${fold_flag} --epochs ${epochs} --seed ${seed}
 
 echo "Script finished"
