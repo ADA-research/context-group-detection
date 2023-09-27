@@ -3,6 +3,7 @@ from __future__ import division, print_function
 import argparse
 import datetime
 import pickle
+import sys
 import time
 
 import torch.optim as optim
@@ -10,6 +11,7 @@ from sklearn.cluster import DBSCAN
 from sknetwork.topology import get_connected_components
 from torch.optim import lr_scheduler
 
+sys.path.append('../../')
 from models.DANTE.F1_calc import group_correctness
 from models.WavenetNRI.data_utils import *
 from models.WavenetNRI.nri_pede import get_groups_from_ids
