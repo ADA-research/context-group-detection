@@ -18,7 +18,7 @@ from models_NRI import *
 
 sys.path.append('../../')
 from models.DANTE.F1_calc import group_correctness
-from nri_pede import get_groups_from_ids
+from models.WavenetNRI.nri_pede import get_groups_from_ids
 
 
 def compute_label_weights(train_loader, eps=1e-4):
