@@ -26,12 +26,12 @@ def read_csv(filename):
     return dataframe
 
 
-def modify_df(dataframe, no_context=False):
+def modify_df(dataframe, name=None, no_context=False):
     details = dataframe['dataset'].str.split('_')
     details_size = len(details[0])
     dataframe['dataset'] = details.apply(lambda x: x[0])
     if details_size == 2:
-        dataframe['name'] = 'WavenetNRI'
+        dataframe['name'] = name
     else:
         if details[0][1] == '1':
             dataframe['name'] = 'DANTE c' + details.apply(lambda x: str(int(x[2]) - 2))
@@ -47,7 +47,7 @@ def modify_df(dataframe, no_context=False):
     return dataframe
 
 
-def modify_sim_df(dataframe, no_context=False, fix_datasets=False):
+def modify_sim_df(dataframe, name=None, no_context=False, fix_datasets=False):
     if fix_datasets:
         dataframe['dataset'] = dataframe['dataset'].replace('8_3_2_2_nri', 'sim_1')
         dataframe['dataset'] = dataframe['dataset'].replace('9_3_2_2_nri', 'sim_2')
@@ -55,7 +55,7 @@ def modify_sim_df(dataframe, no_context=False, fix_datasets=False):
         dataframe['dataset'] = dataframe['dataset'].replace('10_3_2_2_nri', 'sim_4')
         dataframe['dataset'] = dataframe['dataset'].replace('10_3_2_3_nri', 'sim_5')
         dataframe['dataset'] = dataframe['dataset'].replace('10_3_2_4_nri', 'sim_6')
-        dataframe['name'] = 'WavenetNRI'
+        dataframe['name'] = name
     else:
         details = dataframe['dataset'].str.split('_')
         dataframe['dataset'] = details.apply(lambda x: '_'.join(x[0:2]))
@@ -100,27 +100,27 @@ if __name__ == '__main__':
 
     # read data
     pede_wavenet_results = read_csv("./WavenetNRI/logs/nripedsu/pede_wavenet_results.csv")
-    # pede_nri_results = read_csv("./WavenetNRI/logs/nripedsu/pede_nri_results.csv")
-    # pede_gdgan_results = read_csv("./GDGAN/logs/nripedsu/pede_gdgan_results.csv")
+    pede_nri_results = read_csv("./WavenetNRI/logs/nripedsu/pede_nri_results.csv")
+    pede_gdgan_results = read_csv("./GDGAN/logs/nripedsu/pede_gdgan_results.csv")
     pede_nc_results = read_csv("./results/pede_nc_results.csv")
     pede_dante_results = read_csv("./results/pede_dante_results.csv")
     pede_tdante_results = read_csv("./results/pede_tdante_results.csv")
     sim_wavenet_results = read_csv("./WavenetNRI/logs/nrisu/sim_wavenet_results.csv")
-    # sim_nri_results = read_csv("./WavenetNRI/logs/nrisu/sim_nri_results.csv")
-    # sim_gdgan_results = read_csv("./GDGAN/logs/nrisu/sim_gdgan_results.csv")
+    sim_nri_results = read_csv("./WavenetNRI/logs/nrisu/sim_nri_results.csv")
+    sim_gdgan_results = read_csv("./GDGAN/logs/nrisu/sim_gdgan_results.csv")
     sim_nc_results = read_csv("./results/sim_nc_results.csv")
     sim_tdante_results = read_csv("./results/sim_tdante_results.csv")
 
-    pede_wavenet_results = modify_df(pede_wavenet_results)
-    # pede_nri_results = modify_df(pede_nri_results)
-    # pede_gdgan_results = modify_df(pede_gdgan_results)
+    pede_wavenet_results = modify_df(pede_wavenet_results, name='WavenetNRI')
+    pede_nri_results = modify_df(pede_nri_results, name='NRI')
+    pede_gdgan_results = modify_df(pede_gdgan_results, name='GDGAN')
     pede_nc_results = modify_df(pede_nc_results, no_context=True)
     pede_dante_results = modify_df(pede_dante_results)
     pede_tdante_results = modify_df(pede_tdante_results)
 
-    sim_wavenet_results = modify_sim_df(sim_wavenet_results, fix_datasets=True)
-    # sim_nri_results = modify_sim_df(sim_nri_results, fix_datasets=True)
-    # sim_gdgan_results = modify_sim_df(sim_gdgan_results, fix_datasets=True)
+    sim_wavenet_results = modify_sim_df(sim_wavenet_results, name='WavenetNRI', fix_datasets=True)
+    sim_nri_results = modify_sim_df(sim_nri_results, name='NRI', fix_datasets=True)
+    sim_gdgan_results = modify_sim_df(sim_gdgan_results, name='GDGAN', fix_datasets=True)
     sim_nc_results = modify_sim_df(sim_nc_results, no_context=True)
     sim_tdante_results = modify_sim_df(sim_tdante_results)
 
@@ -128,13 +128,13 @@ if __name__ == '__main__':
     abl_pede = pd.concat([pede_nc_results, pede_tdante_results])
     abl_sim = pd.concat([sim_nc_results, sim_tdante_results])
     bas_pede = pd.concat([pede_dante_results,
-                          # pede_nri_results,
-                          # pede_gdgan_results,
+                          pede_nri_results,
+                          pede_gdgan_results,
                           pede_wavenet_results, pede_tdante_results])
     bas_pede = bas_pede[~bas_pede['name'].isin(['DANTE c4', 'T-DANTE c4'])]
     bas_sim = pd.concat([sim_wavenet_results,
-                         # sim_nri_results,
-                         # sim_gdgan_results,
+                         sim_nri_results,
+                         sim_gdgan_results,
                          sim_tdante_results])
     bas_sim = bas_sim[~bas_sim['name'].isin(['DANTE c4', 'T-DANTE c4'])]
 
