@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --array=0-4
+#SBATCH --array=5-24
 #SBATCH --job-name=train_gan
 #SBATCH --output=%x_%j.out
 #SBATCH --mail-user="thomasmaliappis@gmail.com"
