@@ -294,13 +294,18 @@ if __name__ == '__main__':
     pede_gdgan_results = []
     pede_nri_results = []
     pede_nc_results = []
+    pede_nc_gd_results = []
     pede_dante_results = []
     pede_tdante_results = []
+    pede_tdante_gd_results = []
     sim_wavenet_results = []
     sim_gdgan_results = []
     sim_nri_results = []
     sim_nc_results = []
+    sim_nc_results = []
+    sim_nc_gd_results = []
     sim_tdante_results = []
+    sim_tdante_gd_results = []
 
     for dataset in pede_datasets:
         dataset_results = []
@@ -319,16 +324,18 @@ if __name__ == '__main__':
                 results_path_gd = './results/{}_shifted_{}_{}_gd'.format(dataset, frames_num, agents_num)
                 pede_tdante_results.append(
                     ((dataset, frames_num, agents_num), collect_results(results_path, 'e150')))
-                pede_tdante_results.append(
+                pede_tdante_gd_results.append(
                     ((dataset, frames_num, agents_num), collect_results(results_path_gd, 'e150')))
                 if agents_num == 6:
                     pede_nc_results.append(
                         ((dataset, frames_num, agents_num), collect_results(results_path, 'e150_nc')))
-                    pede_nc_results.append(
+                    pede_nc_gd_results.append(
                         ((dataset, frames_num, agents_num), collect_results(results_path_gd, 'e150_nc')))
     write_final_results(pede_dante_results, './results', 'pede_dante_results')
     write_final_results(pede_tdante_results, './results', 'pede_tdante_results')
+    write_final_results(pede_tdante_gd_results, './results', 'pede_tdante_gd_results')
     write_final_results(pede_nc_results, './results', 'pede_nc_results')
+    write_final_results(pede_nc_gd_results, './results', 'pede_nc_gd_results')
     write_final_nri_results(pede_wavenet_results, './WavenetNRI/logs/nripedsu', 'pede_wavenet_results')
     write_final_nri_results(pede_nri_results, './WavenetNRI/logs/nripedsu', 'pede_nri_results')
     write_final_nri_results(pede_gdgan_results, './GDGAN/logs/nripedsu', 'pede_gdgan_results')
@@ -340,16 +347,18 @@ if __name__ == '__main__':
                 results_path_gd = './results/{}_shifted_{}_{}_gd'.format(dataset, frames_num, agents_num)
                 sim_tdante_results.append(
                     ((dataset, frames_num, agents_num), collect_sim_results(results_path, 'e50')))
-                sim_tdante_results.append(
+                sim_tdante_gd_results.append(
                     ((dataset, frames_num, agents_num), collect_sim_results(results_path_gd, 'e50')))
                 if agents_num == 6:
                     sim_nc_results.append(
                         ((dataset, frames_num, agents_num), collect_sim_results(results_path, 'e50_nc')))
-                    sim_nc_results.append(
+                    sim_nc_gd_results.append(
                         ((dataset, frames_num, agents_num), collect_sim_results(results_path_gd, 'e50_nc')))
 
     write_final_results(sim_nc_results, './results', 'sim_nc_results')
+    write_final_results(sim_nc_gd_results, './results', 'sim_nc_gd_results')
     write_final_results(sim_tdante_results, './results', 'sim_tdante_results')
+    write_final_results(sim_tdante_gd_results, './results', 'sim_tdante_gd_results')
 
     for dataset in nri_datasets:
         results_path = './WavenetNRI/logs/nrisu/su_wavenetsym_{}'.format(dataset)
