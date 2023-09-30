@@ -68,8 +68,13 @@ if [ ${frames} -ne 1 ]; then
   frames_flag="-t ${frames}"
 fi
 
+name_flag=""
+if [ ${name} != "" ]; then
+  name_flag="-n ${name}"
+fi
+
 echo "Script starting"
 cd "${HOME}/data1/context-group-detection/models" || exit
-python ${model}.py -c ${config} -f ${fold} -e ${epochs} -n ${name} -d ${dir_name} --seed ${seed} -a ${agents} ${frames_flag} ${nc_flag} ${sim_flag}
+python ${model}.py -c ${config} -f ${fold} -e ${epochs} ${name_flag} -d ${dir_name} --seed ${seed} -a ${agents} ${frames_flag} ${nc_flag} ${sim_flag}
 
 echo "Script finished"
