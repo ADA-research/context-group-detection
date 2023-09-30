@@ -123,7 +123,7 @@ def plot_df(dataframe, metric, ylabel, title, savefile):
     plt.legend(title='Model', loc='lower center')
     # plt.tight_layout()
     plt.savefig(savefile)
-    # plt.show()
+    plt.show()
 
 
 if __name__ == '__main__':
