@@ -319,18 +319,18 @@ if __name__ == '__main__':
             pede_dante_results.append((
                 (dataset, 1, agents_num),
                 collect_results('./results/{}_shifted_1_{}'.format(dataset, agents_num), 'e150')))
-            for frames_num in [15]:
-                results_path = './results/{}_shifted_{}_{}'.format(dataset, frames_num, agents_num)
-                results_path_gd = './results/{}_shifted_{}_{}_gd'.format(dataset, frames_num, agents_num)
-                pede_tdante_results.append(
-                    ((dataset, frames_num, agents_num), collect_results(results_path, 'e150')))
-                pede_tdante_gd_results.append(
-                    ((dataset, frames_num, agents_num), collect_results(results_path_gd, 'e150')))
-                if agents_num == 6:
-                    pede_nc_results.append(
-                        ((dataset, frames_num, agents_num), collect_results(results_path, 'e150_nc')))
-                    pede_nc_gd_results.append(
-                        ((dataset, frames_num, agents_num), collect_results(results_path_gd, 'e150_nc')))
+            frames_num = 15
+            results_path = './results/{}_shifted_{}_{}'.format(dataset, frames_num, agents_num)
+            results_path_gd = './results/{}_shifted_{}_{}_gd'.format(dataset, frames_num, agents_num)
+            pede_tdante_results.append(
+                ((dataset, frames_num, agents_num), collect_results(results_path, 'e150')))
+            pede_tdante_gd_results.append(
+                ((dataset, frames_num, agents_num), collect_results(results_path_gd, 'e150')))
+            if agents_num == 6:
+                pede_nc_results.append(
+                    ((dataset, frames_num, agents_num), collect_results(results_path, 'e150_nc')))
+                pede_nc_gd_results.append(
+                    ((dataset, frames_num, agents_num), collect_results(results_path_gd, 'e150_nc')))
     write_final_results(pede_dante_results, './results', 'pede_dante_results')
     write_final_results(pede_tdante_results, './results', 'pede_tdante_results')
     write_final_results(pede_tdante_gd_results, './results', 'pede_tdante_gd_results')
@@ -342,18 +342,18 @@ if __name__ == '__main__':
 
     for dataset in sim_datasets:
         for agents_num in [6, 10]:
-            for frames_num in [49]:
-                results_path = './results/{}_shifted_{}_{}'.format(dataset, frames_num, agents_num)
-                results_path_gd = './results/{}_shifted_{}_{}_gd'.format(dataset, frames_num, agents_num)
-                sim_tdante_results.append(
-                    ((dataset, frames_num, agents_num), collect_sim_results(results_path, 'e50')))
-                sim_tdante_gd_results.append(
-                    ((dataset, frames_num, agents_num), collect_sim_results(results_path_gd, 'e50')))
-                if agents_num == 6:
-                    sim_nc_results.append(
-                        ((dataset, frames_num, agents_num), collect_sim_results(results_path, 'e50_nc')))
-                    sim_nc_gd_results.append(
-                        ((dataset, frames_num, agents_num), collect_sim_results(results_path_gd, 'e50_nc')))
+            frames_num = 49
+            results_path = './results/{}_shifted_{}_{}'.format(dataset, frames_num, agents_num)
+            results_path_gd = './results/{}_shifted_{}_{}_gd'.format(dataset, frames_num, agents_num)
+            sim_tdante_results.append(
+                ((dataset, frames_num, agents_num), collect_sim_results(results_path, 'e50')))
+            sim_tdante_gd_results.append(
+                ((dataset, frames_num, agents_num), collect_sim_results(results_path_gd, 'e50')))
+            if agents_num == 6:
+                sim_nc_results.append(
+                    ((dataset, frames_num, agents_num), collect_sim_results(results_path, 'e50_nc')))
+                sim_nc_gd_results.append(
+                    ((dataset, frames_num, agents_num), collect_sim_results(results_path_gd, 'e50_nc')))
 
     write_final_results(sim_nc_results, './results', 'sim_nc_results')
     write_final_results(sim_nc_gd_results, './results', 'sim_nc_gd_results')
