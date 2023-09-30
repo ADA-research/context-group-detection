@@ -461,6 +461,9 @@ def dataset_reformat(dataframe, groups, group_pairs, scene_data, agents_num, sam
     :param shift: True if to transform context according to pair coordinates, otherwise False
     :return: dataset
     """
+
+    dataframe = normalise_data(dataframe)
+
     data = []
     labels = []
     scenes_frames = []
@@ -473,8 +476,8 @@ def dataset_reformat(dataframe, groups, group_pairs, scene_data, agents_num, sam
         pairs = list(combinations(scene_agents, 2))
         for pair_agents in pairs:
             non_pair_agents = scene_agents - set(pair_agents)
-            pair_data = get_agent_data_for_frames(dataframe, pair_agents, scene_frame_ids)
-            non_pair_data = get_agent_data_for_frames(dataframe, non_pair_agents, scene_frame_ids)
+            pair_data = get_agent_normalised_data_for_frames(dataframe, pair_agents, scene_frame_ids)
+            non_pair_data = get_agent_normalised_data_for_frames(dataframe, non_pair_agents, scene_frame_ids)
             if shift and len(non_pair_data) > 0:
                 non_pair_data = shift_data(pair_data, non_pair_data, len(scene_frame_ids))
             if len(non_pair_data) <= agents_num - 2:
@@ -733,6 +736,14 @@ def get_sample_params(frames_num, agents_num):
                 'zara02': 2,
                 'students03': 1
             }
+        else:
+            factor = {
+                'eth': 2,
+                'hotel': 2,
+                'zara01': 2,
+                'zara02': 2,
+                'students03': 1
+            }
     elif frames_num == 5:
         if agents_num == 6:
             factor = {
@@ -747,6 +758,14 @@ def get_sample_params(frames_num, agents_num):
                 'eth': 3,
                 'hotel': 4,
                 'zara01': 5,
+                'zara02': 2,
+                'students03': 1
+            }
+        else:
+            factor = {
+                'eth': 2,
+                'hotel': 2,
+                'zara01': 2,
                 'zara02': 2,
                 'students03': 1
             }
@@ -767,6 +786,14 @@ def get_sample_params(frames_num, agents_num):
                 'zara02': 2,
                 'students03': 1
             }
+        else:
+            factor = {
+                'eth': 2,
+                'hotel': 2,
+                'zara01': 2,
+                'zara02': 2,
+                'students03': 1
+            }
     elif frames_num == 15:
         if agents_num == 6:
             factor = {
@@ -784,6 +811,14 @@ def get_sample_params(frames_num, agents_num):
                 'zara02': 3,
                 'students03': 1
             }
+        else:
+            factor = {
+                'eth': 2,
+                'hotel': 2,
+                'zara01': 2,
+                'zara02': 2,
+                'students03': 1
+            }
     return multi_frame, steps, factor
 
 
@@ -792,10 +827,10 @@ def get_args():
 
     parser.add_argument('--seed', type=int, default=14)
     parser.add_argument('-f', '--frames_num', type=int, default=15)
-    parser.add_argument('-a', '--agents_num', type=int, default=10)
+    parser.add_argument('-a', '--agents_num', type=int, default=6)
     parser.add_argument('-ts', '--target_size', type=int, default=100000)
     parser.add_argument('-sf', '--save_folder', type=str, default='./reformatted')
-    parser.add_argument('-p', '--plot', action="store_true", default=True)
+    parser.add_argument('-p', '--plot', action="store_true", default=False)
     parser.add_argument('-s', '--shift', action="store_true", default=True)
     parser.add_argument('-r', '--report', action="store_true", default=False)
     parser.add_argument('--nri', action="store_true", default=False)
