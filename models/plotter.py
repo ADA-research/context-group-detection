@@ -92,10 +92,10 @@ def save_latex_data(dataframe, metric, savefile, title, label):
         datasets_str = datasets_str.replace('_', '\_')
         if 'sim' in datasets_str:
             file.write(
-                f'\\begin{{table}}[]\n\def\\arraystretch{{1.5}}\n\centering\n\\begin{{tabular}}{{c|c|c|c|c|c|c|}}\n\cline{{2-7}}\n{datasets_str} \\\\ \hline\n')
+                f'\\begin{{table}}[]\n\def\\arraystretch{{1.35}}\n\centering\n\\begin{{tabular}}{{c|c|c|c|c|c|c|}}\n\cline{{2-7}}\n{datasets_str} \\\\ \hline\n')
         else:
             file.write(
-                f'\\begin{{table}}[]\n\def\\arraystretch{{1.5}}\n\centering\n\\begin{{tabular}}{{c|c|c|c|c|c|}}\n\cline{{2-6}}\n{datasets_str} \\\\ \hline\n')
+                f'\\begin{{table}}[]\n\def\\arraystretch{{1.35}}\n\centering\n\\begin{{tabular}}{{c|c|c|c|c|c|}}\n\cline{{2-6}}\n{datasets_str} \\\\ \hline\n')
         for model in models:
             metric_data = []
             std_data = []
@@ -182,72 +182,72 @@ if __name__ == '__main__':
             title='Group Correctness P=1 F1 values\nfor each Model and Pedestrian Dataset',
             savefile='pngs/abl_pede_f1_1')
     save_latex_data(abl_pede, metric='f1_1', savefile='latex/abl_pede_f1_1.tex',
-                    title='',
+                    title='Group Correctness values for threshold value $1$ for T-DANTE variations in all pedestrian datasets. Context sizes of $0$, $4$ and $8$ agents and scene size of 15 consecutive timeframes.',
                     label='tab:abl pede f1_1')
     plot_df(bas_pede, metric='f1_1', ylabel='F1',
             title='Group Correctness P=1 F1 values\nfor each Model and Pedestrian Dataset',
             savefile='pngs/bas_pede_f1_1')
     save_latex_data(bas_pede, metric='f1_1', savefile='latex/bas_pede_f1_1.tex',
-                    title='',
-                    label='tab:bas_ ede f1_1')
+                    title='Group Correctness values for threshold value $1$ for T-DANTE vs Baselines in all pedestrian datasets.',
+                    label='tab:bas pede f1_1')
     plot_df(abl_pede, metric='f1_2/3', ylabel='F1',
             title='Group Correctness P=2/3 F1 values\nfor each Model and Pedestrian Dataset',
             savefile='pngs/abl_pede_f1_23')
     save_latex_data(abl_pede, metric='f1_2/3', savefile='latex/abl_pede_f1_23.tex',
-                    title='',
-                    label='tab:abl_ ede f1_2/3')
+                    title='Group Correctness values for threshold value $2/3$ for T-DANTE variations in all pedestrian datasets. Context sizes of $0$, $4$ and $8$ agents and scene size of 15 consecutive timeframes.',
+                    label='tab:abl pede f1_2/3')
     plot_df(bas_pede, metric='f1_2/3', ylabel='F1',
             title='Group Correctness P=2/3 F1 values\nfor each Model and Pedestrian Dataset',
             savefile='pngs/bas_pede_f1_23')
     save_latex_data(bas_pede, metric='f1_2/3', savefile='latex/bas_pede_f1_23.tex',
-                    title='',
-                    label='tab:bas_ ede f1_2/3')
+                    title='Group Correctness values for threshold value $2/3$ for T-DANTE vs Baselines in all pedestrian datasets.',
+                    label='tab:bas pede f1_2/3')
     plot_df(abl_pede, metric='f1_gmitre', ylabel='F1',
             title='Group Mitre F1 values\nfor each Model and Pedestrian Dataset',
             savefile='pngs/abl_pede_f1_gmitre')
     save_latex_data(abl_pede, metric='f1_gmitre', savefile='latex/abl_pede_f1_gmitre.tex',
-                    title='',
-                    label='tab:abl_ ede f1_gmitre')
+                    title='Group Mitre values for T-DANTE variations in all pedestrian datasets. Context sizes of $0$, $4$ and $8$ agents and scene size of 15 consecutive timeframes.',
+                    label='tab:abl pede f1_gmitre')
     plot_df(bas_pede, metric='f1_gmitre', ylabel='F1',
             title='Group Mitre F1 values\nfor each Model and Pedestrian Dataset',
             savefile='pngs/bas_pede_f1_gmitre')
     save_latex_data(bas_pede, metric='f1_gmitre', savefile='latex/bas_pede_f1_gmitre.tex',
-                    title='',
-                    label='tab:bas_ ede f1_gmitre')
+                    title='Group Mitre values  for T-DANTE vs Baselines in all pedestrian datasets.',
+                    label='tab:bas pede f1_gmitre')
 
     plot_df(abl_sim, metric='f1_1', ylabel='F1',
             title='Group Correctness P=1 F1 values\nfor each Model and Simulation Dataset',
             savefile='pngs/abl_sim_f1_1')
     save_latex_data(abl_sim, metric='f1_1', savefile='latex/abl_sim_f1_1.tex',
-                    title='',
+                    title='Group Correctness values for threshold value $1$ for T-DANTE variations in all spring simulation datasets. Context sizes of $4$ and $8$ agents and scene size of 50 consecutive timeframes.',
                     label='tab:abl sim f1_1')
     plot_df(bas_sim, metric='f1_1', ylabel='F1',
             title='Group Correctness P=1 F1 values\nfor each Model and Simulation Dataset',
             savefile='pngs/bas_sim_f1_1')
     save_latex_data(bas_sim, metric='f1_1', savefile='latex/bas_sim_f1_1.tex',
-                    title='',
+                    title='Group Correctness values for threshold value $1$ for T-DANTE vs Baselines in all spring simulation datasets.',
                     label='tab:bas sim f1_1')
     plot_df(abl_sim, metric='f1_2/3', ylabel='F1',
             title='Group Correctness P=2/3 F1 values\nfor each Model and Simulation Dataset',
             savefile='pngs/abl_sim_f1_23')
     save_latex_data(abl_sim, metric='f1_2/3', savefile='latex/abl_sim_f1_23.tex',
-                    title='',
+                    title='Group Correctness values for threshold value $2/3$ for T-DANTE variations in all spring simulation datasets. Context sizes of $4$ and $8$ agents and scene size of 50 consecutive timeframes.',
                     label='tab:abl sim f1_2/3')
     plot_df(bas_sim, metric='f1_2/3', ylabel='F1',
             title='Group Correctness P=2/3 F1 values\nfor each Model and Simulation Dataset',
             savefile='pngs/bas_sim_f1_23')
     save_latex_data(bas_sim, metric='f1_2/3', savefile='latex/bas_sim_f1_23.tex',
-                    title='',
+                    title='Group Correctness values for threshold value $2/3$ for T-DANTE vs Baselines in all spring simulation datasets.',
                     label='tab:bas sim f1_2/3')
     plot_df(abl_sim, metric='f1_gmitre', ylabel='F1',
             title='Group Mitre F1 values\nfor each Model and Simulation Dataset',
             savefile='pngs/abl_sim_f1_gmitre')
     save_latex_data(abl_sim, metric='f1_gmitre', savefile='latex/abl_sim_f1_gmitre.tex',
-                    title='',
+                    title='Group Mitre values for T-DANTE variations in all spring simulation datasets. Context sizes of $0$, $4$ and $8$ agents and scene size of 50 consecutive timeframes.',
                     label='tab:abl sim f1_gmitre')
     plot_df(bas_sim, metric='f1_gmitre', ylabel='F1',
             title='Group Mitre F1 values\nfor each Model and Simulation Dataset',
             savefile='pngs/bas_sim_f1_gmitre')
     save_latex_data(bas_sim, metric='f1_gmitre', savefile='latex/bas_sim_f1_gmitre.tex',
-                    title='',
+                    title='Group Mitre values for T-DANTE vs Baselines in all spring simulation datasets.',
                     label='tab:bas sim f1_gmitre')
