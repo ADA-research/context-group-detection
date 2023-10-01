@@ -11,10 +11,12 @@ based on DANTE [[5]](#5) and we applied LSTM/GRU layers to include temporal feat
 name our model T-DANTE. Figure 1 and Figure 2 give a visual
 representation for the first and second part of our framework, respectively.
 
-![trajectories to affinity graph](pngs/trajectories%20to%20affinity%20graph.png)
+<img src="pngs/trajectories to affinity graph.png" alt="trajectories to affinity graph" style="width:800px;"/>
+
 *Figure 1: Trajectories to affinity graph*
 
-![graph community detection](pngs/graph%20community%20detection.png)
+<img src="pngs/graph community detection.png" alt="graph community detection" style="width:800px;"/>
+
 *Figure 2: Affinity graph community detection*
 
 T-DANTE is a deep neural network (DNN) that predicts the weights for each of the edges in the
@@ -117,7 +119,22 @@ python simulation_preparer.py -f 49 -a 10 -sf "path_to_save_folder"
   utilized for this baseline. The lack of temporal considerations for the problem is expected to make it unable to
   perform as well as our model.
 
-2. WavenetNRI
+2. GDGAN
+
+- Fernando et al. [[7]](#7) implemented a novel deep learning framework for predicting human trajectories and
+  detecting social group membership in crowds. The framework includes a generative adversarial network uses the
+  spatiotemporal structure of the neighbourhood of an agent in order to identify attributes that describe the social
+  identity of the agents. The authors are approaching the problem from an unsupervised learning point of view, allowing
+  them to apply the pipeline to vaious settings without the need of labeling.
+
+3. NRI
+
+- Kipf et al. [[3]](#3) introduced Neural Relational Inference (NRI) model. NRI is an unsupervised model that
+  learns to estimate interactions while at the same time learning the dynamics using observational data. In more detail,
+  this model is a variational auto-encoder which learns the interactions between agents and is using graph neural
+  networks in order to reconstruct the data.
+
+4. WavenetNRI
 
 - Nasri et al. [[4]](#4) used an NRI [[3]](#3) adaptation to perform group detection in spatiotemporal data. The model
   consists of a Graph Neural Network (GNN) encoder transformed by applying a Residual Dilated Causal Convolutional Block
@@ -204,3 +221,8 @@ Proc. ACM Hum.-Comput. Interact., 4(CSCW1), may 2020.
 <a id="6">[6]</a>
 A ̈aron van den Oord, Sander Dieleman, Heiga Zen, Karen Simonyan, Oriol Vinyals, Alexander Graves, Nal Kalchbrenner,
 Andrew Senior, and Koray Kavukcuoglu. Wavenet: A generative model for raw audio. In Arxiv, 2016.
+
+<a id="7">[7]</a>
+Tharindu Fernando, Simon Denman, Sridha Sridharan, and Clinton Fookes. Gd-gan: Generative adversarial networks for
+trajectory prediction and group detection in crowds. In C. V. Jawahar, Hongdong Li, Greg Mori, and Konrad Schindler,
+editors, Computer Vision – ACCV 2018, pages 314–330, Cham, 2019. Springer International Publishing.
