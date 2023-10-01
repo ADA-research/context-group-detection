@@ -96,6 +96,8 @@ def save_latex_data(dataframe, metric, savefile, title, label):
         else:
             file.write(
                 f'\\begin{{table}}[]\n\def\\arraystretch{{1.35}}\n\centering\n\\begin{{tabular}}{{c|c|c|c|c|c|}}\n\cline{{2-6}}\n{datasets_str} \\\\ \hline\n')
+        metric_data_all = []
+        std_data_all = []
         for model in models:
             metric_data = []
             std_data = []
@@ -103,13 +105,26 @@ def save_latex_data(dataframe, metric, savefile, title, label):
                 model_data = dataframe[(dataframe['name'] == model) & (dataframe['dataset'] == dataset)]
                 metric_data.append(model_data[metric].values[0])
                 std_data.append(model_data['{}_std'.format(metric)].values[0])
-            # write model name
+            metric_data_all.append(metric_data)
+            std_data_all.append(std_data)
+        # Find the index of the maximum value in each column
+        max_indices = [metric_data.index(max(metric_data)) for metric_data in zip(*metric_data_all)]
+        # Create a 2D boolean array to mark maximum values
+        is_max = [[i == max_indices[j] for i in range(len(models))] for j in range(len(datasets))]
+        transposed_is_max = list(map(list, zip(*is_max)))
+        for model, metric_data, std_data, max_flags in zip(models, metric_data_all, std_data_all, transposed_is_max):
+            # Write model name
             file.write(
                 f'\multicolumn{{1}}{{|c|}}{{\multirow{{2}}{{*}}{{\\begin{{tabular}}[c]{{@{{}}c@{{}}}}\n{model}\n\end{{tabular}}}}}}\n')
-            metric_data = ' & '.join(map(str, metric_data))
-            std_data = ' & $\pm$'.join(map(str, std_data))
-            file.write(f' & {metric_data} \\\\\n')
-            file.write(f'\multicolumn{{1}}{{|c|}}{{}} & $\pm${std_data} \\\\ \hline\n')
+            # Write metric_data, making the maximum values in each column bold
+            for i, (value, is_max_value) in enumerate(zip(metric_data, max_flags)):
+                if is_max_value:
+                    file.write(f' & \\textbf{{{value}}}')
+                else:
+                    file.write(f' & {value}')
+            # Write standard deviation
+            std_data_str = ' & $\pm$'.join(map(str, std_data))
+            file.write(f' \\\\\n\multicolumn{{1}}{{|c|}}{{}} & $\pm${std_data_str} \\\\ \hline\n')
         file.write(f'\end{{tabular}}\n\caption{{{title}}}\n\label{{{label}}}\n\end{{table}}')
 
 
