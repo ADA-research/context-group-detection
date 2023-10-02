@@ -1,4 +1,3 @@
-import argparse
 import os
 
 import numpy as np
@@ -239,56 +238,11 @@ def write_final_nri_results(results, file_path, name):
     final_df.to_csv(file_name, index=False)
 
 
-def get_args():
-    parser = argparse.ArgumentParser()
-
-    parser.add_argument('--sim', action="store_true", default=False)
-    parser.add_argument('--no_context', action="store_true", default=False)
-    parser.add_argument('--model', type=str, default="nri")
-    parser.add_argument('--dataset', type=str, default="sim_1")
-    parser.add_argument('--single_dataset', action="store_true", default=False)
-
-    return parser.parse_args()
-
-
 if __name__ == '__main__':
-    args = get_args()
 
     nri_datasets = ['8_3_2_2', '9_3_2_2', '9_3_2_3', '10_3_2_2', '10_3_2_3', '10_3_2_4']
     sim_datasets = ['sim_1', 'sim_2', 'sim_3', 'sim_4', 'sim_5', 'sim_6']
     pede_datasets = ['eth', 'hotel', 'zara01', 'zara02', 'students03']
-    if args.single_dataset:
-        if args.model == 'wavenet':
-            if args.sim:
-                results_path = './WavenetNRI/logs/nrisu/wavenetsym_{}'.format(args.dataset, 15)
-                results = (args.dataset, collect_nri_sim_results(results_path))
-                write_final_nri_results(results, './WavenetNRI/logs/nrisu', 'sim_wavenet_results')
-            else:
-                results_path = './WavenetNRI/logs/nripedsu/wavenetsym_{}_shifted_{}'.format(args.dataset, 15)
-                results = (args.dataset, collect_nri_results(results_path))
-                write_final_nri_results(results, './WavenetNRI/logs/nripedsu', 'pede_wavenet_results')
-        elif args.model == 'nri':
-            if args.sim:
-                results_path = './WavenetNRI/logs/nrisu/cnn_{}'.format(args.dataset, 15)
-                results = (args.dataset, collect_nri_sim_results(results_path))
-                write_final_nri_results(results, './WavenetNRI/logs/nrisu', 'sim_nri_results')
-            else:
-                results_path = './WavenetNRI/logs/nripedsu/cnn_{}_shifted_{}'.format(args.dataset, 15)
-                results = (args.dataset, collect_nri_results(results_path))
-                write_final_nri_results(results, './WavenetNRI/logs/nripedsu', 'pede_nri_results')
-        elif args.model == 'gd':
-            results_path = './results/{}_shifted_{}_{}_gd'.format(args.dataset, args.frames, args.agents)
-            if args.sim:
-                results = collect_sim_results(results_path, args.dir_name)
-            else:
-                results = collect_results(results_path, args.dir_name)
-        else:
-            results_path = './results/{}_shifted_{}_{}'.format(args.dataset, args.frames, args.agents)
-            if args.sim:
-                results = collect_sim_results(results_path, args.dir_name)
-            else:
-                results = collect_results(results_path, args.dir_name)
-        exit()
 
     pede_wavenet_results = []
     pede_gdgan_results = []
@@ -301,7 +255,6 @@ if __name__ == '__main__':
     sim_wavenet_results = []
     sim_gdgan_results = []
     sim_nri_results = []
-    sim_nc_results = []
     sim_nc_results = []
     sim_nc_gd_results = []
     sim_tdante_results = []
@@ -320,7 +273,8 @@ if __name__ == '__main__':
                 (dataset, 1, agents_num),
                 collect_results('./results/{}_shifted_1_{}'.format(dataset, agents_num), 'e150')))
             frames_num = 15
-            results_path = './results/{}_shifted_{}_{}'.format(dataset, frames_num, agents_num)
+            results_path = './results/{}_shifted_{}_{}_'.format(dataset, frames_num, agents_num)
+            results_path_nc = './results/{}_shifted_{}_{}'.format(dataset, frames_num, agents_num)
             results_path_gd = './results/{}_shifted_{}_{}_gd'.format(dataset, frames_num, agents_num)
             pede_tdante_results.append(
                 ((dataset, frames_num, agents_num), collect_results(results_path, 'e150')))
@@ -328,7 +282,7 @@ if __name__ == '__main__':
                 ((dataset, frames_num, agents_num), collect_results(results_path_gd, 'e150')))
             if agents_num == 6:
                 pede_nc_results.append(
-                    ((dataset, frames_num, agents_num), collect_results(results_path, 'e150_nc')))
+                    ((dataset, frames_num, agents_num), collect_results(results_path_nc, 'e150_nc')))
                 pede_nc_gd_results.append(
                     ((dataset, frames_num, agents_num), collect_results(results_path_gd, 'e150_nc')))
     write_final_results(pede_dante_results, './results', 'pede_dante_results')
@@ -343,7 +297,11 @@ if __name__ == '__main__':
     for dataset in sim_datasets:
         for agents_num in [6, 10]:
             frames_num = 49
-            results_path = './results/{}_shifted_{}_{}'.format(dataset, frames_num, agents_num)
+            if dataset in ['sim_4', 'sim_5', 'sim_6']:
+                results_path = './results/{}_shifted_{}_{}'.format(dataset, frames_num, agents_num)
+            else:
+                results_path = './results/{}_shifted_{}_{}_'.format(dataset, frames_num, agents_num)
+            results_path_nc = './results/{}_shifted_{}_{}'.format(dataset, frames_num, agents_num)
             results_path_gd = './results/{}_shifted_{}_{}_gd'.format(dataset, frames_num, agents_num)
             sim_tdante_results.append(
                 ((dataset, frames_num, agents_num), collect_sim_results(results_path, 'e50')))
@@ -351,7 +309,7 @@ if __name__ == '__main__':
                 ((dataset, frames_num, agents_num), collect_sim_results(results_path_gd, 'e50')))
             if agents_num == 6:
                 sim_nc_results.append(
-                    ((dataset, frames_num, agents_num), collect_sim_results(results_path, 'e50_nc')))
+                    ((dataset, frames_num, agents_num), collect_sim_results(results_path_nc, 'e50_nc')))
                 sim_nc_gd_results.append(
                     ((dataset, frames_num, agents_num), collect_sim_results(results_path_gd, 'e50_nc')))
 
