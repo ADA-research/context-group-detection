@@ -1,31 +1,30 @@
 import argparse
-import os
 
 import numpy as np
 from scikit_posthocs import posthoc_nemenyi_friedman
-from scipy.stats import anderson, friedmanchisquare
+from scipy.stats import friedmanchisquare
 
 from models.collector import collect_nri_results, collect_results, collect_sim_results, collect_nri_sim_results
 
 
-def anderson_darling_test(data):
-    # Sample data (replace this with your actual data)
-    # data = np.array([1.2, 1.8, 2.1, 2.5, 3.0, 3.2, 3.5, 4.0, 4.2, 4.8])
-
-    # Perform Anderson-Darling test
-    result = anderson(data, dist='norm')
-
-    print("Anderson-Darling Test Statistic:", result.statistic)
-    print("Critical Values:", result.critical_values)
-    print("Significance Levels:", result.significance_level)
-
-    # Interpret the result
-    for i in range(len(result.critical_values)):
-        sl, cv = result.significance_level[i], result.critical_values[i]
-        if result.statistic < cv:
-            print(f"At {sl * 100:.1f}% significance level, the data looks Gaussian (fail to reject H0).")
-        else:
-            print(f"At {sl * 100:.1f}% significance level, the data does not look Gaussian (reject H0).")
+# def anderson_darling_test(data):
+#     # Sample data (replace this with your actual data)
+#     # data = np.array([1.2, 1.8, 2.1, 2.5, 3.0, 3.2, 3.5, 4.0, 4.2, 4.8])
+#
+#     # Perform Anderson-Darling test
+#     result = anderson(data, dist='norm')
+#
+#     print("Anderson-Darling Test Statistic:", result.statistic)
+#     print("Critical Values:", result.critical_values)
+#     print("Significance Levels:", result.significance_level)
+#
+#     # Interpret the result
+#     for i in range(len(result.critical_values)):
+#         sl, cv = result.significance_level[i], result.critical_values[i]
+#         if result.statistic < cv:
+#             print(f"At {sl * 100:.1f}% significance level, the data looks Gaussian (fail to reject H0).")
+#         else:
+#             print(f"At {sl * 100:.1f}% significance level, the data does not look Gaussian (reject H0).")
 
 
 def friedman_test(data, models, dataset, metric, preffix):
@@ -47,63 +46,6 @@ def friedman_test(data, models, dataset, metric, preffix):
         print("\t\tNo significant difference")
 
 
-def collect_data(results_path, nri_results_path, dataset, dir_name, metric, sim):
-    # collect dante + model results
-    models = []
-    results = []
-    for item in os.listdir(results_path):
-        item_path = '{}/{}'.format(results_path, item)
-        if os.path.isdir(item_path) and item.startswith(dataset):
-            for name in [dir_name, '{}_nc'.format(dir_name)]:
-                if sim:
-                    result = collect_sim_results(item_path, name, average=False)
-                else:
-                    result = collect_results(item_path, name, average=False)
-                if result == {}:
-                    continue
-                if metric == 'gmitre':
-                    result = [sample['best_val_f1_gmitre']['value'] for sample in result]
-                elif metric == 't1':
-                    result = [sample['best_val_f1_1']['value'] for sample in result]
-                elif metric == 't2/3':
-                    result = [sample['best_val_f1_2/3']['value'] for sample in result]
-                context = '_nc' if '_nc' in name else ''
-                models.append('{}{}'.format(item.replace(dataset + '_', ''), context))
-                results.append(result)
-    if args.sim:
-        if dataset == 'sim_1_shifted':
-            dataset = '8_3_2_2'
-        elif dataset == 'sim_2_shifted':
-            dataset = '9_3_2_2'
-        elif dataset == 'sim_3_shifted':
-            dataset = '9_3_2_3'
-        elif dataset == 'sim_4_shifted':
-            dataset = '10_3_2_2'
-        elif dataset == 'sim_5_shifted':
-            dataset = '10_3_2_3'
-        elif dataset == 'sim_6_shifted':
-            dataset = '10_3_2_4'
-    # collect nri results
-    for item in os.listdir(nri_results_path):
-        item_path = '{}/{}'.format(nri_results_path, item)
-        if os.path.isdir(item_path) and item.startswith('wavenetsym_{}'.format(dataset)):
-            if sim:
-                result = collect_nri_sim_results(item_path, average=False)
-            else:
-                result = collect_nri_results(item_path, average=False)
-
-            if metric == 'gmitre':
-                result = [sample['f1_gmitre']['f1'] for sample in result]
-            elif metric == 't1':
-                result = [sample['f1_one']['f1'] for sample in result]
-            elif metric == 't2/3':
-                result = [sample['f1_two_thirds']['f1'] for sample in result]
-            models.append('nri')
-            results.append(result)
-            break
-    return models, results
-
-
 def get_args():
     parser = argparse.ArgumentParser()
 
@@ -116,9 +58,6 @@ def get_args():
 
 if __name__ == '__main__':
     args = get_args()
-
-    # collect_results('./results/{}_shifted_1_{}'.format(dataset, agents_num), 'e150')
-    # models, data = collect_data(results_path, nri_results_path, args.dataset, dir_name, args.metric, args.sim)
 
     nri_datasets = ['8_3_2_2', '9_3_2_2', '9_3_2_3', '10_3_2_2', '10_3_2_3', '10_3_2_4']
     sim_datasets = ['sim_1', 'sim_2', 'sim_3', 'sim_4', 'sim_5', 'sim_6']
@@ -193,39 +132,39 @@ if __name__ == '__main__':
         results_path = './GDGAN/logs/nrisu/{}'.format(dataset)
         sim_gdgan_results.append((dataset, collect_nri_sim_results(results_path, average=False)))
 
-    # counter = 1
-    # names = ['T-DANTE nc', 'T-DANTE context', 'T-DANTE GD nc', 'T-DANTE GD context']
-    # results = [pede_nc_results, pede_tdante_results, pede_nc_gd_results, pede_tdante_gd_results]
-    # models = []
-    # for dataset in pede_datasets:
-    #     for metric in ['best_val_f1_1', 'best_val_f1_2/3', 'best_val_f1_gmitre']:
-    #         data = []
-    #         names = ['T-DANTE nc', 'T-DANTE context', 'T-DANTE GD nc', 'T-DANTE GD context']
-    #         for models_results, model_name in zip(results, names):
-    #             for model_results in models_results:
-    #                 if model_results[0][0] == dataset:
-    #                     data.append([sample[metric]['value'] for sample in model_results[1]])
-    #                     if counter == 1:
-    #                         if 'nc' in model_name:
-    #                             models.append(model_name)
-    #                         else:
-    #                             models.append('{} {}'.format(model_name, int(model_results[0][2]) - 2))
-    #         if counter == 1:
-    #             print('model names: {}'.format(models))
-    #         print('\tDataset: {}, metric: {}'.format(dataset, metric))
-    #         friedman_test(np.asarray(data), models, dataset, metric.replace('/', ''), preffix='abl_pede')
-    #         counter += 1
-    #
-    # results = [sim_nc_results, sim_tdante_results, sim_nc_gd_results, sim_tdante_gd_results]
-    # for dataset in sim_datasets:
-    #     for metric in ['best_val_f1_1', 'best_val_f1_2/3', 'best_val_f1_gmitre']:
-    #         data = []
-    #         for models_results, model_name in zip(results, names):
-    #             for model_results in models_results:
-    #                 if model_results[0][0] == dataset:
-    #                     data.append([sample[metric]['value'] for sample in model_results[1]])
-    #         print('\tDataset: {}, metric: {}'.format(dataset, metric))
-    #         friedman_test(np.asarray(data), models, dataset, metric.replace('/', ''), preffix='abl_sim')
+    counter = 1
+    names = ['T-DANTE nc', 'T-DANTE context', 'T-DANTE GD nc', 'T-DANTE GD context']
+    results = [pede_nc_results, pede_tdante_results, pede_nc_gd_results, pede_tdante_gd_results]
+    models = []
+    for dataset in pede_datasets:
+        for metric in ['best_val_f1_1', 'best_val_f1_2/3', 'best_val_f1_gmitre']:
+            data = []
+            names = ['T-DANTE nc', 'T-DANTE context', 'T-DANTE GD nc', 'T-DANTE GD context']
+            for models_results, model_name in zip(results, names):
+                for model_results in models_results:
+                    if model_results[0][0] == dataset:
+                        data.append([sample[metric]['value'] for sample in model_results[1]])
+                        if counter == 1:
+                            if 'nc' in model_name:
+                                models.append(model_name)
+                            else:
+                                models.append('{} {}'.format(model_name, int(model_results[0][2]) - 2))
+            if counter == 1:
+                print('model names: {}'.format(models))
+            print('\tDataset: {}, metric: {}'.format(dataset, metric))
+            friedman_test(np.asarray(data), models, dataset, metric.replace('/', ''), preffix='abl_pede')
+            counter += 1
+
+    results = [sim_nc_results, sim_tdante_results, sim_nc_gd_results, sim_tdante_gd_results]
+    for dataset in sim_datasets:
+        for metric in ['best_val_f1_1', 'best_val_f1_2/3', 'best_val_f1_gmitre']:
+            data = []
+            for models_results, model_name in zip(results, names):
+                for model_results in models_results:
+                    if model_results[0][0] == dataset:
+                        data.append([sample[metric]['value'] for sample in model_results[1]])
+            print('\tDataset: {}, metric: {}'.format(dataset, metric))
+            friedman_test(np.asarray(data), models, dataset, metric.replace('/', ''), preffix='abl_sim')
 
     names = ['DANTE', 'NRI', 'GDGAN', 'WavenetNRI', 'T-DANTE']
     results = [pede_dante_results, pede_nri_results, pede_gdgan_results, pede_wavenet_results, pede_tdante_results]
