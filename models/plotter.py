@@ -1,9 +1,9 @@
 import argparse
 
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 import seaborn as sns
-import numpy as np
 
 from models.collector import collect_nri_results, collect_results, collect_sim_results, collect_nri_sim_results
 
