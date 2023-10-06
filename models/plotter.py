@@ -305,7 +305,7 @@ if __name__ == '__main__':
                           pede_nri_results,
                           pede_gdgan_results,
                           pede_wavenet_results, pede_tdante_results])
-    bas_pede = bas_pede[~bas_pede['name'].isin(['DANTE c8', 'T-DANTE c8'])]
+    bas_pede = bas_pede[~bas_pede['name'].isin(['DANTE c4', 'T-DANTE c4'])]
     bas_sim = pd.concat([sim_wavenet_results,
                          sim_nri_results,
                          sim_gdgan_results,
