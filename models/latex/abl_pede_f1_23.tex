@@ -1,0 +1,40 @@
+\begin{table}[]
+    \def\arraystretch{1.35}
+    \centering
+    \begin{tabular}{c|c|c|c|c|c|}
+        \cline{2-6}
+        & eth             & hotel           & zara01          & zara02          & students03     \\ \hline
+        \multicolumn{1}{|c|}{\multirow{2}{*}{\begin{tabular}[c]{@{}c@{}}
+                                                 T-DANTE\\no context
+        \end{tabular}}}
+        & \textbf{0.6094} & 0.5306          & 0.8188          & 0.8552          & 0.7084         \\
+        \multicolumn{1}{|c|}{} & $\pm$0.0185     & $\pm$0.0272     & $\pm$0.0127     & $\pm$0.0079     & $\pm$0.075     \\ \hline
+        \multicolumn{1}{|c|}{\multirow{2}{*}{\begin{tabular}[c]{@{}c@{}}
+                                                 T-DANTE\\context 4
+        \end{tabular}}}
+        & 0.6063          & 0.5367          & 0.8253          & 0.8641          & 0.7768         \\
+        \multicolumn{1}{|c|}{} & $\pm$0.0156     & $\pm$0.0284     & $\pm$0.0129     & $\pm$0.0093     & $\pm$0.045     \\ \hline
+        \multicolumn{1}{|c|}{\multirow{2}{*}{\begin{tabular}[c]{@{}c@{}}
+                                                 T-DANTE\\context 8
+        \end{tabular}}}
+        & 0.609           & 0.533           & \textbf{0.8256} & \textbf{0.8715} & \textbf{0.807} \\
+        \multicolumn{1}{|c|}{} & $\pm$0.0221     & $\pm$0.0253     & $\pm$0.0136     & $\pm$0.01       & $\pm$0.0374    \\ \hline
+        \multicolumn{1}{|c|}{\multirow{2}{*}{\begin{tabular}[c]{@{}c@{}}
+                                                 T-DANTE\\GD no context
+        \end{tabular}}}
+        & 0.6057          & 0.5258          & 0.8134          & 0.8508          & 0.7752         \\
+        \multicolumn{1}{|c|}{} & $\pm$0.0174     & $\pm$0.026      & $\pm$0.015      & $\pm$0.0111     & $\pm$0.069     \\ \hline
+        \multicolumn{1}{|c|}{\multirow{2}{*}{\begin{tabular}[c]{@{}c@{}}
+                                                 T-DANTE\\GD context 4
+        \end{tabular}}}
+        & 0.5983          & 0.5306          & 0.8236          & 0.8522          & 0.7919         \\
+        \multicolumn{1}{|c|}{} & $\pm$0.019      & $\pm$0.0261     & $\pm$0.0158     & $\pm$0.0097     & $\pm$0.057     \\ \hline
+        \multicolumn{1}{|c|}{\multirow{2}{*}{\begin{tabular}[c]{@{}c@{}}
+                                                 T-DANTE\\GD context 8
+        \end{tabular}}}
+        & 0.5999          & \textbf{0.5382} & 0.8202          & 0.8592          & 0.7979         \\
+        \multicolumn{1}{|c|}{} & $\pm$0.0255     & $\pm$0.0283     & $\pm$0.0163     & $\pm$0.0122     & $\pm$0.0493    \\ \hline
+    \end{tabular}
+    \caption{Group Correctness values for threshold value $2/3$ for T-DANTE variations in all pedestrian datasets. Context sizes of $0$, $4$ and $8$ agents and scene size of 15 consecutive timeframes.}
+    \label{tab:abl pede f1_2/3}
+\end{table}

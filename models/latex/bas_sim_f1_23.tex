@@ -1,0 +1,25 @@
+\begin{table}[]
+    \def\arraystretch{1.35}
+    \centering
+    \begin{tabular}{c|c|c|c|c|c|c|}
+        \cline{2-7}
+        & sim\_1          & sim\_2          & sim\_3          & sim\_4          & sim\_5          & sim\_6          \\ \hline
+        \multicolumn{1}{|c|}{\multirow{2}{*}{\begin{tabular}[c]{@{}c@{}}
+                                                 WavenetNRI
+        \end{tabular}}}
+        & \textbf{0.9993} & \textbf{0.9983} & 0.9849          & \textbf{0.9996} & 0.9793          & 0.9641          \\
+        \multicolumn{1}{|c|}{} & $\pm$0.0015     & $\pm$0.0023     & $\pm$0.0049     & $\pm$0.0013     & $\pm$0.0096 & $\pm$0.0086 \\ \hline
+        \multicolumn{1}{|c|}{\multirow{2}{*}{\begin{tabular}[c]{@{}c@{}}
+                                                 NRI
+        \end{tabular}}}
+        & 0.9886          & 0.987           & \textbf{0.9906} & 0.9985          & \textbf{0.9922} & \textbf{0.9932} \\
+        \multicolumn{1}{|c|}{} & $\pm$0.0035     & $\pm$0.0044     & $\pm$0.0036     & $\pm$0.0017     & $\pm$0.0036 & $\pm$0.0032 \\ \hline
+        \multicolumn{1}{|c|}{\multirow{2}{*}{\begin{tabular}[c]{@{}c@{}}
+                                                 T-DANTE\\context 4
+        \end{tabular}}}
+        & 0.9734          & 0.9854          & 0.9869          & 0.9803          & 0.9745          & 0.9578          \\
+        \multicolumn{1}{|c|}{} & $\pm$0.0021     & $\pm$0.0019     & $\pm$0.0039     & $\pm$0.0029     & $\pm$0.008 & $\pm$0.0093 \\ \hline
+    \end{tabular}
+    \caption{Group Correctness values for threshold value $2/3$ for T-DANTE vs Baselines in all spring simulation datasets.}
+    \label{tab:bas sim f1_2/3}
+\end{table}

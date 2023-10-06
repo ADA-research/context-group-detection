@@ -1,0 +1,40 @@
+\begin{table}[]
+    \def\arraystretch{1.35}
+    \centering
+    \begin{tabular}{c|c|c|c|c|c|c|}
+        \cline{2-7}
+        & sim\_1          & sim\_2          & sim\_3          & sim\_4          & sim\_5          & sim\_6          \\ \hline
+        \multicolumn{1}{|c|}{\multirow{2}{*}{\begin{tabular}[c]{@{}c@{}}
+                                                 T-DANTE\\no context
+        \end{tabular}}}
+        & 0.978           & 0.9737          & 0.97            & 0.9668          & 0.9745          & 0.9448          \\
+        \multicolumn{1}{|c|}{} & $\pm$0.0051     & $\pm$0.0059     & $\pm$0.0064     & $\pm$0.0059     & $\pm$0.004 & $\pm$0.007 \\ \hline
+        \multicolumn{1}{|c|}{\multirow{2}{*}{\begin{tabular}[c]{@{}c@{}}
+                                                 T-DANTE\\context 4
+        \end{tabular}}}
+        & 0.9734          & \textbf{0.9854} & \textbf{0.9869} & 0.9803          & 0.9745          & 0.9578          \\
+        \multicolumn{1}{|c|}{} & $\pm$0.0021     & $\pm$0.0019     & $\pm$0.0039     & $\pm$0.0029     & $\pm$0.008 & $\pm$0.0093 \\ \hline
+        \multicolumn{1}{|c|}{\multirow{2}{*}{\begin{tabular}[c]{@{}c@{}}
+                                                 T-DANTE\\context 8
+        \end{tabular}}}
+        & 0.9555          & 0.9771          & 0.9755          & 0.9616          & 0.9408          & 0.9169          \\
+        \multicolumn{1}{|c|}{} & $\pm$0.0114     & $\pm$0.0052     & $\pm$0.0079     & $\pm$0.0074     & $\pm$0.019 & $\pm$0.01 \\ \hline
+        \multicolumn{1}{|c|}{\multirow{2}{*}{\begin{tabular}[c]{@{}c@{}}
+                                                 T-DANTE\\GD no context
+        \end{tabular}}}
+        & 0.9848          & 0.9799          & 0.9784          & 0.9764          & 0.9808          & 0.9557          \\
+        \multicolumn{1}{|c|}{} & $\pm$0.0038     & $\pm$0.0048     & $\pm$0.0058     & $\pm$0.0031     & $\pm$0.0049 & $\pm$0.0064 \\ \hline
+        \multicolumn{1}{|c|}{\multirow{2}{*}{\begin{tabular}[c]{@{}c@{}}
+                                                 T-DANTE\\GD context 4
+        \end{tabular}}}
+        & \textbf{0.9857} & 0.983           & 0.9825          & \textbf{0.9854} & \textbf{0.9832} & \textbf{0.9687} \\
+        \multicolumn{1}{|c|}{} & $\pm$0.0028     & $\pm$0.0046     & $\pm$0.003      & $\pm$0.0031     & $\pm$0.0036 & $\pm$0.0053 \\ \hline
+        \multicolumn{1}{|c|}{\multirow{2}{*}{\begin{tabular}[c]{@{}c@{}}
+                                                 T-DANTE\\GD context 8
+        \end{tabular}}}
+        & 0.98            & 0.9749          & 0.974           & 0.9693          & 0.9603          & 0.9346          \\
+        \multicolumn{1}{|c|}{} & $\pm$0.0048     & $\pm$0.0067     & $\pm$0.0064     & $\pm$0.0093     & $\pm$0.0121 & $\pm$0.0145 \\ \hline
+    \end{tabular}
+    \caption{Group Correctness values for threshold value $2/3$ for T-DANTE variations in all spring simulation datasets. Context sizes of $4$ and $8$ agents and scene size of 50 consecutive timeframes.}
+    \label{tab:abl sim f1_2/3}
+\end{table}

@@ -1,0 +1,35 @@
+\begin{table}[]
+    \def\arraystretch{1.35}
+    \centering
+    \begin{tabular}{c|c|c|c|c|c|}
+        \cline{2-6}
+        & eth             & hotel           & zara01         & zara02          & students03      \\ \hline
+        \multicolumn{1}{|c|}{\multirow{2}{*}{\begin{tabular}[c]{@{}c@{}}
+                                                 DANTE\\context 8
+        \end{tabular}}}
+        & 0.5479          & 0.5859          & 0.7932         & 0.7054          & 0.5019          \\
+        \multicolumn{1}{|c|}{} & $\pm$0.0195     & $\pm$0.0355     & $\pm$0.0285    & $\pm$0.0259     & $\pm$0.0131     \\ \hline
+        \multicolumn{1}{|c|}{\multirow{2}{*}{\begin{tabular}[c]{@{}c@{}}
+                                                 NRI
+        \end{tabular}}}
+        & 0.5707          & 0.5399          & 0.5969         & 0.4172          & 0.28            \\
+        \multicolumn{1}{|c|}{} & $\pm$0.0738     & $\pm$0.0972     & $\pm$0.0527    & $\pm$0.019      & $\pm$0.026      \\ \hline
+        \multicolumn{1}{|c|}{\multirow{2}{*}{\begin{tabular}[c]{@{}c@{}}
+                                                 GDGAN
+        \end{tabular}}}
+        & \textbf{0.7058} & \textbf{0.6117} & 0.7762         & 0.5273          & 0.286           \\
+        \multicolumn{1}{|c|}{} & $\pm$0.0257     & $\pm$0.0514     & $\pm$0.0218    & $\pm$0.0237     & $\pm$0.0215     \\ \hline
+        \multicolumn{1}{|c|}{\multirow{2}{*}{\begin{tabular}[c]{@{}c@{}}
+                                                 WavenetNRI
+        \end{tabular}}}
+        & 0.5526          & 0.4549          & 0.627          & 0.4622          & 0.2799          \\
+        \multicolumn{1}{|c|}{} & $\pm$0.0568     & $\pm$0.0799     & $\pm$0.0659    & $\pm$0.0401     & $\pm$0.0237     \\ \hline
+        \multicolumn{1}{|c|}{\multirow{2}{*}{\begin{tabular}[c]{@{}c@{}}
+                                                 T-DANTE\\context 8
+        \end{tabular}}}
+        & 0.6651          & 0.5425          & \textbf{0.838} & \textbf{0.8726} & \textbf{0.7805} \\
+        \multicolumn{1}{|c|}{} & $\pm$0.0168     & $\pm$0.0228     & $\pm$0.0152    & $\pm$0.0106     & $\pm$0.0281     \\ \hline
+    \end{tabular}
+    \caption{Group Mitre values for T-DANTE vs Baselines in all pedestrian datasets.}
+    \label{tab:bas pede f1_gmitre}
+\end{table}
