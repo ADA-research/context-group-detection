@@ -150,8 +150,8 @@ def save_latex_data(dataframe, metric, savefile, title, label):
             std_data = []
             for dataset in datasets:
                 model_data = dataframe[(dataframe['name'] == model) & (dataframe['dataset'] == dataset)]
-                metric_data.append(np.average(model_data[metric]))
-                std_data.append(np.std(model_data[metric]))
+                metric_data.append(np.round(np.mean(model_data[metric]), 4))
+                std_data.append(np.round(np.std(model_data[metric]), 4))
             metric_data_all.append(metric_data)
             std_data_all.append(std_data)
         # Find the index of the maximum value in each column
