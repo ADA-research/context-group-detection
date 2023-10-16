@@ -1,0 +1,8 @@
+---
+features: 4
+patience: 150
+dropout: 0.35
+reg: 0.0000001
+eps_thres: 1.0e-13
+dataset: sim_5_shifted
+dataset_path: ../datasets/simulation/sim_9_3_2_3
