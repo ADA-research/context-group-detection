@@ -181,7 +181,6 @@ def get_args():
     parser.add_argument('--samples_freq', type=int, default=50)
     parser.add_argument('-f', '--frames_num', type=int, default=49)
     parser.add_argument('-a', '--agents_num', type=int, default=10)
-    parser.add_argument('-ts', '--target_size', type=int, default=100000)
     parser.add_argument('-d', '--dataset', type=str, default='eth')
     parser.add_argument('-sf', '--save_folder', type=str, default='./reformatted')
     parser.add_argument('-p', '--plot', action="store_true", default=False)
