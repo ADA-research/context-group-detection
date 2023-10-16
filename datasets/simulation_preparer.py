@@ -156,12 +156,12 @@ def save_split(save_folder, dataset, frames_num, agents_num, data, labels, frame
 
 def get_sample_params():
     steps = {
-        'sim_1': 1,
-        'sim_2': 1,
-        'sim_3': 1,
-        'sim_4': 1,
-        'sim_5': 1,
-        'sim_6': 1
+        'sim_1': 20,
+        'sim_2': 25,
+        'sim_3': 25,
+        'sim_4': 30,
+        'sim_5': 30,
+        'sim_6': 30
     }
     factor = {
         'sim_1': 1,
@@ -179,7 +179,7 @@ def get_args():
 
     parser.add_argument('--seed', type=int, default=14)
     parser.add_argument('--samples_freq', type=int, default=50)
-    parser.add_argument('-f', '--frames_num', type=int, default=49)
+    parser.add_argument('-f', '--frames_num', type=int, default=1)
     parser.add_argument('-a', '--agents_num', type=int, default=10)
     parser.add_argument('-d', '--dataset', type=str, default='eth')
     parser.add_argument('-sf', '--save_folder', type=str, default='./reformatted')
@@ -251,9 +251,10 @@ if __name__ == '__main__':
         group_pairs = get_group_pairs(groups)
 
         for split_df, name, target_size in split_sims(df, paths[dataset]):
+            step = 1 if args.frames_num != 1 else steps[dataset]
             scenes = get_scene_data(dataframe=split_df, consecutive_frames=args.frames_num,
                                     difference_between_frames=difference,
-                                    groups=groups, step=1, sim=True)
+                                    groups=groups, step=step, sim=True)
 
             sample_rates = get_sample_rates(scenes, group_pairs, factor=factor[dataset], target_size=target_size)
             print('\tsplit: {}, started at: {}'.format(name, dataset_start))
@@ -264,6 +265,11 @@ if __name__ == '__main__':
                                                                      agents_num=args.agents_num,
                                                                      sample_rates=sample_rates,
                                                                      shift=args.shift)
+            # data_samples = dataset_size_calculator(scene_data=scenes,
+            #                                        group_pairs=group_pairs,
+            #                                        agents_num=args.agents_num,
+            #                                        sample_rates=sample_rates)
+            # print('\tdata size: {}'.format(data_samples))
             dataset_name = '{}_shifted'.format(dataset) if args.shift else dataset
             # save dataset in folds
             save_split(args.save_folder, dataset_name, args.frames_num, args.agents_num, data, labels, frames,
