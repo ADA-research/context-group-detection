@@ -94,7 +94,8 @@ def modify_df(dataframe, name=None, no_context=False, model=None):
     return dataframe
 
 
-def modify_sim_df(dataframe, name=None, no_context=False, fix_datasets=False, model=None, suffix=None):
+def modify_sim_df(dataframe, name=None, no_context=False, fix_datasets=False, model=None, suffix=None,
+                  single_frame=False):
     if fix_datasets:
         dataframe['dataset'] = dataframe['dataset'].str.replace('_{}'.format(suffix), '')
         dataframe['dataset'] = dataframe['dataset'].replace('8_3_2_2', 'sim_1')
@@ -107,11 +108,14 @@ def modify_sim_df(dataframe, name=None, no_context=False, fix_datasets=False, mo
     else:
         details = dataframe['dataset'].str.split('_')
         dataframe['dataset'] = details.apply(lambda x: '_'.join(x[0:2]))
-        if no_context:
-            dataframe['name'] = 'T-DANTE GD nc' if model == 'gd' else 'T-DANTE nc'
+        if single_frame:
+            dataframe['name'] = 'DANTE c8'
         else:
-            dataframe['name'] = ('T-DANTE GD c' if model == 'gd' else 'T-DANTE c') + details.apply(
-                lambda x: str(int(x[-1]) - 2))
+            if no_context:
+                dataframe['name'] = 'T-DANTE GD nc' if model == 'gd' else 'T-DANTE nc'
+            else:
+                dataframe['name'] = ('T-DANTE GD c' if model == 'gd' else 'T-DANTE c') + details.apply(
+                    lambda x: str(int(x[-1]) - 2))
 
     float_columns = list(dataframe.columns.values[1:-1])
     dataframe[float_columns] = dataframe[float_columns].astype(float)
@@ -208,6 +212,7 @@ if __name__ == '__main__':
     sim_nri_results = []
     sim_nc_results = []
     sim_nc_gd_results = []
+    # sim_dante_results = []
     sim_tdante_results = []
     sim_tdante_gd_results = []
 
@@ -238,6 +243,9 @@ if __name__ == '__main__':
                     ((dataset, frames_num, agents_num), collect_results(results_path_gd, 'e150_nc', average=False)))
 
     for dataset in sim_datasets:
+        # sim_dante_results.append((
+        #     (dataset, 1, 10),
+        #     collect_sim_results('./results/{}_shifted_1_{}'.format(dataset, 10), 'e50', average=False)))
         for agents_num in [6, 10]:
             frames_num = 49
             if dataset in ['sim_4', 'sim_5', 'sim_6']:
@@ -278,6 +286,7 @@ if __name__ == '__main__':
     sim_gdgan_results = create_nri_df(sim_gdgan_results, 'gdgan')
     sim_nc_results = create_df(sim_nc_results)
     sim_nc_gd_results = create_df(sim_nc_gd_results)
+    # sim_dante_results = create_df(sim_dante_results)
     sim_tdante_results = create_df(sim_tdante_results)
     sim_tdante_gd_results = create_df(sim_tdante_gd_results)
 
@@ -295,6 +304,7 @@ if __name__ == '__main__':
     sim_gdgan_results = modify_sim_df(sim_gdgan_results, name='GDGAN', fix_datasets=True, suffix='gdgan')
     sim_nc_results = modify_sim_df(sim_nc_results, no_context=True)
     sim_nc_gd_results = modify_sim_df(sim_nc_gd_results, no_context=True, model='gd')
+    # sim_dante_results = modify_sim_df(sim_dante_results, name='DANTE', single_frame=True)
     sim_tdante_results = modify_sim_df(sim_tdante_results)
     sim_tdante_gd_results = modify_sim_df(sim_tdante_gd_results, model='gd')
 
@@ -309,8 +319,9 @@ if __name__ == '__main__':
     bas_sim = pd.concat([sim_wavenet_results,
                          sim_nri_results,
                          sim_gdgan_results,
+                         # sim_dante_results,
                          sim_tdante_results])
-    bas_sim = bas_sim[~bas_sim['name'].isin(['DANTE c8', 'T-DANTE c8'])]
+    bas_sim = bas_sim[~bas_sim['name'].isin(['T-DANTE c8'])]
 
     sns.set(style='whitegrid')
     plot_df(abl_pede, metric='f1_1', ylabel='F1',
