@@ -369,10 +369,10 @@ if __name__ == '__main__':
                     title='Group Correctness metric with $P=1$ for T-DANTE vs Baselines in all pedestrian datasets. \\textbf{*} shows that this result is significantly different than all the other values in the same column.',
                     label='tab:bas pede f1_1')
     save_latex_data(abl_pede, metric='f1_2/3', savefile='latex/abl_pede_f1_23.tex',
-                    title='Group Correctness metric with $P=2/3$ for T-DANTE variations in all pedestrian datasets. Context sizes of $0$, $4$ and $8$ agents and scene size of 15 consecutive timeframes.',
+                    title='Group Correctness metric with $P=\dfrac{2}{3}$ for T-DANTE variations in all pedestrian datasets. Context sizes of $0$, $4$ and $8$ agents and scene size of 15 consecutive timeframes.',
                     label='tab:abl pede f1_2/3')
     save_latex_data(bas_pede, metric='f1_2/3', savefile='latex/bas_pede_f1_23.tex',
-                    title='Group Correctness metric with $P=2/3$ for T-DANTE vs Baselines in all pedestrian datasets.',
+                    title='Group Correctness metric with $P=\dfrac{2}{3}$ for T-DANTE vs Baselines in all pedestrian datasets.',
                     label='tab:bas pede f1_2/3')
     save_latex_data(abl_pede, metric='f1_gmitre', savefile='latex/abl_pede_f1_gmitre.tex',
                     title='Group Mitre metric for T-DANTE variations in all pedestrian datasets. Context sizes of $0$, $4$ and $8$ agents and scene size of 15 consecutive timeframes.',
@@ -388,10 +388,10 @@ if __name__ == '__main__':
                     title='Group Correctness metric with $P=1$ for T-DANTE vs Baselines in all spring simulation datasets.',
                     label='tab:bas sim f1_1')
     save_latex_data(abl_sim, metric='f1_2/3', savefile='latex/abl_sim_f1_23.tex',
-                    title='Group Correctness metric with $P=2/3$ for T-DANTE variations in all spring simulation datasets. Context sizes of $0$, $4$ and $8$ agents and scene size of 50 consecutive timeframes.',
+                    title='Group Correctness metric with $P=\dfrac{2}{3}$ for T-DANTE variations in all spring simulation datasets. Context sizes of $0$, $4$ and $8$ agents and scene size of 50 consecutive timeframes.',
                     label='tab:abl sim f1_2/3')
     save_latex_data(bas_sim, metric='f1_2/3', savefile='latex/bas_sim_f1_23.tex',
-                    title='Group Correctness metric with $P=2/3$ for T-DANTE vs Baselines in all spring simulation datasets.',
+                    title='Group Correctness metric with $P=\dfrac{2}{3}$ for T-DANTE vs Baselines in all spring simulation datasets.',
                     label='tab:bas sim f1_2/3')
     save_latex_data(abl_sim, metric='f1_gmitre', savefile='latex/abl_sim_f1_gmitre.tex',
                     title='Group Mitre metric for T-DANTE variations in all spring simulation datasets. Context sizes of $0$, $4$ and $8$ agents and scene size of 50 consecutive timeframes.',
