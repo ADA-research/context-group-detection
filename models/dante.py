@@ -48,13 +48,16 @@ if __name__ == "__main__":
         if args.sim:
             train, test, val = load_data(
                 '../datasets/reformatted/{}_1_{}'.format(config['dataset'], args.agents))
+            dir_name = '{}_1_{}/{}_{}'.format(
+                config['dataset'], args.agents, args.dir_name, args.seed)
         else:
             train, test, val = load_data(
                 '../datasets/reformatted/{}_1_{}/fold_{}'.format(config['dataset'], args.agents, args.fold))
+            dir_name = '{}_1_{}/fold_{}/{}_{}'.format(
+                config['dataset'], args.agents, args.fold, args.dir_name, args.seed),
 
         train_and_save_model(global_filters, individual_filters, combined_filters, train, test, val, args.epochs,
                              config['dataset'], config['dataset_path'], reg=config['reg'], dropout=config['dropout'],
                              patience=config['patience'],
-                             dir_name='{}_1_{}/fold_{}/{}_{}'.format(
-                                 config['dataset'], args.agents, args.fold, args.dir_name, args.seed),
+                             dir_name=dir_name,
                              eps_thres=config['eps_thres'])
