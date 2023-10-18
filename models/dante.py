@@ -17,8 +17,8 @@ def get_args():
     parser.add_argument('-e', '--epochs', type=int, default=1)
     parser.add_argument('-a', '--agents', type=int, default=10)
     parser.add_argument('-d', '--dir_name', type=str, default="dir_name")
-    parser.add_argument('-c', '--config', type=str, default="./config/dante_sim_1.yml")
-    parser.add_argument('--sim', action="store_true", default=False)
+    parser.add_argument('-c', '--config', type=str, default="./config/dante_sim_6.yml")
+    parser.add_argument('--sim', action="store_true", default=True)
 
     return parser.parse_args()
 

@@ -5,4 +5,4 @@ dropout: 0.35
 reg: 0.0000001
 eps_thres: 1.0e-13
 dataset: sim_1_shifted
-dataset_path: ../datasets/simulation/sim_10_3_2_3
+dataset_path: ../datasets/simulation/sim_8_3_2_2
