@@ -212,7 +212,7 @@ if __name__ == '__main__':
     sim_nri_results = []
     sim_nc_results = []
     sim_nc_gd_results = []
-    # sim_dante_results = []
+    sim_dante_results = []
     sim_tdante_results = []
     sim_tdante_gd_results = []
 
@@ -243,9 +243,9 @@ if __name__ == '__main__':
                     ((dataset, frames_num, agents_num), collect_results(results_path_gd, 'e150_nc', average=False)))
 
     for dataset in sim_datasets:
-        # sim_dante_results.append((
-        #     (dataset, 1, 10),
-        #     collect_sim_results('./results/{}_shifted_1_{}'.format(dataset, 10), 'e50', average=False)))
+        sim_dante_results.append((
+            (dataset, 1, 10),
+            collect_sim_results('./results/{}_shifted_1_{}'.format(dataset, 10), 'e50', average=False)))
         for agents_num in [6, 10]:
             frames_num = 49
             if dataset in ['sim_4', 'sim_5', 'sim_6']:
@@ -286,7 +286,7 @@ if __name__ == '__main__':
     sim_gdgan_results = create_nri_df(sim_gdgan_results, 'gdgan')
     sim_nc_results = create_df(sim_nc_results)
     sim_nc_gd_results = create_df(sim_nc_gd_results)
-    # sim_dante_results = create_df(sim_dante_results)
+    sim_dante_results = create_df(sim_dante_results)
     sim_tdante_results = create_df(sim_tdante_results)
     sim_tdante_gd_results = create_df(sim_tdante_gd_results)
 
@@ -304,7 +304,7 @@ if __name__ == '__main__':
     sim_gdgan_results = modify_sim_df(sim_gdgan_results, name='GDGAN', fix_datasets=True, suffix='gdgan')
     sim_nc_results = modify_sim_df(sim_nc_results, no_context=True)
     sim_nc_gd_results = modify_sim_df(sim_nc_gd_results, no_context=True, model='gd')
-    # sim_dante_results = modify_sim_df(sim_dante_results, name='DANTE', single_frame=True)
+    sim_dante_results = modify_sim_df(sim_dante_results, name='DANTE', single_frame=True)
     sim_tdante_results = modify_sim_df(sim_tdante_results)
     sim_tdante_gd_results = modify_sim_df(sim_tdante_gd_results, model='gd')
 
@@ -319,7 +319,7 @@ if __name__ == '__main__':
     bas_sim = pd.concat([sim_wavenet_results,
                          sim_nri_results,
                          sim_gdgan_results,
-                         # sim_dante_results,
+                         sim_dante_results,
                          sim_tdante_results])
     bas_sim = bas_sim[~bas_sim['name'].isin(['T-DANTE c8'])]
 
