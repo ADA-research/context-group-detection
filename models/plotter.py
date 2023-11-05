@@ -322,6 +322,8 @@ if __name__ == '__main__':
                          sim_dante_results,
                          sim_tdante_results])
     bas_sim = bas_sim[~bas_sim['name'].isin(['T-DANTE c8'])]
+    bas_pede['name'] = bas_pede['name'].replace(['DANTE c8', 'T-DANTE c8'], ['DANTE', 'T-DANTE'])
+    bas_sim['name'] = bas_sim['name'].replace(['DANTE c8', 'T-DANTE c4'], ['DANTE', 'T-DANTE'])
 
     sns.set(style='whitegrid')
     plot_df(abl_pede, metric='f1_1', ylabel='F1',
