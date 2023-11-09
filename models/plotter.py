@@ -314,12 +314,13 @@ if __name__ == '__main__':
     bas_pede = pd.concat([pede_dante_results,
                           pede_nri_results,
                           pede_gdgan_results,
-                          pede_wavenet_results, pede_tdante_results])
+                          pede_wavenet_results,
+                          pede_tdante_results])
     bas_pede = bas_pede[~bas_pede['name'].isin(['DANTE c4', 'T-DANTE c4'])]
-    bas_sim = pd.concat([sim_wavenet_results,
+    bas_sim = pd.concat([sim_dante_results,
                          sim_nri_results,
                          sim_gdgan_results,
-                         sim_dante_results,
+                         sim_wavenet_results,
                          sim_tdante_results])
     bas_sim = bas_sim[~bas_sim['name'].isin(['T-DANTE c8'])]
     bas_pede['name'] = bas_pede['name'].replace(['DANTE c8', 'T-DANTE c8'], ['DANTE', 'T-DANTE'])
