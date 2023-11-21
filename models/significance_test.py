@@ -1,8 +1,8 @@
 import argparse
+from statistics import mean
 
-import numpy as np
 from scikit_posthocs import posthoc_nemenyi_friedman
-from scipy.stats import friedmanchisquare
+from scipy.stats import friedmanchisquare, wilcoxon
 
 from models.collector import collect_nri_results, collect_results, collect_sim_results, collect_nri_sim_results
 
@@ -42,6 +42,25 @@ def friedman_test(data, models, dataset, metric, preffix):
         nemenyi_result.set_index('model', inplace=True)
         # print("Critical Difference (Nemenyi):", nemenyi_result)
         nemenyi_result.to_csv('./csvs/{}_{}_{}.csv'.format(preffix, dataset, metric))
+    else:
+        print("\t\tNo significant difference")
+
+
+def wilcoxon_test(data, models, dataset, metric, preffix):
+    means_and_indices = [(mean(model_data), index) for index, model_data in enumerate(data)]
+    sorted_means_and_indices = sorted(means_and_indices, key=lambda x: x[0], reverse=True)
+    first_data = data[sorted_means_and_indices[0][1]]
+    second_data = data[sorted_means_and_indices[1][1]]
+    first_model_name = models[sorted_means_and_indices[0][1]]
+    second_model_name = models[sorted_means_and_indices[1][1]]
+    # Perform Wilcoxon test
+    result = wilcoxon(x=first_data, y=second_data)
+
+    # Interpret the result
+    alpha = 0.05
+    if result.pvalue < alpha:
+        print("\t\tSignificant difference between {} and {} for {}_{}_{}"
+              .format(first_model_name, second_model_name, preffix, dataset, metric))
     else:
         print("\t\tNo significant difference")
 
@@ -152,7 +171,8 @@ if __name__ == '__main__':
             if counter == 1:
                 print('model names: {}'.format(models))
             print('\tDataset: {}, metric: {}'.format(dataset, metric))
-            friedman_test(np.asarray(data), models, dataset, metric.replace('/', ''), preffix='abl_pede')
+            wilcoxon_test(data, models, dataset, metric.replace('/', ''), preffix='abl_pede')
+            # friedman_test(np.asarray(data), models, dataset, metric.replace('/', ''), preffix='abl_pede')
             counter += 1
 
     results = [sim_nc_results, sim_tdante_results, sim_nc_gd_results, sim_tdante_gd_results]
@@ -164,7 +184,8 @@ if __name__ == '__main__':
                     if model_results[0][0] == dataset:
                         data.append([sample[metric]['value'] for sample in model_results[1]])
             print('\tDataset: {}, metric: {}'.format(dataset, metric))
-            friedman_test(np.asarray(data), models, dataset, metric.replace('/', ''), preffix='abl_sim')
+            wilcoxon_test(data, models, dataset, metric.replace('/', ''), preffix='abl_sim')
+            # friedman_test(np.asarray(data), models, dataset, metric.replace('/', ''), preffix='abl_sim')
 
     names = ['DANTE', 'NRI', 'GDGAN', 'WavenetNRI', 'T-DANTE']
     results = [pede_dante_results, pede_nri_results, pede_gdgan_results, pede_wavenet_results, pede_tdante_results]
@@ -189,7 +210,8 @@ if __name__ == '__main__':
                             data.append(
                                 [sample[local_metric]['f1'] for sample in model_results[1]])
             print('\tDataset: {}, metric: {}'.format(dataset, metric))
-            friedman_test(np.asarray(data), names, dataset, metric.replace('/', ''), preffix='bas_pede')
+            wilcoxon_test(data, names, dataset, metric.replace('/', ''), preffix='bas_pede')
+            # friedman_test(np.asarray(data), names, dataset, metric.replace('/', ''), preffix='bas_pede')
 
     results = [sim_nc_results, sim_tdante_results, sim_nc_gd_results, sim_tdante_gd_results]
     for dataset in sim_datasets:
@@ -200,4 +222,5 @@ if __name__ == '__main__':
                     if model_results[0][0] == dataset:
                         data.append([sample[metric]['value'] for sample in model_results[1]])
             print('\tDataset: {}, metric: {}'.format(dataset, metric))
-            friedman_test(np.asarray(data), names, dataset, metric.replace('/', ''), preffix='bas_sim')
+            wilcoxon_test(data, names, dataset, metric.replace('/', ''), preffix='bas_sim')
+            # friedman_test(np.asarray(data), names, dataset, metric.replace('/', ''), preffix='bas_sim')
