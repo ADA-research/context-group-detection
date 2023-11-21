@@ -143,10 +143,10 @@ def save_latex_data(dataframe, metric, savefile, title, label):
         datasets_str = datasets_str.replace('_', '\_')
         if 'sim' in datasets_str:
             file.write(
-                f'\\begin{{table}}[]\n\def\\arraystretch{{1.35}}\n\centering\n\\begin{{tabular}}{{c|c|c|c|c|c|c|}}\n\cline{{2-7}}\n{datasets_str} \\\\ \hline\n')
+                f'\\begin{{table}}[!htb]\n\def\\arraystretch{{1.35}}\n\centering\n\\begin{{tabular}}{{c|c|c|c|c|c|c|}}\n\cline{{2-7}}\n{datasets_str} \\\\ \hline\n')
         else:
             file.write(
-                f'\\begin{{table}}[]\n\def\\arraystretch{{1.35}}\n\centering\n\\begin{{tabular}}{{c|c|c|c|c|c|}}\n\cline{{2-6}}\n{datasets_str} \\\\ \hline\n')
+                f'\\begin{{table}}[!htb]\n\def\\arraystretch{{1.35}}\n\centering\n\\begin{{tabular}}{{c|c|c|c|c|c|}}\n\cline{{2-6}}\n{datasets_str} \\\\ \hline\n')
         metric_data_all = []
         std_data_all = []
         for model in models:
