@@ -160,6 +160,7 @@ For a simulation dataset the command is the following
 python model.py -c path_to_config_file -f fold -e epochs --seed ${seed} -a 10 -f 15 --sim
 ```
 
+The default T-DANTE configuration files are places in models/config/ folder and are named model_{dataset}.yml.
 More information has to be defined in the configuration files.
 
 ### Results
