@@ -57,6 +57,17 @@ is that a number of particles move in a 2-D space, simulating the concept of par
 affecting the trajectory of each other. Locations and velocities of the particles are part of the generated data as well
 as the communities that they belong to.
 
+In order to create a new simulation dataset you need to run the following command
+
+```
+python group_simulation.py --n_balls ${n_balls} --groups ${groups} --max_attraction_points ${max_attraction_points}
+```
+For example the following command generates the sim<sub>1</sub> dataset of the experiments.
+```
+python group_simulation.py --n_balls 8 --groups 2 --max_attraction_points 3
+```
+More arguments can be found in [group_simulation.py](datasets%2Fsimulation%2Fgroup_simulation.py).
+
 ### Dataset Preprocessing
 
 <img alt="folds split" src="pngs/frames.png" style="width:400px;"/>
